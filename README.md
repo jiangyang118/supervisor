@@ -35,6 +35,29 @@
 ## 环境变量
 复制 `.env.example` 为 `.env` 并按需修改。
 
+## 运行
+- 学校端：`cd apps/web-school && npm run dev` 打开 http://localhost:4200
+- 监管端：`cd apps/web-regulator && npm run dev` 打开 http://localhost:4300
+
+## 已实现（前端演示）
+- 学校端：概览、每日报表（占位导出按钮）、AI 预警占位、明厨亮灶入口、晨检、留样记录/清理、陪餐、农残快检、消毒、废弃物、卫生检查/资产维护、出入库/库存/索证/添加剂、供应商、仓库、资质证件、应急入口、隐患、预警、设备、统计、食安指数、系统配置入口。
+- 监管端：总览、每日报表入口、AI 巡查入口、明厨亮灶入口、各类台账（晨检/留样/陪餐/农残/消毒/废弃物/出入库+索证+添加剂）、演示大屏、预警/统计/食安指数/系统配置入口。
+
+说明：当前为可运行的前端演示版，各页面支持表格、筛选（部分）、新增/处置（部分）、CSV 导出（前端生成，UTF-8 BOM）。PDF 导出按钮为占位弹窗，待接入后端或前端模板。
+
+## 待办（下次 Codex 继续）
+- 鉴权与登录：统一登录、角色与租户隔离（JWT + Pinia 状态）。
+- 后端 API：NestJS 服务（api-gateway、user-service、食品安全相关服务）+ OpenAPI 文档，按 prompt/init.md 模块分组补齐。
+- 数据层：Prisma schema、迁移与种子数据（学校/食堂/人员/设备/摄像头/台账/AI 事件样例）。
+- 导出：后端导出 CSV/Excel、PDF 报表模板（每日报表、预警看板）。
+- AI 事件：ai-vision-service（Mock 定时产出）→ Kafka → alert-service 入库与推送，前端 WebSocket 看板联动。
+- 视频：iot-service（RTSP/回放/快照 Mock），前端明厨亮灶页面接入快照与通道配置。
+- 设备移动端/应急移动端：UniApp 骨架与页面对齐，接统一鉴权。
+- DevOps：Dockerfile、docker-compose（一键起 Postgres/Redis/MinIO/Kafka/Nginx）、.env.example、Makefile、scripts/demo.sh、CI（GitHub Actions）。
+- 质量：关键页面 E2E、后端单测覆盖、Lint/Prettier/Husky/Commitlint。
+
+如需我优先接哪一块，请备注（例如先补后端 API 与数据库）。
+
 ## OpenAPI
 - API 文档：启动 `api-gateway` 后访问 `http://localhost/api/docs`
 

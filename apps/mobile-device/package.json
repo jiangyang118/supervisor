@@ -1,0 +1,12 @@
+{
+  "name": "@foodsafe/mobile-device",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "UniApp device management mobile app (skeleton)",
+  "scripts": {
+    "dev": "echo 'Open in HBuilderX or run via uniapp CLI'"
+  },
+  "dependencies": {}
+}
+

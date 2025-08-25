@@ -1,0 +1,15 @@
+# syntax=docker/dockerfile:1
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY services/api-gateway/package.json ./package.json
+RUN npm install
+COPY services/api-gateway/ .
+RUN npm run build
+
+FROM node:20-alpine
+WORKDIR /app
+ENV NODE_ENV=production
+COPY services/api-gateway/package.json ./package.json
+RUN npm install --omit=dev
+COPY --from=builder /app/dist ./dist
+CMD ["node", "dist/main.js"]

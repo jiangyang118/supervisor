@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "npmScope": "foodsafe",
+  "affected": { "defaultBase": "main" },
+  "namedInputs": {
+    "default": ["{projectRoot}/**/*", "!{projectRoot}/**/*.spec.*"],
+    "production": ["default", "!{projectRoot}/**/*.test.*"]
+  },
+  "plugins": []
+}
+

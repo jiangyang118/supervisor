@@ -1,0 +1,12 @@
+{
+  "name": "@foodsafe/mobile-emergency",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "UniApp emergency management mobile app (skeleton)",
+  "scripts": {
+    "dev": "echo 'Open in HBuilderX or run via uniapp CLI'"
+  },
+  "dependencies": {}
+}
+

@@ -24,10 +24,10 @@
 - `scripts/` 一键演示脚本骨架
 
 ## 快速开始
-1. 安装 pnpm 与 Node 20：`corepack enable && corepack prepare pnpm@latest --activate`
-2. 安装依赖：`pnpm install`（首次构建容器时也会自动拉取）
-3. 本地开发（多包并行）：`pnpm dev`
-4. 构建：`pnpm build`
+1. 使用 npm（免 Corepack）：确保 Node 20，运行 `npm --version` 验证
+2. 安装依赖（工作区）：`npm install --workspaces`
+3. 本地开发（多包并行）：`npm run dev --workspaces --if-present`
+4. 构建：`npm run build --workspaces --if-present`
 5. 一键演示（容器）：`bash scripts/demo.sh`
 
 > 说明：当前仅为骨架，可启动基础服务与示例接口，后续可逐步补全数据库、鉴权、AI 事件流、导出等能力。
@@ -40,4 +40,10 @@
 
 ## 备注
 - UniApp 项目建议用 HBuilderX 打开进行运行/打包。
-- docker-compose 已包含 Postgres/Redis/MinIO/Kafka/Nginx 以及示例服务镜像构建。
+- docker-compose 已包含 Postgres/Redis/MinIO/Kafka/Nginx 与示例服务镜像构建（Dockerfile 已改为使用 npm）。
+
+### 单独运行某个包（npm 示例）
+- 网关开发：`npm --prefix services/api-gateway run dev`
+- 用户服务开发：`npm --prefix services/user-service run dev`
+- 学校端 Web：`npm --prefix apps/web-school run dev`
+- 监管端 Web：`npm --prefix apps/web-regulator run dev`

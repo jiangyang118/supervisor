@@ -7,11 +7,7 @@ const BigScreen = () => import('../views/BigScreen.vue');
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/overview' },
   { path: '/overview', name: 'dashboard', component: Dashboard },
-  {
-    path: '/reports',
-    component: GenericPage,
-    meta: { title: '辖区每日报表', actions: ['export-pdf', 'export-csv'] },
-  },
+  { path: '/reports', component: () => import('../views/Reports.vue') },
   {
     path: '/ai/inspections',
     component: GenericPage,

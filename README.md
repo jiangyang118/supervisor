@@ -44,6 +44,14 @@
 - 学校端：`cd apps/web-school && npm run dev` 打开 http://localhost:4200
 - 监管端：`cd apps/web-regulator && npm run dev` 打开 http://localhost:4300
 
+### 学校端快速体验（推荐给一线用户演示）
+
+- 首页：查看“入/出库、卫生合格率、设备在线率、AI 预警、家长满意度”等 KPI 与图表；支持刷新与导出当日数据。
+- 每日报表：按日期/餐次查看“晨检/留样/消毒/陪餐/废弃物/AI 预警”等汇总，提供饼图/柱图与入/出库、卫生/设备简表；支持导出 CSV（PDF 为占位）。
+- AI 事件：学校端“AI 汇总/事件”可查看并处置；监管端可联动巡查任务与远程提醒。
+- 明厨亮灶：查看直播/回放/抓拍与通道；`WVP_BASE` 配置后即可播放。
+- 终端用户手册：监管人员与后勤主任请阅读 docs/USER_GUIDE_ENDUSER.md；更细分角色清单见 docs/USER_MANUAL.md。
+
 ## 测试与质量
 
 - Lint（Prettier）：`npm run lint`

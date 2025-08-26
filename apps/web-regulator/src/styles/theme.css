@@ -1,0 +1,32 @@
+:root {
+  --brand-primary: #2b7de1;
+  --brand-bg: #f7f9fc;
+  --brand-header: #ffffff;
+  --brand-border: #eef1f6;
+}
+html,
+body,
+#app {
+  height: 100%;
+}
+body {
+  background: var(--brand-bg);
+}
+.app-header {
+  background: #fff;
+  border-bottom: 1px solid var(--brand-border);
+}
+.app-aside {
+  background: #fff;
+  border-right: 1px solid var(--brand-border);
+}
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0 16px;
+}
+.page-title {
+  font-size: 18px;
+  font-weight: 600;
+}

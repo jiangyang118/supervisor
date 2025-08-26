@@ -1,0 +1,817 @@
+{
+  "info": {
+    "_postman_id": "e9b7f6b1-dc9a-4a7b-9a74-edu-foodsafe",
+    "name": "Food Safety Cloud - Web School & Regulator",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Postman collection covering Web School and Web Regulator endpoints per prompt/init.md. Uses {{baseUrl}} as API Gateway base."
+  },
+  "item": [
+    {
+      "name": "_Health",
+      "item": [
+        {
+          "name": "Gateway Health",
+          "request": { "method": "GET", "url": "{{baseUrl}}/health" }
+        }
+      ]
+    },
+    {
+      "name": "Web School",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "Login",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"principal@school.cn\",\n  \"password\": \"Admin@1234\"\n}"
+                },
+                "url": "{{baseUrl}}/auth/login"
+              }
+            },
+            {
+              "name": "Refresh",
+              "request": { "method": "POST", "url": "{{baseUrl}}/auth/refresh" }
+            },
+            { "name": "Me", "request": { "method": "GET", "url": "{{baseUrl}}/auth/me" } }
+          ]
+        },
+        {
+          "name": "Dashboard",
+          "item": [
+            {
+              "name": "Overview (Home KPIs)",
+              "request": { "method": "GET", "url": "{{baseUrl}}/home/summary" }
+            }
+          ]
+        },
+        {
+          "name": "AI Inspection",
+          "item": [
+            {
+              "name": "List Events",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/ai/events?from=&to=&type=" }
+            },
+            {
+              "name": "Handle Event",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"AI-001\",\n  \"measure\": \"口头提醒并记录\"\n}"
+                },
+                "url": "{{baseUrl}}/school/ai/events/handle"
+              }
+            },
+            {
+              "name": "Stats",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/ai/stats?dim=day&from=&to=" }
+            },
+            {
+              "name": "Export Stats CSV",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/ai/stats/export?format=csv" }
+            }
+          ]
+        },
+        {
+          "name": "Bright Kitchen",
+          "item": [
+            {
+              "name": "Channels (List)",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/bright/channels" }
+            },
+            {
+              "name": "Create/Update Channel",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"S-CH-001\",\n  \"name\": \"后厨-操作台\",\n  \"enabled\": true,\n  \"rtsp\": \"rtsp://...\"\n}"
+                },
+                "url": "{{baseUrl}}/school/bright/channels"
+              }
+            },
+            {
+              "name": "Snapshots (List)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/bright/snapshots?camera=S-CH-001"
+              }
+            },
+            {
+              "name": "Playback (Query)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/bright/playback?camera=S-CH-001&from=&to="
+              }
+            }
+          ]
+        },
+        {
+          "name": "Morning Check",
+          "item": [
+            {
+              "name": "List",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/morning-check?from=&to=&staff="
+              }
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"staff\": \"张三\",\n  \"temp\": 36.6,\n  \"result\": \"正常\"\n}"
+                },
+                "url": "{{baseUrl}}/school/morning-check"
+              }
+            },
+            {
+              "name": "Update",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": { "mode": "raw", "raw": "{\n  \"result\": \"异常\"\n}" },
+                "url": "{{baseUrl}}/school/morning-check/MC-001"
+              }
+            },
+            {
+              "name": "Delete",
+              "request": { "method": "DELETE", "url": "{{baseUrl}}/school/morning-check/MC-001" }
+            },
+            {
+              "name": "Export CSV",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/morning-check/export?format=csv"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sampling",
+          "item": [
+            {
+              "name": "Records (List)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/sampling/records?from=&to=&sample="
+              }
+            },
+            {
+              "name": "Create Record",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sample\": \"午餐菜品A\",\n  \"weight\": 150,\n  \"cabinet\": \"A-1\",\n  \"duration\": 48\n}"
+                },
+                "url": "{{baseUrl}}/school/sampling/records"
+              }
+            },
+            {
+              "name": "Cleanup (List)",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/sampling/cleanup?from=&to=" }
+            },
+            {
+              "name": "Create Cleanup",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sample\": \"午餐菜品A\",\n  \"method\": \"销毁\",\n  \"by\": \"李四\"\n}"
+                },
+                "url": "{{baseUrl}}/school/sampling/cleanup"
+              }
+            },
+            {
+              "name": "Export CSV",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/sampling/records/export?format=csv"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dine With",
+          "item": [
+            {
+              "name": "List",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/dine?from=&to=&meal=" }
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"meal\": \"午餐\",\n  \"people\": \"校长,家长代表\",\n  \"comment\": \"满意\"\n}"
+                },
+                "url": "{{baseUrl}}/school/dine"
+              }
+            },
+            {
+              "name": "Export CSV",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/dine/export?format=csv" }
+            }
+          ]
+        },
+        {
+          "name": "Pesticide Test",
+          "item": [
+            {
+              "name": "List",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/pesticide-tests?from=&to=&result="
+              }
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"sample\": \"菠菜\",\n  \"device\": \"PRT-100\",\n  \"result\": \"不合格\",\n  \"remark\": \"复检中\"\n}"
+                },
+                "url": "{{baseUrl}}/school/pesticide-tests"
+              }
+            },
+            {
+              "name": "Export CSV",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/pesticide-tests/export?format=csv"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Disinfection",
+          "item": [
+            {
+              "name": "List",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/disinfection?from=&to=&method="
+              }
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"method\": \"酒精\",\n  \"duration\": 30,\n  \"items\": \"案板/台面\"\n}"
+                },
+                "url": "{{baseUrl}}/school/disinfection"
+              }
+            },
+            {
+              "name": "Export CSV",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/disinfection/export?format=csv"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Waste",
+          "item": [
+            {
+              "name": "List",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/waste?from=&to=&category=" }
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"date\": \"2025-09-30\",\n  \"category\": \"餐厨垃圾\",\n  \"amount\": 20,\n  \"buyer\": \"回收公司A\",\n  \"person\": \"王五\"\n}"
+                },
+                "url": "{{baseUrl}}/school/waste"
+              }
+            },
+            {
+              "name": "Export CSV",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/waste/export?format=csv" }
+            }
+          ]
+        },
+        {
+          "name": "Hygiene & Assets",
+          "item": [
+            {
+              "name": "Hygiene (List)",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/hygiene/inspections" }
+            },
+            {
+              "name": "Hygiene (Create)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"item\": \"操作台卫生\",\n  \"result\": \"合格\",\n  \"remark\": \"\"\n}"
+                },
+                "url": "{{baseUrl}}/school/hygiene/inspections"
+              }
+            },
+            {
+              "name": "Asset Maintenance (List)",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/hygiene/assets" }
+            },
+            {
+              "name": "Asset Maintenance (Create)",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"asset\": \"留样柜 A-1\",\n  \"action\": \"定期保养\",\n  \"by\": \"设备管理员\"\n}"
+                },
+                "url": "{{baseUrl}}/school/hygiene/assets"
+              }
+            },
+            {
+              "name": "Hygiene Export",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/hygiene/inspections/export?format=csv"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inventory",
+          "item": [
+            {
+              "name": "Items (List)",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/inventory/items?q=" }
+            },
+            {
+              "name": "Item Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"大米\",\n  \"unit\": \"kg\",\n  \"category\": \"主食\"\n}"
+                },
+                "url": "{{baseUrl}}/school/inventory/items"
+              }
+            },
+            {
+              "name": "Inbound (List)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/inventory/inbound?from=&to=&item="
+              }
+            },
+            {
+              "name": "Inbound Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"item\": \"大米\",\n  \"quantity\": 50,\n  \"supplier\": \"供应商A\"\n}"
+                },
+                "url": "{{baseUrl}}/school/inventory/inbound"
+              }
+            },
+            {
+              "name": "Outbound (List)",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/inventory/outbound?from=&to=&item="
+              }
+            },
+            {
+              "name": "Outbound Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"item\": \"大米\",\n  \"quantity\": 10,\n  \"purpose\": \"午餐\"\n}"
+                },
+                "url": "{{baseUrl}}/school/inventory/outbound"
+              }
+            },
+            {
+              "name": "Stock (List)",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/inventory/stock" }
+            },
+            {
+              "name": "Tickets (List)",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/inventory/tickets" }
+            },
+            {
+              "name": "Ticket Upload",
+              "request": { "method": "POST", "url": "{{baseUrl}}/school/inventory/tickets" }
+            },
+            {
+              "name": "Additives (List)",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/inventory/additives" }
+            },
+            {
+              "name": "Additive Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"食盐\",\n  \"amount\": 10,\n  \"dish\": \"青菜\"\n}"
+                },
+                "url": "{{baseUrl}}/school/inventory/additives"
+              }
+            },
+            {
+              "name": "Inventory Export",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/inventory/export?format=csv"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Partners & Certificates",
+          "item": [
+            {
+              "name": "Suppliers",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/partners/suppliers" }
+            },
+            {
+              "name": "Warehouses",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/partners/warehouses" }
+            },
+            {
+              "name": "Certificates (List)",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/certificates" }
+            },
+            {
+              "name": "Certificate Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"owner\": \"张三\",\n  \"type\": \"人员健康证\",\n  \"number\": \"HC-888\",\n  \"expireAt\": \"2026-12-31\"\n}"
+                },
+                "url": "{{baseUrl}}/school/certificates"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Training & Food Waste",
+          "item": [
+            {
+              "name": "Courses",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/training/courses" }
+            },
+            {
+              "name": "Exams",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/training/exams" }
+            },
+            {
+              "name": "Results",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/training/results" }
+            },
+            {
+              "name": "Food Waste Stats",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/food-waste/stats" }
+            },
+            {
+              "name": "Food Waste Details",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/food-waste/details" }
+            },
+            {
+              "name": "Food Waste Export",
+              "request": {
+                "method": "GET",
+                "url": "{{baseUrl}}/school/food-waste/export?format=csv"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Public",
+          "item": [
+            {
+              "name": "Feedback (List)",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/public/feedback?status=" }
+            },
+            {
+              "name": "Feedback Reply",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"FB-001\",\n  \"reply\": \"已处理，感谢反馈\"\n}"
+                },
+                "url": "{{baseUrl}}/school/public/feedback/reply"
+              }
+            },
+            {
+              "name": "Public Config",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/public/config" }
+            }
+          ]
+        },
+        {
+          "name": "Emergency",
+          "item": [
+            {
+              "name": "Overview",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/emergency/overview" }
+            },
+            {
+              "name": "Plans",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/emergency/plans" }
+            },
+            {
+              "name": "Duty",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/emergency/duty" }
+            },
+            {
+              "name": "Events",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/emergency/events" }
+            },
+            {
+              "name": "Tasks",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/emergency/tasks" }
+            },
+            {
+              "name": "Video Cameras",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/emergency/cameras" }
+            },
+            {
+              "name": "Resources",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/emergency/resources" }
+            }
+          ]
+        },
+        {
+          "name": "Risk & Warning",
+          "item": [
+            {
+              "name": "Risk Hidden",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/risk" }
+            },
+            {
+              "name": "Warnings",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/warnings" }
+            }
+          ]
+        },
+        {
+          "name": "Devices & Analytics",
+          "item": [
+            {
+              "name": "Devices",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/devices" }
+            },
+            {
+              "name": "Analytics",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/analytics" }
+            },
+            {
+              "name": "Food Index",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/food-index" }
+            }
+          ]
+        },
+        {
+          "name": "System",
+          "item": [
+            {
+              "name": "Announcements",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/system/announcements" }
+            },
+            {
+              "name": "Canteen Info",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/system/canteen" }
+            },
+            {
+              "name": "Linkage",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/system/linkage" }
+            },
+            {
+              "name": "App Download",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/system/app" }
+            },
+            {
+              "name": "Meals",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/system/meals" }
+            },
+            {
+              "name": "Users",
+              "request": { "method": "GET", "url": "{{baseUrl}}/school/system/users" }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Web Regulator",
+      "item": [
+        {
+          "name": "Dashboard",
+          "item": [
+            {
+              "name": "Overview",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/overview" }
+            }
+          ]
+        },
+        {
+          "name": "AI Inspection",
+          "item": [
+            {
+              "name": "List",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/ai/inspections" }
+            },
+            { "name": "Tasks", "request": { "method": "GET", "url": "{{baseUrl}}/reg/ai/tasks" } },
+            {
+              "name": "Broadcast",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\\n  \\\"school\\\": \\\"示例一中\\\",\\n  \\\"camera\\\": \\\"1# 操作台\\\",\\n  \\\"text\\\": \\\"请佩戴口罩和帽子\\\"\\n}"
+                },
+                "url": "{{baseUrl}}/reg/ai/broadcast"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bright Kitchen",
+          "item": [
+            {
+              "name": "Channels",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/bright/channels" }
+            }
+          ]
+        },
+        {
+          "name": "Ledgers",
+          "item": [
+            {
+              "name": "Morning",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/ledgers/morning" }
+            },
+            {
+              "name": "Sampling",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/ledgers/sampling" }
+            },
+            {
+              "name": "Dine",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/ledgers/dine" }
+            },
+            {
+              "name": "Pesticide",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/ledgers/pesticide" }
+            },
+            {
+              "name": "Disinfection",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/ledgers/disinfection" }
+            },
+            {
+              "name": "Waste",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/ledgers/waste" }
+            },
+            {
+              "name": "Inventory",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/ledgers/inventory" }
+            }
+          ]
+        },
+        {
+          "name": "Certificates",
+          "item": [
+            {
+              "name": "List",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/certificates" }
+            }
+          ]
+        },
+        {
+          "name": "Training",
+          "item": [
+            { "name": "List", "request": { "method": "GET", "url": "{{baseUrl}}/reg/training" } }
+          ]
+        },
+        {
+          "name": "Food Waste",
+          "item": [
+            {
+              "name": "Stats",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/food-waste/stats" }
+            },
+            {
+              "name": "Details",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/food-waste/details" }
+            }
+          ]
+        },
+        {
+          "name": "Public",
+          "item": [
+            {
+              "name": "Feedback",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/public/feedback" }
+            }
+          ]
+        },
+        {
+          "name": "Inspections",
+          "item": [
+            {
+              "name": "List",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/inspections" }
+            },
+            {
+              "name": "Create",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\\n  \\\"type\\\": \\\"日常\\\",\\n  \\\"grid\\\": \\\"一组/王五\\\",\\n  \\\"content\\\": \\\"卫生与防鼠\\\"\\n}"
+                },
+                "url": "{{baseUrl}}/reg/inspections"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Warnings",
+          "item": [
+            {
+              "name": "Summary",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/warnings/summary" }
+            },
+            { "name": "Details", "request": { "method": "GET", "url": "{{baseUrl}}/reg/warnings" } }
+          ]
+        },
+        {
+          "name": "Analytics",
+          "item": [
+            {
+              "name": "KPIs",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/analytics/kpis" }
+            }
+          ]
+        },
+        {
+          "name": "Food Index",
+          "item": [
+            {
+              "name": "Ranking",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/food-index/ranking" }
+            }
+          ]
+        },
+        {
+          "name": "System",
+          "item": [
+            {
+              "name": "Org Info",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/system/info" }
+            },
+            {
+              "name": "Users",
+              "request": { "method": "GET", "url": "{{baseUrl}}/reg/system/users" }
+            },
+            { "name": "App", "request": { "method": "GET", "url": "{{baseUrl}}/reg/system/app" } }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [{ "key": "baseUrl", "value": "http://localhost:3000", "type": "string" }]
+}

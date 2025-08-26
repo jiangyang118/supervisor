@@ -12,4 +12,8 @@ export const api = {
   hygiene: () => get<any[]>('/home/hygiene'),
   devices: () => get<any[]>('/home/devices'),
   feedback: () => get<any[]>('/home/parent-feedback'),
+  schoolEvents: (schoolId?: string) =>
+    get<any[]>(`/school/ai/events${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`),
+  schoolDaily: (schoolId?: string) =>
+    get<any>(`/reports/school/daily${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`),
 };

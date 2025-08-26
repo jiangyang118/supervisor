@@ -3,6 +3,16 @@ import type { RouteLocationNormalizedLoaded } from 'vue-router';
 const map: Record<string, string> = {
   '/overview': '首页',
   '/reports': '每日报表',
+  // 父级分组（用于面包屑中文化）
+  '/ai': '智能检查/AI 预警',
+  '/bright-kitchen': '明厨亮灶',
+  '/sampling': '留样管理',
+  '/hygiene': '卫生检查',
+  '/inventory': '出入库/食材',
+  '/training': '培训考试',
+  '/public': '公示管理',
+  '/emergency': '应急管理',
+  '/system': '系统配置',
   '/ai/events': '违规抓拍明细',
   '/ai/summary': 'AI 抓拍统计',
   '/bright-kitchen/live': '实时视频',

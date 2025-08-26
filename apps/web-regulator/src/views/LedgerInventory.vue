@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>出入库/索证/添加剂</span>
         <div>
           <el-button @click="onExportCsv">导出 CSV</el-button>
@@ -58,22 +58,86 @@
 import { ref } from 'vue';
 import { exportCsv } from '../utils/export';
 const tab = ref('in');
-type InRow = { id: string; school: string; item: string; quantity: number; supplier: string; at: string };
-type OutRow = { id: string; school: string; item: string; quantity: number; purpose: string; by: string; at: string };
+type InRow = {
+  id: string;
+  school: string;
+  item: string;
+  quantity: number;
+  supplier: string;
+  at: string;
+};
+type OutRow = {
+  id: string;
+  school: string;
+  item: string;
+  quantity: number;
+  purpose: string;
+  by: string;
+  at: string;
+};
 type TkRow = { id: string; school: string; item: string; type: string; status: string; at: string };
 type AdRow = { id: string; school: string; name: string; amount: number; dish: string; at: string };
-const inRows = ref<InRow[]>([{ id: 'IN-001', school: '示例一中', item: '大米', quantity: 50, supplier: '供应商A', at: new Date().toLocaleString() }]);
-const outRows = ref<OutRow[]>([{ id: 'OUT-001', school: '示例二小', item: '大米', quantity: 10, purpose: '午餐', by: '张三', at: new Date().toLocaleString() }]);
-const tkRows = ref<TkRow[]>([{ id: 'TK-001', school: '示例一中', item: '大米', type: '合格证', status: '已上传', at: new Date().toLocaleString() }]);
-const adRows = ref<AdRow[]>([{ id: 'AD-001', school: '示例二小', name: '食盐', amount: 10, dish: '青菜', at: new Date().toLocaleString() }]);
+const inRows = ref<InRow[]>([
+  {
+    id: 'IN-001',
+    school: '示例一中',
+    item: '大米',
+    quantity: 50,
+    supplier: '供应商A',
+    at: new Date().toLocaleString(),
+  },
+]);
+const outRows = ref<OutRow[]>([
+  {
+    id: 'OUT-001',
+    school: '示例二小',
+    item: '大米',
+    quantity: 10,
+    purpose: '午餐',
+    by: '张三',
+    at: new Date().toLocaleString(),
+  },
+]);
+const tkRows = ref<TkRow[]>([
+  {
+    id: 'TK-001',
+    school: '示例一中',
+    item: '大米',
+    type: '合格证',
+    status: '已上传',
+    at: new Date().toLocaleString(),
+  },
+]);
+const adRows = ref<AdRow[]>([
+  {
+    id: 'AD-001',
+    school: '示例二小',
+    name: '食盐',
+    amount: 10,
+    dish: '青菜',
+    at: new Date().toLocaleString(),
+  },
+]);
 const onExportCsv = () => {
   const all = [
-    ...inRows.value.map(r => ({ type:'入库', ...r })),
-    ...outRows.value.map(r => ({ type:'出库', ...r })),
-    ...tkRows.value.map(r => ({ type:'索证', ...r })),
-    ...adRows.value.map(r => ({ type:'添加剂', ...r })),
+    ...inRows.value.map((r) => ({ ...r, kind: '入库' })),
+    ...outRows.value.map((r) => ({ ...r, kind: '出库' })),
+    ...tkRows.value.map((r) => ({ ...r, kind: '索证' })),
+    ...adRows.value.map((r) => ({ ...r, kind: '添加剂' })),
   ];
-  exportCsv('出入库与索证添加剂-监管', all as any, { type:'类型', id:'ID', school:'学校', item:'商品', quantity:'数量', supplier:'供应商', purpose:'用途', by:'出库人', name:'添加剂', amount:'用量', dish:'菜品', at:'时间' });
+  exportCsv('出入库与索证添加剂-监管', all as any, {
+    kind: '类型',
+    id: 'ID',
+    school: '学校',
+    item: '商品',
+    quantity: '数量',
+    supplier: '供应商',
+    purpose: '用途',
+    by: '出库人',
+    name: '添加剂',
+    amount: '用量',
+    dish: '菜品',
+    at: '时间',
+  });
 };
 </script>
-

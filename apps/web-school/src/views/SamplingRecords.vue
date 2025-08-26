@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>留样记录</span>
         <div>
           <el-button type="primary" @click="openCreate">新建</el-button>
@@ -9,7 +9,7 @@
         </div>
       </div>
     </template>
-    <el-form :inline="true" :model="filters" style="margin-bottom:8px;">
+    <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="样品">
         <el-input v-model="filters.sample" />
       </el-form-item>
@@ -46,7 +46,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -55,19 +55,52 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { id: string; sample: string; weight: number; cabinet: string; duration: number; at: string };
+type Row = {
+  id: string;
+  sample: string;
+  weight: number;
+  cabinet: string;
+  duration: number;
+  at: string;
+};
 const rows = ref<Row[]>([
-  { id: 'SP-001', sample: '午餐菜品A', weight: 150, cabinet: 'A-1', duration: 48, at: new Date().toLocaleString() },
+  {
+    id: 'SP-001',
+    sample: '午餐菜品A',
+    weight: 150,
+    cabinet: 'A-1',
+    duration: 48,
+    at: new Date().toLocaleString(),
+  },
 ]);
-const filters = reactive<{ sample: string; range: [Date,Date]|null }>({ sample:'', range:null });
+const filters = reactive<{ sample: string; range: [Date, Date] | null }>({
+  sample: '',
+  range: null,
+});
 const applyFilters = () => {};
 const createVisible = ref(false);
 const form = reactive({ sample: '', weight: 100, cabinet: '', duration: 48 });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  rows.value.unshift({ id: `SP-${String(rows.value.length+1).padStart(3,'0')}`, sample: form.sample, weight: form.weight, cabinet: form.cabinet, duration: form.duration, at: new Date().toLocaleString() });
+  rows.value.unshift({
+    id: `SP-${String(rows.value.length + 1).padStart(3, '0')}`,
+    sample: form.sample,
+    weight: form.weight,
+    cabinet: form.cabinet,
+    duration: form.duration,
+    at: new Date().toLocaleString(),
+  });
   createVisible.value = false;
 };
-const onExportCsv = () => exportCsv('留样记录', rows.value, { id:'ID', sample:'样品', weight:'重量', cabinet:'留样柜', duration:'时长', at:'时间' });
+const onExportCsv = () =>
+  exportCsv('留样记录', rows.value, {
+    id: 'ID',
+    sample: '样品',
+    weight: '重量',
+    cabinet: '留样柜',
+    duration: '时长',
+    at: '时间',
+  });
 </script>
-

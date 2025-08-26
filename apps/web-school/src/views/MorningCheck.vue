@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>晨检管理</span>
         <div>
           <el-button type="primary" @click="openCreate">录入晨检</el-button>
@@ -9,7 +9,7 @@
         </div>
       </div>
     </template>
-    <el-form :inline="true" :model="filters" style="margin-bottom:8px;">
+    <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="人员">
         <el-input v-model="filters.staff" placeholder="姓名/工号" />
       </el-form-item>
@@ -56,7 +56,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -65,20 +65,40 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { id: string; staff: string; temp: number; result: '正常'|'异常'; at: string };
+type Row = { id: string; staff: string; temp: number; result: '正常' | '异常'; at: string };
 const rows = ref<Row[]>([
   { id: 'MC-001', staff: '张三', temp: 36.6, result: '正常', at: new Date().toLocaleString() },
 ]);
-const filters = reactive<{ staff: string; result: ''|'正常'|'异常'|null; range: [Date,Date]|null }>({ staff:'', result:null, range:null });
+const filters = reactive<{
+  staff: string;
+  result: '' | '正常' | '异常' | null;
+  range: [Date, Date] | null;
+}>({ staff: '', result: null, range: null });
 const applyFilters = () => {};
 const createVisible = ref(false);
 const form = reactive({ staff: '', temp: 36.5, result: '正常' });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  rows.value.unshift({ id: `MC-${String(rows.value.length+1).padStart(3,'0')}`, staff: form.staff, temp: form.temp, result: form.result as any, at: new Date().toLocaleString() });
+  rows.value.unshift({
+    id: `MC-${String(rows.value.length + 1).padStart(3, '0')}`,
+    staff: form.staff,
+    temp: form.temp,
+    result: form.result as any,
+    at: new Date().toLocaleString(),
+  });
   createVisible.value = false;
 };
-const remove = (id: string) => { rows.value = rows.value.filter(r => r.id !== id); };
-const onExportCsv = () => exportCsv('晨检台账', rows.value, { id:'ID', staff:'人员', temp:'体温', result:'结果', at:'时间' });
+const remove = (id: string) => {
+  rows.value = rows.value.filter((r) => r.id !== id);
+};
+const onExportCsv = () =>
+  exportCsv('晨检台账', rows.value, {
+    id: 'ID',
+    staff: '人员',
+    temp: '体温',
+    result: '结果',
+    at: '时间',
+  });
 </script>
-

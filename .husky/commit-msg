@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+. "$(dirname "$0")/_/husky.sh"
+
+echo "[husky] checking commit message"
+npx --no-install commitlint -E HUSKY_GIT_PARAMS || {
+  echo "Install @commitlint/cli to enable message checks";
+  exit 0;
+}
+

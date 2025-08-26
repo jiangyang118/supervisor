@@ -2,20 +2,33 @@ import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 
 const Home = () => import('../views/Home.vue');
 const Reports = () => import('../views/Reports.vue');
-const GenericPage = () => import('../views/GenericPage.vue');
 
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/overview' },
   { path: '/overview', name: 'overview', component: Home },
-  { path: '/reports', name: 'reports', component: Reports, meta: { title: '每日报表', actions: ['export-pdf','export-csv'] } },
+  {
+    path: '/reports',
+    name: 'reports',
+    component: Reports,
+    meta: { title: '每日报表', actions: ['export-pdf', 'export-csv'] },
+  },
 
   // AI & Bright Kitchen
-  { path: '/ai/events', component: GenericPage, meta: { title: '违规抓拍明细', actions: ['export-csv','export-pdf'] } },
-  { path: '/ai/summary', component: GenericPage, meta: { title: 'AI 抓拍统计', actions: ['export-csv','export-pdf'] } },
-  { path: '/bright-kitchen/live', component: GenericPage, meta: { title: '实时视频', mainCol: '通道', actions: ['export-csv'] } },
-  { path: '/bright-kitchen/playback', component: GenericPage, meta: { title: '回放', actions: ['export-csv'] } },
-  { path: '/bright-kitchen/snapshots', component: GenericPage, meta: { title: '快照留存', actions: ['export-csv'] } },
-  { path: '/bright-kitchen/channels', component: GenericPage, meta: { title: '通道配置', actions: ['export-csv'] } },
+  { path: '/ai/events', component: () => import('../views/AiEvents.vue') },
+  { path: '/ai/summary', component: () => import('../views/AiSummary.vue') },
+  { path: '/bright-kitchen/live', component: () => import('../views/bright/BrightLive.vue') },
+  {
+    path: '/bright-kitchen/playback',
+    component: () => import('../views/bright/BrightPlayback.vue'),
+  },
+  {
+    path: '/bright-kitchen/snapshots',
+    component: () => import('../views/bright/BrightSnapshots.vue'),
+  },
+  {
+    path: '/bright-kitchen/channels',
+    component: () => import('../views/bright/BrightChannels.vue'),
+  },
 
   // Operational ledgers
   { path: '/morning-check', component: () => import('../views/MorningCheck.vue') },
@@ -40,35 +53,35 @@ const routes: RouteRecordRaw[] = [
   { path: '/certificates', component: () => import('../views/Certificates.vue') },
 
   // Training & public & waste
-  { path: '/training/courses', component: GenericPage, meta: { title: '培训课程', actions: ['export-csv'] } },
-  { path: '/training/exams', component: GenericPage, meta: { title: '考试管理', actions: ['export-csv'] } },
-  { path: '/food-waste', component: GenericPage, meta: { title: '食品浪费管理', actions: ['export-csv'] } },
-  { path: '/public-feedback', component: GenericPage, meta: { title: '公众投诉/建议/表扬/评论', actions: ['export-csv'] } },
-  { path: '/public-config', component: GenericPage, meta: { title: '公示项配置', actions: ['export-csv'] } },
+  { path: '/training/courses', component: () => import('../views/Training.vue') },
+  { path: '/training/exams', component: () => import('../views/Training.vue') },
+  { path: '/food-waste', component: () => import('../views/FoodWaste.vue') },
+  { path: '/public-feedback', component: () => import('../views/PublicFeedback.vue') },
+  { path: '/public-config', component: () => import('../views/PublicConfig.vue') },
 
   // Emergency
-  { path: '/emergency/overview', component: GenericPage, meta: { title: '应急概览', actions: ['export-csv'] } },
-  { path: '/emergency/plans', component: GenericPage, meta: { title: '预案管理', actions: ['export-csv'] } },
-  { path: '/emergency/duty', component: GenericPage, meta: { title: '值守管理', actions: ['export-csv'] } },
-  { path: '/emergency/events', component: GenericPage, meta: { title: '事件/演练管理', actions: ['export-csv'] } },
-  { path: '/emergency/command', component: GenericPage, meta: { title: '指挥调度', actions: ['export-csv'] } },
-  { path: '/emergency/video', component: GenericPage, meta: { title: '视频监控管理', actions: ['export-csv'] } },
-  { path: '/emergency/resources', component: GenericPage, meta: { title: '资源库', actions: ['export-csv'] } },
+  { path: '/emergency/overview', component: () => import('../views/EmergencyOverview.vue') },
+  { path: '/emergency/plans', component: () => import('../views/EmergencyPlans.vue') },
+  { path: '/emergency/duty', component: () => import('../views/EmergencyDuty.vue') },
+  { path: '/emergency/events', component: () => import('../views/EmergencyEvents.vue') },
+  { path: '/emergency/command', component: () => import('../views/EmergencyCommand.vue') },
+  { path: '/emergency/video', component: () => import('../views/EmergencyVideo.vue') },
+  { path: '/emergency/resources', component: () => import('../views/EmergencyResources.vue') },
 
   // Risk & warnings & devices & analytics
-  { path: '/risks', component: GenericPage, meta: { title: '隐患排查管理', actions: ['export-csv'] } },
-  { path: '/warnings', component: GenericPage, meta: { title: '预警汇总', actions: ['export-csv'] } },
-  { path: '/devices', component: GenericPage, meta: { title: '已接入设备信息', actions: ['export-csv'] } },
-  { path: '/analytics', component: GenericPage, meta: { title: '大数据统计看板', actions: ['export-csv','export-pdf'] } },
-  { path: '/food-index', component: GenericPage, meta: { title: '食安指数', actions: ['export-csv'] } },
+  { path: '/risks', component: () => import('../views/Risks.vue') },
+  { path: '/warnings', component: () => import('../views/Warnings.vue') },
+  { path: '/devices', component: () => import('../views/Devices.vue') },
+  { path: '/analytics', component: () => import('../views/Analytics.vue') },
+  { path: '/food-index', component: () => import('../views/FoodIndex.vue') },
 
   // System
-  { path: '/system/announcements', component: GenericPage, meta: { title: '公告公文', actions: ['export-csv'] } },
-  { path: '/system/canteen', component: GenericPage, meta: { title: '学校食堂信息维护', actions: ['export-csv'] } },
-  { path: '/system/linkage', component: GenericPage, meta: { title: '与监管端关联', actions: ['export-csv'] } },
-  { path: '/system/app-download', component: GenericPage, meta: { title: 'APP 下载', actions: [] } },
-  { path: '/system/meals', component: GenericPage, meta: { title: '餐次设置', actions: ['export-csv'] } },
-  { path: '/system/users', component: GenericPage, meta: { title: '用户/角色/RBAC', actions: ['export-csv'] } },
+  { path: '/system/announcements', component: () => import('../views/SystemAnnouncements.vue') },
+  { path: '/system/canteen', component: () => import('../views/SystemCanteen.vue') },
+  { path: '/system/linkage', component: () => import('../views/SystemLinkage.vue') },
+  { path: '/system/app-download', component: () => import('../views/SystemApp.vue') },
+  { path: '/system/meals', component: () => import('../views/SystemMeals.vue') },
+  { path: '/system/users', component: () => import('../views/SystemUsers.vue') },
 ];
 
 export default createRouter({

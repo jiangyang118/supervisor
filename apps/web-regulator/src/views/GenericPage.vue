@@ -8,6 +8,5 @@ import PageStub from '../components/PageStub.vue';
 const route = useRoute();
 const title = (route.meta.title as string) || '页面';
 const mainCol = (route.meta.mainCol as string) || '名称';
-const actions = (route.meta.actions as string[]) || ['export-csv','export-pdf'];
+const actions = (route.meta.actions as string[]) || ['export-csv', 'export-pdf'];
 </script>
-

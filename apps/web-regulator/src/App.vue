@@ -1,6 +1,6 @@
 <template>
-  <el-container style="height:100vh">
-    <el-header style="display:flex;align-items:center;justify-content:space-between">
+  <el-container style="height: 100vh">
+    <el-header style="display: flex; align-items: center; justify-content: space-between">
       <div>监管端 • 食品安全云</div>
       <el-space>
         <el-button link type="primary" @click="go('/overview')">总览</el-button>
@@ -8,7 +8,7 @@
       </el-space>
     </el-header>
     <el-container>
-      <el-aside width="240px" style="border-right:1px solid #f0f0f0">
+      <el-aside width="240px" style="border-right: 1px solid #f0f0f0">
         <el-menu :default-active="active" router unique-opened>
           <el-menu-item index="/overview">首页总览</el-menu-item>
           <el-menu-item index="/reports">每日报表</el-menu-item>
@@ -63,5 +63,7 @@ const go = (p: string) => router.push(p);
 </script>
 
 <style>
-body { margin: 0; }
+body {
+  margin: 0;
+}
 </style>

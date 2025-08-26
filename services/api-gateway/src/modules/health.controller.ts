@@ -7,4 +7,3 @@ export class HealthController {
     return { ok: true, service: 'api-gateway', time: new Date().toISOString() };
   }
 }
-

@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>供应商管理</span>
         <div>
           <el-button type="primary" @click="openCreate">新增供应商</el-button>
@@ -30,7 +30,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -45,11 +45,18 @@ const rows = ref<Row[]>([
 ]);
 const createVisible = ref(false);
 const form = reactive({ name: '', phone: '', license: '' });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  rows.value.unshift({ id: `SP-${String(rows.value.length+1).padStart(3,'0')}`, name: form.name, phone: form.phone, license: form.license });
+  rows.value.unshift({
+    id: `SP-${String(rows.value.length + 1).padStart(3, '0')}`,
+    name: form.name,
+    phone: form.phone,
+    license: form.license,
+  });
   createVisible.value = false;
 };
-const onExportCsv = () => exportCsv('供应商', rows.value, { id:'ID', name:'名称', phone:'电话', license:'营业执照号' });
+const onExportCsv = () =>
+  exportCsv('供应商', rows.value, { id: 'ID', name: '名称', phone: '电话', license: '营业执照号' });
 </script>
-

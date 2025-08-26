@@ -4,4 +4,3 @@
     <slot />
   </page-container>
 </template>
-

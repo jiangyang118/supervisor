@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>食品添加剂使用记录</span>
         <div>
           <el-button type="primary" @click="openCreate">新增记录</el-button>
@@ -31,7 +31,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -46,11 +46,25 @@ const rows = ref<Row[]>([
 ]);
 const createVisible = ref(false);
 const form = reactive({ name: '', amount: 0, dish: '' });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  rows.value.unshift({ id: `AD-${String(rows.value.length+1).padStart(3,'0')}`, name: form.name, amount: form.amount, dish: form.dish, at: new Date().toLocaleString() });
+  rows.value.unshift({
+    id: `AD-${String(rows.value.length + 1).padStart(3, '0')}`,
+    name: form.name,
+    amount: form.amount,
+    dish: form.dish,
+    at: new Date().toLocaleString(),
+  });
   createVisible.value = false;
 };
-const onExportCsv = () => exportCsv('添加剂使用', rows.value, { id:'ID', name:'添加剂', amount:'用量', dish:'菜品', at:'时间' });
+const onExportCsv = () =>
+  exportCsv('添加剂使用', rows.value, {
+    id: 'ID',
+    name: '添加剂',
+    amount: '用量',
+    dish: '菜品',
+    at: '时间',
+  });
 </script>
-

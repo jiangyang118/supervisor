@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>固定资产维护台账</span>
         <div>
           <el-button type="primary" @click="openCreate">新建维护</el-button>
@@ -31,7 +31,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -42,15 +42,35 @@ import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
 type Row = { id: string; asset: string; action: string; by: string; at: string };
 const rows = ref<Row[]>([
-  { id: 'AM-001', asset: '留样柜 A-1', action: '定期保养', by: '设备管理员', at: new Date().toLocaleString() },
+  {
+    id: 'AM-001',
+    asset: '留样柜 A-1',
+    action: '定期保养',
+    by: '设备管理员',
+    at: new Date().toLocaleString(),
+  },
 ]);
 const createVisible = ref(false);
 const form = reactive({ asset: '', action: '', by: '' });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  rows.value.unshift({ id: `AM-${String(rows.value.length+1).padStart(3,'0')}`, asset: form.asset, action: form.action, by: form.by, at: new Date().toLocaleString() });
+  rows.value.unshift({
+    id: `AM-${String(rows.value.length + 1).padStart(3, '0')}`,
+    asset: form.asset,
+    action: form.action,
+    by: form.by,
+    at: new Date().toLocaleString(),
+  });
   createVisible.value = false;
 };
-const onExportCsv = () => exportCsv('固定资产维护', rows.value, { id:'ID', asset:'资产', action:'维护动作', by:'负责人', at:'时间' });
+const onExportCsv = () =>
+  exportCsv('固定资产维护', rows.value, {
+    id: 'ID',
+    asset: '资产',
+    action: '维护动作',
+    by: '负责人',
+    at: '时间',
+  });
 </script>
-

@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>农残快检管理</span>
         <div>
           <el-button type="primary" @click="openCreate">新建</el-button>
@@ -10,7 +10,7 @@
         </div>
       </div>
     </template>
-    <el-form :inline="true" :model="filters" style="margin-bottom:8px;">
+    <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="关键词">
         <el-input v-model="filters.q" placeholder="样品/人员/设备" clearable />
       </el-form-item>
@@ -46,13 +46,13 @@
   <el-dialog v-model="createVisible" title="新建农残检测记录" width="520px">
     <el-form :model="form" label-width="96px">
       <el-form-item label="样品">
-        <el-input v-model="form.sample" />
+        <el-input v-model="form.sample" data-testid="dlg-sample" />
       </el-form-item>
       <el-form-item label="检测仪">
-        <el-input v-model="form.device" />
+        <el-input v-model="form.device" data-testid="dlg-device" />
       </el-form-item>
       <el-form-item label="结果">
-        <el-select v-model="form.result">
+        <el-select v-model="form.result" data-testid="dlg-result" :teleported="false">
           <el-option label="合格" value="合格" />
           <el-option label="不合格" value="不合格" />
         </el-select>
@@ -62,7 +62,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -72,28 +72,90 @@
 import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
 
-type Row = { id: string; sample: string; device: string; result: '合格'|'不合格'; status: string; at: string; };
+type Row = {
+  id: string;
+  sample: string;
+  device: string;
+  result: '合格' | '不合格';
+  status: string;
+  at: string;
+};
 const rows = ref<Row[]>([
-  { id: 'PT-001', sample: '黄瓜', device: 'PRT-100', result: '合格', status: '正常', at: new Date().toLocaleString() },
-  { id: 'PT-002', sample: '菠菜', device: 'PRT-100', result: '不合格', status: '异常', at: new Date().toLocaleString() },
+  {
+    id: 'PT-001',
+    sample: '黄瓜',
+    device: 'PRT-100',
+    result: '合格',
+    status: '正常',
+    at: new Date().toLocaleString(),
+  },
+  {
+    id: 'PT-002',
+    sample: '菠菜',
+    device: 'PRT-100',
+    result: '不合格',
+    status: '异常',
+    at: new Date().toLocaleString(),
+  },
 ]);
 
-const filters = reactive<{ q: string; result: ''|'合格'|'不合格'|null; range: [Date,Date]|null }>({ q:'', result:null, range: null });
+const filters = reactive<{
+  q: string;
+  result: '' | '合格' | '不合格' | null;
+  range: [Date, Date] | null;
+}>({ q: '', result: null, range: null });
 const applyFilters = () => {
   // Demo: no-op. Hook API later.
 };
 
 const createVisible = ref(false);
 const form = reactive({ sample: '', device: '', result: '合格', remark: '' });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  rows.value.unshift({ id: `PT-${String(rows.value.length+1).padStart(3,'0')}`, sample: form.sample, device: form.device, result: form.result as any, status: form.result === '合格' ? '正常':'异常', at: new Date().toLocaleString() });
+  const newRow: Row = {
+    id: `PT-${String(rows.value.length + 1).padStart(3, '0')}`,
+    sample: form.sample,
+    device: form.device,
+    result: form.result as any,
+    status: form.result === '合格' ? '正常' : '异常',
+    at: new Date().toLocaleString(),
+  };
+  rows.value.unshift(newRow);
+  // 写入跨端可读 Cookie（同域 localhost 跨端口共享）
+  try {
+    const key = 'fs_pesticide_records';
+    const cookie = document.cookie.split('; ').find((c) => c.startsWith(key + '='));
+    const arr: any[] = cookie ? JSON.parse(decodeURIComponent(cookie.split('=')[1])) : [];
+    arr.unshift({
+      sample: newRow.sample,
+      result: newRow.result,
+      status: newRow.status,
+      at: newRow.at,
+      school: '示例中学',
+    });
+    const val = encodeURIComponent(JSON.stringify(arr.slice(0, 50))); // 限制大小
+    const expires = new Date(Date.now() + 24 * 3600 * 1000).toUTCString();
+    document.cookie = `${key}=${val}; path=/; SameSite=Lax; Expires=${expires}`;
+  } catch {}
   createVisible.value = false;
 };
-const remove = (id: string) => { rows.value = rows.value.filter(r => r.id !== id); };
-const dispose = (row: Row) => { alert(`处置记录 ${row.id}（演示）`); };
+const remove = (id: string) => {
+  rows.value = rows.value.filter((r) => r.id !== id);
+};
+const dispose = (row: Row) => {
+  alert(`处置记录 ${row.id}（演示）`);
+};
 
-const onExportCsv = () => exportCsv('农残快检', rows.value, { id:'ID', sample:'样品', device:'检测仪', result:'结果', status:'状态', at:'时间' });
+const onExportCsv = () =>
+  exportCsv('农残快检', rows.value, {
+    id: 'ID',
+    sample: '样品',
+    device: '检测仪',
+    result: '结果',
+    status: '状态',
+    at: '时间',
+  });
 const onExportPdf = () => alert('导出 PDF（演示）');
 </script>
-

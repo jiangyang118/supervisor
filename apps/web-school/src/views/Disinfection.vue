@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>消毒管理</span>
         <div>
           <el-button type="primary" @click="openCreate">新建</el-button>
@@ -10,7 +10,7 @@
         </div>
       </div>
     </template>
-    <el-form :inline="true" :model="filters" style="margin-bottom:8px;">
+    <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="方式">
         <el-select v-model="filters.method" clearable>
           <el-option label="酒精" value="酒精" />
@@ -63,7 +63,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -73,26 +73,70 @@
 import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
 
-type Row = { id: string; method: string; duration: number; items: string; status: string; at: string; };
+type Row = {
+  id: string;
+  method: string;
+  duration: number;
+  items: string;
+  status: string;
+  at: string;
+};
 const rows = ref<Row[]>([
-  { id: 'DS-001', method: '酒精', duration: 30, items: '案板/台面', status: '正常', at: new Date().toLocaleString() },
-  { id: 'DS-002', method: '紫外', duration: 15, items: '餐具', status: '正常', at: new Date().toLocaleString() },
+  {
+    id: 'DS-001',
+    method: '酒精',
+    duration: 30,
+    items: '案板/台面',
+    status: '正常',
+    at: new Date().toLocaleString(),
+  },
+  {
+    id: 'DS-002',
+    method: '紫外',
+    duration: 15,
+    items: '餐具',
+    status: '正常',
+    at: new Date().toLocaleString(),
+  },
 ]);
 
-const filters = reactive<{ method: string|undefined; range: [Date,Date]|null }>({ method: undefined, range: null });
+const filters = reactive<{ method: string | undefined; range: [Date, Date] | null }>({
+  method: undefined,
+  range: null,
+});
 const applyFilters = () => {};
 
 const createVisible = ref(false);
 const form = reactive({ method: '酒精', duration: 30, items: '' });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  rows.value.unshift({ id: `DS-${String(rows.value.length+1).padStart(3,'0')}`, method: form.method, duration: form.duration, items: form.items, status: '正常', at: new Date().toLocaleString() });
+  rows.value.unshift({
+    id: `DS-${String(rows.value.length + 1).padStart(3, '0')}`,
+    method: form.method,
+    duration: form.duration,
+    items: form.items,
+    status: '正常',
+    at: new Date().toLocaleString(),
+  });
   createVisible.value = false;
 };
-const remove = (id: string) => { rows.value = rows.value.filter(r => r.id !== id); };
-const dispose = (row: Row) => { alert(`处置记录 ${row.id}（演示）`); };
+const remove = (id: string) => {
+  rows.value = rows.value.filter((r) => r.id !== id);
+};
+const dispose = (row: Row) => {
+  alert(`处置记录 ${row.id}（演示）`);
+};
 
-const onExportCsv = () => exportCsv('消毒管理', rows.value, { id:'ID', method:'方式', duration:'时长', items:'物品', status:'状态', at:'时间' });
+const onExportCsv = () =>
+  exportCsv('消毒管理', rows.value, {
+    id: 'ID',
+    method: '方式',
+    duration: '时长',
+    items: '物品',
+    status: '状态',
+    at: '时间',
+  });
 const onExportPdf = () => alert('导出 PDF（演示）');
 </script>
-

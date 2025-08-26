@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>入库登记</span>
         <div>
           <el-button type="primary" @click="openCreate">新增入库</el-button>
@@ -31,7 +31,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -42,15 +42,35 @@ import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
 type Row = { id: string; item: string; quantity: number; supplier: string; at: string };
 const rows = ref<Row[]>([
-  { id: 'IN-001', item: '大米', quantity: 50, supplier: '示例供应商', at: new Date().toLocaleString() },
+  {
+    id: 'IN-001',
+    item: '大米',
+    quantity: 50,
+    supplier: '示例供应商',
+    at: new Date().toLocaleString(),
+  },
 ]);
 const createVisible = ref(false);
 const form = reactive({ item: '', quantity: 1, supplier: '' });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  rows.value.unshift({ id: `IN-${String(rows.value.length+1).padStart(3,'0')}`, item: form.item, quantity: form.quantity, supplier: form.supplier, at: new Date().toLocaleString() });
+  rows.value.unshift({
+    id: `IN-${String(rows.value.length + 1).padStart(3, '0')}`,
+    item: form.item,
+    quantity: form.quantity,
+    supplier: form.supplier,
+    at: new Date().toLocaleString(),
+  });
   createVisible.value = false;
 };
-const onExportCsv = () => exportCsv('入库登记', rows.value, { id:'ID', item:'商品', quantity:'数量', supplier:'供应商', at:'时间' });
+const onExportCsv = () =>
+  exportCsv('入库登记', rows.value, {
+    id: 'ID',
+    item: '商品',
+    quantity: '数量',
+    supplier: '供应商',
+    at: '时间',
+  });
 </script>
-

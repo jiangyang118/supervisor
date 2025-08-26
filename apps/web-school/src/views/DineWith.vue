@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>陪餐管理</span>
         <div>
           <el-button type="primary" @click="openCreate">新增陪餐</el-button>
@@ -9,7 +9,7 @@
         </div>
       </div>
     </template>
-    <el-form :inline="true" :model="filters" style="margin-bottom:8px;">
+    <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="餐次">
         <el-select v-model="filters.meal" clearable>
           <el-option label="早餐" value="早餐" />
@@ -47,7 +47,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -58,17 +58,37 @@ import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
 type Row = { id: string; meal: string; people: string; comment: string; at: string };
 const rows = ref<Row[]>([
-  { id: 'DW-001', meal: '午餐', people: '校长,食堂主管', comment: '满意', at: new Date().toLocaleString() },
+  {
+    id: 'DW-001',
+    meal: '午餐',
+    people: '校长,食堂主管',
+    comment: '满意',
+    at: new Date().toLocaleString(),
+  },
 ]);
-const filters = reactive<{ meal: string|undefined }>({ meal: undefined });
+const filters = reactive<{ meal: string | undefined }>({ meal: undefined });
 const applyFilters = () => {};
 const createVisible = ref(false);
 const form = reactive({ meal: '午餐', people: '', comment: '' });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  rows.value.unshift({ id: `DW-${String(rows.value.length+1).padStart(3,'0')}`, meal: form.meal, people: form.people, comment: form.comment, at: new Date().toLocaleString() });
+  rows.value.unshift({
+    id: `DW-${String(rows.value.length + 1).padStart(3, '0')}`,
+    meal: form.meal,
+    people: form.people,
+    comment: form.comment,
+    at: new Date().toLocaleString(),
+  });
   createVisible.value = false;
 };
-const onExportCsv = () => exportCsv('陪餐管理', rows.value, { id:'ID', meal:'餐次', people:'人员', comment:'评价', at:'时间' });
+const onExportCsv = () =>
+  exportCsv('陪餐管理', rows.value, {
+    id: 'ID',
+    meal: '餐次',
+    people: '人员',
+    comment: '评价',
+    at: '时间',
+  });
 </script>
-

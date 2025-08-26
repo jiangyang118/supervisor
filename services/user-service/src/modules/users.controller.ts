@@ -14,4 +14,3 @@ export class UsersController {
     return data.map((u) => PublicUser.parse(u));
   }
 }
-

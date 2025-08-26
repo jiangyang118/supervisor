@@ -1,14 +1,14 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>晨检台账</span>
         <div>
           <el-button @click="onExportCsv">导出 CSV</el-button>
         </div>
       </div>
     </template>
-    <el-form :inline="true" :model="filters" style="margin-bottom:8px;">
+    <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="学校">
         <el-input v-model="filters.school" />
       </el-form-item>
@@ -41,10 +41,28 @@ import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
 type Row = { id: string; school: string; staff: string; temp: number; result: string; at: string };
 const rows = ref<Row[]>([
-  { id: 'MC-001', school: '示例一中', staff: '张三', temp: 36.6, result: '正常', at: new Date().toLocaleString() },
+  {
+    id: 'MC-001',
+    school: '示例一中',
+    staff: '张三',
+    temp: 36.6,
+    result: '正常',
+    at: new Date().toLocaleString(),
+  },
 ]);
-const filters = reactive<{ school: string; result: ''|'正常'|'异常'|null; range: [Date,Date]|null }>({ school:'', result:null, range:null });
+const filters = reactive<{
+  school: string;
+  result: '' | '正常' | '异常' | null;
+  range: [Date, Date] | null;
+}>({ school: '', result: null, range: null });
 const applyFilters = () => {};
-const onExportCsv = () => exportCsv('晨检台账-监管', rows.value, { id:'ID', school:'学校', staff:'人员', temp:'体温', result:'结果', at:'时间' });
+const onExportCsv = () =>
+  exportCsv('晨检台账-监管', rows.value, {
+    id: 'ID',
+    school: '学校',
+    staff: '人员',
+    temp: '体温',
+    result: '结果',
+    at: '时间',
+  });
 </script>
-

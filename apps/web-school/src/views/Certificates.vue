@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>资质证件管理</span>
         <div>
           <el-button type="primary" @click="openCreate">新增证件</el-button>
@@ -39,7 +39,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -48,18 +48,48 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { id: string; owner: string; type: string; number: string; expireAt: string; status: string };
+type Row = {
+  id: string;
+  owner: string;
+  type: string;
+  number: string;
+  expireAt: string;
+  status: string;
+};
 const rows = ref<Row[]>([
-  { id: 'CF-001', owner: '张三', type: '人员健康证', number: 'HC-888', expireAt: '2026-12-31', status: '有效' },
+  {
+    id: 'CF-001',
+    owner: '张三',
+    type: '人员健康证',
+    number: 'HC-888',
+    expireAt: '2026-12-31',
+    status: '有效',
+  },
 ]);
 const createVisible = ref(false);
 const form = reactive({ owner: '', type: '人员健康证', number: '', expireAt: new Date() });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  const exp = (form.expireAt as any)?.toISOString?.().slice(0,10) ?? String(form.expireAt);
-  rows.value.unshift({ id: `CF-${String(rows.value.length+1).padStart(3,'0')}`, owner: form.owner, type: form.type, number: form.number, expireAt: exp, status: '有效' });
+  const exp = (form.expireAt as any)?.toISOString?.().slice(0, 10) ?? String(form.expireAt);
+  rows.value.unshift({
+    id: `CF-${String(rows.value.length + 1).padStart(3, '0')}`,
+    owner: form.owner,
+    type: form.type,
+    number: form.number,
+    expireAt: exp,
+    status: '有效',
+  });
   createVisible.value = false;
 };
-const onExportCsv = () => exportCsv('资质证件', rows.value, { id:'ID', owner:'主体', type:'类型', number:'证件号', expireAt:'到期时间', status:'状态' });
+const onExportCsv = () =>
+  exportCsv('资质证件', rows.value, {
+    id: 'ID',
+    owner: '主体',
+    type: '类型',
+    number: '证件号',
+    expireAt: '到期时间',
+    status: '状态',
+  });
 </script>
-

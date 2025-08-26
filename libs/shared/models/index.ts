@@ -20,7 +20,14 @@ export const Canteen = z.object({
 export type Canteen = z.infer<typeof Canteen>;
 
 // Users & Auth
-export const RoleEnum = z.enum(['ADMIN', 'REGULATOR', 'SCHOOL', 'SUPPLIER', 'DEVICE_OPS', 'PARENT']);
+export const RoleEnum = z.enum([
+  'ADMIN',
+  'REGULATOR',
+  'SCHOOL',
+  'SUPPLIER',
+  'DEVICE_OPS',
+  'PARENT',
+]);
 export const User = z.object({
   id: Id,
   tenantId: Id, // schoolId or orgId
@@ -103,4 +110,3 @@ export const Models = {
   AIEvent,
   Alert,
 };
-

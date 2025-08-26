@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>出库登记</span>
         <div>
           <el-button type="primary" @click="openCreate">新增出库</el-button>
@@ -35,7 +35,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -46,15 +46,38 @@ import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
 type Row = { id: string; item: string; quantity: number; purpose: string; by: string; at: string };
 const rows = ref<Row[]>([
-  { id: 'OUT-001', item: '大米', quantity: 10, purpose: '食堂午餐', by: '张三', at: new Date().toLocaleString() },
+  {
+    id: 'OUT-001',
+    item: '大米',
+    quantity: 10,
+    purpose: '食堂午餐',
+    by: '张三',
+    at: new Date().toLocaleString(),
+  },
 ]);
 const createVisible = ref(false);
 const form = reactive({ item: '', quantity: 1, purpose: '', by: '' });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  rows.value.unshift({ id: `OUT-${String(rows.value.length+1).padStart(3,'0')}`, item: form.item, quantity: form.quantity, purpose: form.purpose, by: form.by, at: new Date().toLocaleString() });
+  rows.value.unshift({
+    id: `OUT-${String(rows.value.length + 1).padStart(3, '0')}`,
+    item: form.item,
+    quantity: form.quantity,
+    purpose: form.purpose,
+    by: form.by,
+    at: new Date().toLocaleString(),
+  });
   createVisible.value = false;
 };
-const onExportCsv = () => exportCsv('出库登记', rows.value, { id:'ID', item:'商品', quantity:'数量', purpose:'用途', by:'出库人', at:'时间' });
+const onExportCsv = () =>
+  exportCsv('出库登记', rows.value, {
+    id: 'ID',
+    item: '商品',
+    quantity: '数量',
+    purpose: '用途',
+    by: '出库人',
+    at: '时间',
+  });
 </script>
-

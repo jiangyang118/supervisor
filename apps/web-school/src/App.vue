@@ -1,6 +1,9 @@
 <template>
-  <el-container style="height:100vh">
-    <el-header style="display:flex;align-items:center;justify-content:space-between">
+  <el-container style="height: 100vh">
+    <el-header
+      class="app-header"
+      style="display: flex; align-items: center; justify-content: space-between"
+    >
       <div>学校端 • 食品安全云</div>
       <el-space>
         <el-button link type="primary" @click="go('/overview')">首页</el-button>
@@ -8,7 +11,7 @@
       </el-space>
     </el-header>
     <el-container>
-      <el-aside width="240px" style="border-right:1px solid #f0f0f0;">
+      <el-aside width="240px" class="app-aside">
         <el-menu :default-active="active" router unique-opened>
           <el-menu-item index="/overview">概览</el-menu-item>
           <el-sub-menu index="ai">
@@ -88,15 +91,17 @@
         </el-menu>
       </el-aside>
       <el-main>
+        <PageHeader />
         <router-view />
       </el-main>
     </el-container>
   </el-container>
-  </template>
+</template>
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import { computed } from 'vue';
+import PageHeader from './components/PageHeader.vue';
 const route = useRoute();
 const router = useRouter();
 const active = computed(() => route.path);
@@ -104,5 +109,7 @@ const go = (p: string) => router.push(p);
 </script>
 
 <style>
-body { margin: 0; }
+body {
+  margin: 0;
+}
 </style>

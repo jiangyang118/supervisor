@@ -11,7 +11,10 @@
 <script setup lang="ts"></script>
 
 <style>
-.container { padding: 16px; }
-.list view { padding: 8px 0; }
+.container {
+  padding: 16px;
+}
+.list view {
+  padding: 8px 0;
+}
 </style>
-

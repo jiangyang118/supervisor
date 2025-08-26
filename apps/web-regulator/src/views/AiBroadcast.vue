@@ -1,0 +1,54 @@
+<template>
+  <el-card>
+    <template #header>
+      <div style="display: flex; align-items: center; justify-content: space-between">
+        <span>远程喊话</span>
+        <div>
+          <el-button type="primary" @click="send">发送语音</el-button>
+        </div>
+      </div>
+    </template>
+    <el-form :model="form" label-width="96px" style="max-width: 640px">
+      <el-form-item label="学校"><el-input v-model="form.school" /></el-form-item>
+      <el-form-item label="摄像头"><el-input v-model="form.camera" /></el-form-item>
+      <el-form-item label="文字内容"><el-input v-model="form.text" type="textarea" /></el-form-item>
+      <el-form-item label="TTS 声音">
+        <el-select v-model="form.voice"
+          ><el-option label="女声" value="female" /><el-option label="男声" value="male"
+        /></el-select>
+      </el-form-item>
+    </el-form>
+    <el-divider>发送记录</el-divider>
+    <el-table :data="records" size="small" border>
+      <el-table-column prop="id" label="ID" width="120" />
+      <el-table-column prop="school" label="学校" />
+      <el-table-column prop="camera" label="摄像头" />
+      <el-table-column prop="text" label="内容" />
+      <el-table-column prop="status" label="状态" width="120" />
+      <el-table-column prop="at" label="时间" width="180" />
+    </el-table>
+  </el-card>
+</template>
+
+<script setup lang="ts">
+import { reactive, ref } from 'vue';
+type Rec = { id: string; school: string; camera: string; text: string; status: string; at: string };
+const form = reactive({
+  school: '',
+  camera: '',
+  text: '请立刻佩戴好口罩和帽子，注意卫生规范。',
+  voice: 'female',
+});
+const records = ref<Rec[]>([]);
+const send = () => {
+  records.value.unshift({
+    id: `BC-${String(records.value.length + 1).padStart(3, '0')}`,
+    school: form.school || '示例学校',
+    camera: form.camera || '1# 操作台',
+    text: form.text,
+    status: '已发送',
+    at: new Date().toLocaleString(),
+  });
+  alert('已发送（演示）');
+};
+</script>

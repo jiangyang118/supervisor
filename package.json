@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "packageManager": "pnpm@9",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "apps/*",
     "services/*",
@@ -12,10 +14,27 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "dev": "npm run dev --workspaces --if-present",
-    "format": "prettier -w ."
+    "format": "prettier -w .",
+    "lint": "prettier -c .",
+    "lint:eslint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "vue-tsc -p apps/web-school/tsconfig.json --noEmit && vue-tsc -p apps/web-regulator/tsconfig.json --noEmit",
+    "prepare": "husky install || true",
+    "test:e2e": "playwright test",
+    "e2e:report": "playwright show-report"
   },
   "devDependencies": {
     "prettier": "^3.3.3",
-    "typescript": "^5.5.4"
+    "typescript": "^5.5.4",
+    "vue-tsc": "^2.0.29",
+    "@commitlint/cli": "^19.4.0",
+    "@commitlint/config-conventional": "^19.4.0",
+    "husky": "^9.1.6",
+    "@playwright/test": "^1.47.2",
+    "eslint": "^8.57.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "eslint-plugin-vue": "^9.27.0",
+    "eslint-config-prettier": "^9.1.0"
   }
 }

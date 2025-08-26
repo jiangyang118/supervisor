@@ -1,14 +1,14 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>陪餐台账</span>
         <div>
           <el-button @click="onExportCsv">导出 CSV</el-button>
         </div>
       </div>
     </template>
-    <el-form :inline="true" :model="filters" style="margin-bottom:8px;">
+    <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="学校">
         <el-input v-model="filters.school" />
       </el-form-item>
@@ -34,11 +34,35 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { id: string; school: string; meal: string; people: string; comment: string; at: string };
+type Row = {
+  id: string;
+  school: string;
+  meal: string;
+  people: string;
+  comment: string;
+  at: string;
+};
 const rows = ref<Row[]>([
-  { id: 'DW-001', school: '示例二小', meal: '午餐', people: '校长,家长代表', comment: '满意', at: new Date().toLocaleString() },
+  {
+    id: 'DW-001',
+    school: '示例二小',
+    meal: '午餐',
+    people: '校长,家长代表',
+    comment: '满意',
+    at: new Date().toLocaleString(),
+  },
 ]);
-const filters = reactive<{ school: string; meal: string|undefined }>({ school:'', meal: undefined });
-const onExportCsv = () => exportCsv('陪餐台账-监管', rows.value, { id:'ID', school:'学校', meal:'餐次', people:'人员', comment:'评价', at:'时间' });
+const filters = reactive<{ school: string; meal: string | undefined }>({
+  school: '',
+  meal: undefined,
+});
+const onExportCsv = () =>
+  exportCsv('陪餐台账-监管', rows.value, {
+    id: 'ID',
+    school: '学校',
+    meal: '餐次',
+    people: '人员',
+    comment: '评价',
+    at: '时间',
+  });
 </script>
-

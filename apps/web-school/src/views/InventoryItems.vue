@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>商品管理</span>
         <div>
           <el-button type="primary" @click="openCreate">新增商品</el-button>
@@ -30,7 +30,7 @@
       </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="createVisible=false">取消</el-button>
+      <el-button @click="createVisible = false">取消</el-button>
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
@@ -40,16 +40,21 @@
 import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
 type Row = { id: string; name: string; unit: string; category: string };
-const rows = ref<Row[]>([
-  { id: 'IT-001', name: '大米', unit: 'kg', category: '主食' },
-]);
+const rows = ref<Row[]>([{ id: 'IT-001', name: '大米', unit: 'kg', category: '主食' }]);
 const createVisible = ref(false);
 const form = reactive({ name: '', unit: 'kg', category: '' });
-const openCreate = () => { createVisible.value = true; };
+const openCreate = () => {
+  createVisible.value = true;
+};
 const save = () => {
-  rows.value.unshift({ id: `IT-${String(rows.value.length+1).padStart(3,'0')}`, name: form.name, unit: form.unit, category: form.category });
+  rows.value.unshift({
+    id: `IT-${String(rows.value.length + 1).padStart(3, '0')}`,
+    name: form.name,
+    unit: form.unit,
+    category: form.category,
+  });
   createVisible.value = false;
 };
-const onExportCsv = () => exportCsv('商品管理', rows.value, { id:'ID', name:'名称', unit:'单位', category:'分类' });
+const onExportCsv = () =>
+  exportCsv('商品管理', rows.value, { id: 'ID', name: '名称', unit: '单位', category: '分类' });
 </script>
-

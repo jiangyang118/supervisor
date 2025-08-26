@@ -1,14 +1,14 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display: flex; align-items: center; justify-content: space-between">
         <span>废弃物台账</span>
         <div>
           <el-button @click="onExportCsv">导出 CSV</el-button>
         </div>
       </div>
     </template>
-    <el-form :inline="true" :model="filters" style="margin-bottom:8px;">
+    <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="学校">
         <el-input v-model="filters.school" />
       </el-form-item>
@@ -34,11 +34,38 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { id: string; school: string; date: string; category: string; amount: number; buyer: string; person: string };
+type Row = {
+  id: string;
+  school: string;
+  date: string;
+  category: string;
+  amount: number;
+  buyer: string;
+  person: string;
+};
 const rows = ref<Row[]>([
-  { id: 'WS-001', school: '示例一中', date: new Date().toLocaleDateString(), category: '餐厨垃圾', amount: 30, buyer: '回收公司A', person: '李四' },
+  {
+    id: 'WS-001',
+    school: '示例一中',
+    date: new Date().toLocaleDateString(),
+    category: '餐厨垃圾',
+    amount: 30,
+    buyer: '回收公司A',
+    person: '李四',
+  },
 ]);
-const filters = reactive<{ school: string; category: string|undefined }>({ school:'', category: undefined });
-const onExportCsv = () => exportCsv('废弃物台账-监管', rows.value, { id:'ID', school:'学校', date:'日期', category:'种类', amount:'数量(kg)', buyer:'收购单位', person:'收运人' });
+const filters = reactive<{ school: string; category: string | undefined }>({
+  school: '',
+  category: undefined,
+});
+const onExportCsv = () =>
+  exportCsv('废弃物台账-监管', rows.value, {
+    id: 'ID',
+    school: '学校',
+    date: '日期',
+    category: '种类',
+    amount: '数量(kg)',
+    buyer: '收购单位',
+    person: '收运人',
+  });
 </script>
-

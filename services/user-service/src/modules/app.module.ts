@@ -7,4 +7,3 @@ import { UsersController } from './users.controller';
   providers: [],
 })
 export class AppModule {}
-

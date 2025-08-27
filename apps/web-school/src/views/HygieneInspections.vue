@@ -9,25 +9,47 @@
         </div>
       </div>
     </template>
+    <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
+      <el-form-item label="结果">
+        <el-select v-model="filters.result" clearable style="width: 120px">
+          <el-option label="合格" value="合格" />
+          <el-option label="不合格" value="不合格" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="日期">
+        <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+      </el-form-item>
+      <el-form-item>
+        <el-button @click="applyFilters">查询</el-button>
+      </el-form-item>
+    </el-form>
     <el-table :data="rows" size="small" border>
       <el-table-column prop="id" label="ID" width="140" />
-      <el-table-column prop="item" label="检查项" />
-      <el-table-column prop="result" label="结果" width="120" />
+      <el-table-column prop="result" label="结果" width="120">
+        <template #default="{ row }"
+          ><el-tag :type="row.result === '合格' ? 'success' : 'danger'" effect="plain">{{
+            row.result
+          }}</el-tag></template
+        >
+      </el-table-column>
+      <el-table-column prop="by" label="检查人" width="140" />
       <el-table-column prop="remark" label="备注" />
-      <el-table-column prop="at" label="时间" width="180" />
+      <el-table-column label="时间" width="180"
+        ><template #default="{ row }">{{ formatTime(row.date) }}</template></el-table-column
+      >
     </el-table>
   </el-card>
 
   <el-dialog v-model="createVisible" title="新建卫生检查" width="520px">
     <el-form :model="form" label-width="96px">
-      <el-form-item label="检查项">
-        <el-input v-model="form.item" />
-      </el-form-item>
       <el-form-item label="结果">
         <el-select v-model="form.result">
           <el-option label="合格" value="合格" />
           <el-option label="不合格" value="不合格" />
         </el-select>
+      </el-form-item>
+      <el-form-item label="检查人">
+        <el-input v-model="form.by" />
       </el-form-item>
       <el-form-item label="备注">
         <el-input v-model="form.remark" />
@@ -41,33 +63,73 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { id: string; item: string; result: string; remark: string; at: string };
-const rows = ref<Row[]>([
-  { id: 'HY-001', item: '操作台卫生', result: '合格', remark: '', at: new Date().toLocaleString() },
-]);
+import { api } from '../services/api';
+import { ElMessage } from 'element-plus';
+const rows = ref<any[]>([]);
+const filters = reactive<{ result: '' | '合格' | '不合格' | null; range: [Date, Date] | null }>({
+  result: null,
+  range: null,
+});
+async function load() {
+  const params: any = {};
+  if (filters.result) params.result = filters.result;
+  if (filters.range && filters.range.length === 2) {
+    params.start = filters.range[0].toISOString();
+    params.end = filters.range[1].toISOString();
+  }
+  try {
+    const res = await api.hygieneList(params);
+    rows.value = res.items;
+  } catch {
+    ElMessage.error('加载失败');
+  }
+}
+function applyFilters() {
+  load();
+}
+
 const createVisible = ref(false);
-const form = reactive({ item: '', result: '合格', remark: '' });
+const form = reactive({ result: '合格', by: '', remark: '' });
 const openCreate = () => {
+  form.result = '合格';
+  form.by = '';
+  form.remark = '';
   createVisible.value = true;
 };
-const save = () => {
-  rows.value.unshift({
-    id: `HY-${String(rows.value.length + 1).padStart(3, '0')}`,
-    item: form.item,
-    result: form.result,
-    remark: form.remark,
-    at: new Date().toLocaleString(),
-  });
-  createVisible.value = false;
-};
+async function save() {
+  if (!form.result || !form.by) {
+    ElMessage.warning('请填写结果与检查人');
+    return;
+  }
+  try {
+    await api.hygieneCreate({
+      result: form.result as any,
+      by: form.by,
+      remark: form.remark || undefined,
+    });
+    ElMessage.success('已上报');
+    createVisible.value = false;
+    load();
+  } catch {
+    ElMessage.error('保存失败');
+  }
+}
 const onExportCsv = () =>
   exportCsv('卫生检查', rows.value, {
     id: 'ID',
-    item: '检查项',
     result: '结果',
+    by: '检查人',
     remark: '备注',
-    at: '时间',
+    date: '时间',
   });
+function formatTime(iso: string) {
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
+}
+onMounted(() => load());
 </script>

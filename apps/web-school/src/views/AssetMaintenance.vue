@@ -9,12 +9,25 @@
         </div>
       </div>
     </template>
+    <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
+      <el-form-item label="资产">
+        <el-input v-model="filters.asset" />
+      </el-form-item>
+      <el-form-item label="日期">
+        <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+      </el-form-item>
+      <el-form-item>
+        <el-button @click="applyFilters">查询</el-button>
+      </el-form-item>
+    </el-form>
     <el-table :data="rows" size="small" border>
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="asset" label="资产" />
-      <el-table-column prop="action" label="维护动作" />
+      <el-table-column prop="action" label="维护内容" />
       <el-table-column prop="by" label="负责人" />
-      <el-table-column prop="at" label="时间" width="180" />
+      <el-table-column label="时间" width="180"
+        ><template #default="{ row }">{{ formatTime(row.date) }}</template></el-table-column
+      >
     </el-table>
   </el-card>
 
@@ -23,11 +36,14 @@
       <el-form-item label="资产">
         <el-input v-model="form.asset" />
       </el-form-item>
-      <el-form-item label="维护动作">
+      <el-form-item label="维护内容">
         <el-input v-model="form.action" />
       </el-form-item>
       <el-form-item label="负责人">
         <el-input v-model="form.by" />
+      </el-form-item>
+      <el-form-item label="日期">
+        <el-date-picker v-model="form.date" type="datetime" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -38,39 +54,76 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { id: string; asset: string; action: string; by: string; at: string };
-const rows = ref<Row[]>([
-  {
-    id: 'AM-001',
-    asset: '留样柜 A-1',
-    action: '定期保养',
-    by: '设备管理员',
-    at: new Date().toLocaleString(),
-  },
-]);
+import { api } from '../services/api';
+import { ElMessage } from 'element-plus';
+const rows = ref<any[]>([]);
+const filters = reactive<{ asset: string; range: [Date, Date] | null }>({ asset: '', range: null });
+async function load() {
+  const params: any = {};
+  if (filters.asset) params.asset = filters.asset;
+  if (filters.range && filters.range.length === 2) {
+    params.start = filters.range[0].toISOString();
+    params.end = filters.range[1].toISOString();
+  }
+  try {
+    const res = await api.assetsList(params);
+    rows.value = res.items;
+  } catch {
+    ElMessage.error('加载失败');
+  }
+}
+function applyFilters() {
+  load();
+}
+
 const createVisible = ref(false);
-const form = reactive({ asset: '', action: '', by: '' });
+const form = reactive<{ asset: string; action: string; by: string; date?: Date | nil }>({
+  asset: '',
+  action: '',
+  by: '',
+} as any);
 const openCreate = () => {
+  form.asset = '';
+  form.action = '';
+  form.by = '';
+  form.date = undefined;
   createVisible.value = true;
 };
-const save = () => {
-  rows.value.unshift({
-    id: `AM-${String(rows.value.length + 1).padStart(3, '0')}`,
-    asset: form.asset,
-    action: form.action,
-    by: form.by,
-    at: new Date().toLocaleString(),
-  });
-  createVisible.value = false;
-};
+async function save() {
+  if (!form.asset || !form.action || !form.by) {
+    ElMessage.warning('请填写资产、维护内容、负责人');
+    return;
+  }
+  try {
+    await api.assetsCreate({
+      asset: form.asset,
+      action: form.action,
+      by: form.by,
+      date: (form.date as any)?.toISOString?.(),
+    });
+    ElMessage.success('已上报');
+    createVisible.value = false;
+    load();
+  } catch {
+    ElMessage.error('保存失败');
+  }
+}
 const onExportCsv = () =>
   exportCsv('固定资产维护', rows.value, {
     id: 'ID',
     asset: '资产',
-    action: '维护动作',
+    action: '维护内容',
     by: '负责人',
-    at: '时间',
+    date: '时间',
   });
+function formatTime(iso: string) {
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
+}
+onMounted(() => load());
 </script>

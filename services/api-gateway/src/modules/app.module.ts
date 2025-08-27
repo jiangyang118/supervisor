@@ -6,6 +6,18 @@ import { AIController } from './ai.controller';
 import { BrightController } from './bright.controller';
 import { ReportsController } from './reports.controller';
 import { SchoolReportsController } from './school-reports.controller';
+import { MorningCheckController } from './morning-check.controller';
+import { MorningCheckService } from './morning-check.service';
+import { SamplingController } from './sampling.controller';
+import { SamplingService } from './sampling.service';
+import { DineController } from './dine.controller';
+import { DineService } from './dine.service';
+import { PesticideController } from './pesticide.controller';
+import { PesticideService } from './pesticide.service';
+import { DisinfectionController } from './disinfection.controller';
+import { DisinfectionService } from './disinfection.service';
+import { HygieneController } from './hygiene.controller';
+import { HygieneService } from './hygiene.service';
 
 @Module({
   controllers: [
@@ -16,7 +28,20 @@ import { SchoolReportsController } from './school-reports.controller';
     BrightController,
     ReportsController,
     SchoolReportsController,
+    MorningCheckController,
+    SamplingController,
+    DineController,
+    PesticideController,
+    DisinfectionController,
+    HygieneController,
   ],
-  providers: [],
+  providers: [
+    MorningCheckService,
+    SamplingService,
+    DineService,
+    PesticideService,
+    DisinfectionService,
+    HygieneService,
+  ],
 })
 export class AppModule {}

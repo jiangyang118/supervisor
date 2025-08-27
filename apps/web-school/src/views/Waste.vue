@@ -83,7 +83,7 @@ const rows = ref<Row[]>([
   },
 ]);
 const filters = reactive<{ category: string | undefined; range: [Date, Date] | null }>({
-  category: undefined,
+  category: '餐厨垃圾',
   range: null,
 });
 const applyFilters = () => {};

@@ -150,7 +150,7 @@ import VChart from 'vue-echarts';
 use([PieChart, BarChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer]);
 
 const range = ref<[Date, Date] | null>(null);
-const meal = ref<string | null>(null);
+const meal = ref<string | null>('breakfast');
 const kpi = ref({ morning: 0, sampling: 0, disinfection: 0, dine: 0, waste: 0, ai: 0 });
 const aiType = ref<{ type: string; count: number }[]>([]);
 

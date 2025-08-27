@@ -61,7 +61,7 @@
       </el-table-column>
       <el-table-column label="操作" width="200">
         <template #default="{ row }">
-          <el-button size="small" v-if="row.result === '异常'" @click="openMeasure(row)"
+          <el-button v-if="row.result === '异常'" size="small" @click="openMeasure(row)"
             >处理措施</el-button
           >
           <el-button size="small" type="danger" text @click="remove(row.id)">删除</el-button>
@@ -76,12 +76,7 @@
         :total="total"
         :page-size="pageSize"
         :current-page="page"
-        @current-change="
-          (p: number) => {
-            page = p;
-            load();
-          }
-        "
+        @current-change="handlePageChange"
       />
     </div>
   </el-card>
@@ -142,6 +137,12 @@ const page = ref(1);
 const pageSize = ref(20);
 const sseConnected = ref(false);
 let es: EventSource | null = null;
+
+// 处理分页变化
+function handlePageChange(p: number) {
+  page.value = p;
+  load();
+}
 
 const filters = reactive<{
   staff: string;

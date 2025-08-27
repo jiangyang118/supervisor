@@ -71,7 +71,7 @@
       </el-table-column>
       <el-table-column label="操作" width="180">
         <template #default="{ row }">
-          <el-button size="small" v-if="row.exception" @click="openMeasure(row)"
+          <el-button v-if="row.exception" size="small" @click="openMeasure(row)"
             >处理措施</el-button
           >
         </template>
@@ -84,12 +84,7 @@
         :total="total"
         :page-size="pageSize"
         :current-page="page"
-        @current-change="
-          (p: number) => {
-            page = p;
-            load();
-          }
-        "
+        @current-change="handlePageChange"
       />
     </div>
   </el-card>
@@ -145,6 +140,11 @@ import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api, API_BASE } from '../services/api';
 import { ElMessage } from 'element-plus';
+
+const handlePageChange = (p: number) => {
+  page.value = p;
+  load();
+};
 
 const rows = ref<any[]>([]);
 const total = ref(0);

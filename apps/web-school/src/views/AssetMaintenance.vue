@@ -79,7 +79,7 @@ function applyFilters() {
 }
 
 const createVisible = ref(false);
-const form = reactive<{ asset: string; action: string; by: string; date?: Date | nil }>({
+const form = reactive<{ asset: string; action: string; by: string; date?: Date | null }>({
   asset: '',
   action: '',
   by: '',

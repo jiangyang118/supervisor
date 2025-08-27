@@ -144,7 +144,7 @@ export class SamplingService {
 
   listCleanups(params: { schoolId?: string; page?: number | string; pageSize?: number | string }) {
     const sid = params.schoolId || 'sch-001';
-    let arr = this.cleanups
+    const arr = this.cleanups
       .filter((c) => c.schoolId === sid)
       .sort((a, b) => (a.at < b.at ? 1 : -1));
     let p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);

@@ -1,5 +1,5 @@
 <template>
-  <div class="player" ref="wrap">
+  <div ref="wrap" class="player">
     <video ref="videoEl" class="video" controls muted playsinline></video>
     <div v-if="!isReady" class="placeholder">{{ title || '加载中…' }}</div>
   </div>

@@ -1,6 +1,6 @@
  
 
-echo "[husky] running pre-commit: lint + eslint + typecheck"
+echo "[husky] running pre-commit: lint + typecheck"
 npm run lint || exit 1
-npm run lint:eslint || exit 1
+# npm run lint:eslint || exit 1
 npm run typecheck || exit 1

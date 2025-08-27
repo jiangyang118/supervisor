@@ -18,6 +18,12 @@ import { DisinfectionController } from './disinfection.controller';
 import { DisinfectionService } from './disinfection.service';
 import { HygieneController } from './hygiene.controller';
 import { HygieneService } from './hygiene.service';
+import { CredentialsController } from './credentials.controller';
+import { CredentialsService } from './credentials.service';
+import { TrainingController } from './training.controller';
+import { TrainingService } from './training.service';
+import { InventoryController } from './inventory.controller';
+import { InventoryService } from './inventory.service';
 
 @Module({
   controllers: [
@@ -34,6 +40,7 @@ import { HygieneService } from './hygiene.service';
     PesticideController,
     DisinfectionController,
     HygieneController,
+    InventoryController,
   ],
   providers: [
     MorningCheckService,
@@ -42,6 +49,7 @@ import { HygieneService } from './hygiene.service';
     PesticideService,
     DisinfectionService,
     HygieneService,
+    InventoryService,
   ],
 })
 export class AppModule {}

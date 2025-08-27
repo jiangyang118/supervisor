@@ -11,21 +11,23 @@
     </template>
     <el-table :data="rows" size="small" border>
       <el-table-column prop="id" label="ID" width="140" />
-      <el-table-column prop="item" label="商品" />
-      <el-table-column prop="quantity" label="数量" width="120" />
+      <el-table-column label="商品"><template #default="{ row }">{{ productName(row.productId) }}</template></el-table-column>
+      <el-table-column prop="qty" label="数量" width="120" />
       <el-table-column prop="purpose" label="用途" />
       <el-table-column prop="by" label="出库人" />
-      <el-table-column prop="at" label="时间" width="180" />
+      <el-table-column label="时间" width="180"><template #default="{ row }">{{ formatTime(row.at) }}</template></el-table-column>
     </el-table>
   </el-card>
 
   <el-dialog v-model="createVisible" title="新增出库" width="520px">
     <el-form :model="form" label-width="96px">
       <el-form-item label="商品">
-        <el-input v-model="form.item" />
+        <el-select v-model="form.productId" style="width: 240px">
+          <el-option v-for="p in products" :key="p.id" :label="p.name" :value="p.id" />
+        </el-select>
       </el-form-item>
       <el-form-item label="数量">
-        <el-input-number v-model="form.quantity" :min="1" />
+        <el-input-number v-model="form.qty" :min="1" />
       </el-form-item>
       <el-form-item label="用途">
         <el-input v-model="form.purpose" />
@@ -42,42 +44,19 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { id: string; item: string; quantity: number; purpose: string; by: string; at: string };
-const rows = ref<Row[]>([
-  {
-    id: 'OUT-001',
-    item: '大米',
-    quantity: 10,
-    purpose: '食堂午餐',
-    by: '张三',
-    at: new Date().toLocaleString(),
-  },
-]);
+import { api } from '../services/api';
+import { ElMessage } from 'element-plus';
+const rows = ref<any[]>([]);
+const products = ref<any[]>([]);
+function productName(id: string){ return products.value.find((p:any)=>p.id===id)?.name || '-'; }
+function formatTime(iso: string){ try { return new Date(iso).toLocaleString(); } catch { return iso; } }
+async function load(){ rows.value = await api.invOutboundList(); products.value = await api.invProducts(); }
 const createVisible = ref(false);
-const form = reactive({ item: '', quantity: 1, purpose: '', by: '' });
-const openCreate = () => {
-  createVisible.value = true;
-};
-const save = () => {
-  rows.value.unshift({
-    id: `OUT-${String(rows.value.length + 1).padStart(3, '0')}`,
-    item: form.item,
-    quantity: form.quantity,
-    purpose: form.purpose,
-    by: form.by,
-    at: new Date().toLocaleString(),
-  });
-  createVisible.value = false;
-};
-const onExportCsv = () =>
-  exportCsv('出库登记', rows.value, {
-    id: 'ID',
-    item: '商品',
-    quantity: '数量',
-    purpose: '用途',
-    by: '出库人',
-    at: '时间',
-  });
+const form = reactive<{ productId: string; qty: number; purpose?: string; by?: string }>({ productId: '', qty: 1 });
+const openCreate = () => { form.productId = products.value[0]?.id || ''; form.qty=1; form.purpose=''; form.by=''; createVisible.value = true; };
+async function save(){ if(!form.productId || !form.qty){ ElMessage.warning('请选择商品并填写数量'); return; } await api.invOutboundCreate(form as any); ElMessage.success('已上报'); createVisible.value=false; load(); }
+const onExportCsv = () => exportCsv('出库登记', rows.value, { id: 'ID', productId: '商品ID', qty: '数量', purpose: '用途', by: '出库人', at: '时间' });
+onMounted(()=>load());
 </script>

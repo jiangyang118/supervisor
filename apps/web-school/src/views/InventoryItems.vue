@@ -13,7 +13,7 @@
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="name" label="名称" />
       <el-table-column prop="unit" label="单位" width="100" />
-      <el-table-column prop="category" label="分类" />
+      <el-table-column label="分类"><template #default="{ row }">{{ categoryName(row.categoryId) }}</template></el-table-column>
     </el-table>
   </el-card>
 
@@ -26,7 +26,9 @@
         <el-input v-model="form.unit" />
       </el-form-item>
       <el-form-item label="分类">
-        <el-input v-model="form.category" />
+        <el-select v-model="form.categoryId" style="width: 240px">
+          <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
+        </el-select>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -37,24 +39,17 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { id: string; name: string; unit: string; category: string };
-const rows = ref<Row[]>([{ id: 'IT-001', name: '大米', unit: 'kg', category: '主食' }]);
+import { api } from '../services/api';
+const rows = ref<any[]>([]);
+const categories = ref<any[]>([]);
 const createVisible = ref(false);
-const form = reactive({ name: '', unit: 'kg', category: '' });
-const openCreate = () => {
-  createVisible.value = true;
-};
-const save = () => {
-  rows.value.unshift({
-    id: `IT-${String(rows.value.length + 1).padStart(3, '0')}`,
-    name: form.name,
-    unit: form.unit,
-    category: form.category,
-  });
-  createVisible.value = false;
-};
-const onExportCsv = () =>
-  exportCsv('商品管理', rows.value, { id: 'ID', name: '名称', unit: '单位', category: '分类' });
+const form = reactive<{ name: string; unit: string; categoryId?: string }>({ name: '', unit: 'kg' });
+function categoryName(id?: string){ return categories.value.find((c:any)=>c.id===id)?.name || '-'; }
+async function load(){ rows.value = await api.invProducts(); categories.value = await api.invCategories(); }
+const openCreate = () => { form.name=''; form.unit='kg'; form.categoryId = categories.value[0]?.id; createVisible.value = true; };
+async function save(){ await api.invProductCreate(form as any); createVisible.value=false; load(); }
+const onExportCsv = () => exportCsv('商品管理', rows.value, { id: 'ID', name: '名称', unit: '单位', categoryId: '分类ID' });
+onMounted(()=>load());
 </script>

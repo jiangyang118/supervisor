@@ -1,5 +1,6 @@
 // API基础地址
 const BASE = 'http://localhost:3000';
+export const API_BASE = BASE;
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
@@ -368,5 +369,84 @@ export const api = {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
+  },
+  // Inventory module
+  invCategories: () => get<any[]>(`/school/inventory/categories`),
+  invCategoryCreate: async (name: string) => {
+    const res = await fetch(`${BASE}/school/inventory/categories`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name }) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invProducts: () => get<any[]>(`/school/inventory/products`),
+  invProductCreate: async (body: { name: string; unit: string; categoryId?: string }) => {
+    const res = await fetch(`${BASE}/school/inventory/products`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invImportCloud: () => get<any>(`/school/inventory/products/import/cloud`),
+  invImportTemplate: async (items: any[]) => {
+    const res = await fetch(`${BASE}/school/inventory/products/import/template`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ items }) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invSuppliers: (params: { q?: string; enabled?: 'true'|'false'; page?: number; pageSize?: number } = {}) =>
+    get<{ items: any[]; total: number; page: number; pageSize: number }>(
+      `/school/inventory/suppliers?${new URLSearchParams(
+        Object.fromEntries(Object.entries({ ...params }).filter(([,v])=>v!==undefined && v!==null).map(([k,v])=>[k,String(v)])) as any,
+      ).toString()}`,
+    ),
+  invSupplierCreate: async (body: any) => {
+    const res = await fetch(`${BASE}/school/inventory/suppliers`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invWarehouses: () => get<any[]>(`/school/inventory/warehouses`),
+  invWarehouseCreate: async (body: { name: string; location?: string; capacity?: number }) => {
+    const res = await fetch(`${BASE}/school/inventory/warehouses`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invInboundList: () => get<any[]>(`/school/inventory/inbound`),
+  invInboundCreate: async (body: { productId: string; qty: number; supplierId?: string; warehouseId?: string; imageUrl?: string }) => {
+    const res = await fetch(`${BASE}/school/inventory/inbound`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invOutboundList: () => get<any[]>(`/school/inventory/outbound`),
+  invOutboundCreate: async (body: { productId: string; qty: number; purpose?: string; by?: string; warehouseId?: string }) => {
+    const res = await fetch(`${BASE}/school/inventory/outbound`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invStock: () => get<any[]>(`/school/inventory/stock`),
+  invStocktake: async (body: { productId: string; qty: number }) => {
+    const res = await fetch(`${BASE}/school/inventory/stock/stocktake`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invTickets: () => get<any[]>(`/school/inventory/tickets`),
+  invTicketCreate: async (body: { productId: string; type: string; imageUrl?: string }) => {
+    const res = await fetch(`${BASE}/school/inventory/tickets`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invAdditives: () => get<any[]>(`/school/inventory/additives`),
+  invAdditiveCreate: async (body: { name: string; amount: number; dish?: string; by?: string }) => {
+    const res = await fetch(`${BASE}/school/inventory/additives`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invSupplierUpdate: async (id: string, body: any) => {
+    const res = await fetch(`${BASE}/school/inventory/suppliers?id=${encodeURIComponent(id)}`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invSupplierDelete: async (id: string) => {
+    const res = await fetch(`${BASE}/school/inventory/suppliers/delete`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id }) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
+  },
+  invSuppliersExportCsv: async () => {
+    const res = await fetch(`${BASE}/school/inventory/suppliers/export.csv`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const { csv } = await res.json();
+    return csv as string;
+  },
+  invSuppliersImport: async (payload: { items: any[] } | string) => {
+    const isCsv = typeof payload === 'string';
+    const res = await fetch(`${BASE}/school/inventory/suppliers/import`, {
+      method:'POST',
+      headers: isCsv ? { 'Content-Type': 'text/plain;charset=utf-8' } : { 'Content-Type': 'application/json' },
+      body: isCsv ? payload as string : JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`); return res.json();
   },
 };

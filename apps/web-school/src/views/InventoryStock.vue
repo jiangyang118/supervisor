@@ -19,21 +19,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { item: string; qty: number; unit: string; updatedAt: string };
-const rows = ref<Row[]>([
-  { item: '大米', qty: 120, unit: 'kg', updatedAt: new Date().toLocaleString() },
-  { item: '鸡蛋', qty: 300, unit: '枚', updatedAt: new Date().toLocaleString() },
-]);
-const doCheck = () => {
-  alert('已触发库存盘点（演示）');
-};
-const onExportCsv = () =>
-  exportCsv('库存盘点', rows.value, {
-    item: '商品',
-    qty: '库存',
-    unit: '单位',
-    updatedAt: '更新时间',
-  });
+import { api } from '../services/api';
+const rows = ref<any[]>([]);
+const products = ref<any[]>([]);
+function productName(id: string){ return products.value.find((p:any)=>p.id===id)?.name || id; }
+async function load(){ rows.value = await api.invStock(); products.value = await api.invProducts(); }
+async function doCheck(){ if (rows.value.length>0) await api.invStocktake({ productId: rows.value[0].productId, qty: rows.value[0].qty }); await load(); }
+const onExportCsv = () => exportCsv('库存盘点', rows.value, { productId: '商品ID', qty: '库存', updatedAt: '更新时间' });
+onMounted(()=>load());
 </script>

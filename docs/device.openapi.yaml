@@ -1,0 +1,127 @@
+openapi: 3.1.0
+info:
+  title: Device Integration API
+  version: 0.1.0
+  description: Third-party device interface for morning check integration.
+servers:
+  - url: http://localhost:3000
+paths:
+  /device/morningChecker/employeeList:
+    get:
+      summary: Get employee list
+      parameters:
+        - name: equipmentCode
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statusCode: { type: integer }
+                  message: { type: string }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        userId: { type: string }
+                        name: { type: string }
+                        post: { type: string }
+                        portraitPhoto: { type: string }
+                        healthStartTime: { type: string }
+                        healthEndTime: { type: string }
+                        healthNumber: { type: string }
+                        healthUrl: { type: string }
+                        updateTime: { type: string }
+  /device/morningChecker/checkData:
+    post:
+      summary: Submit morning check data
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                equipmentCode: { type: string }
+                uuid: { type: string }
+                userId: { type: string }
+                foreheadTemp: { type: number }
+                checkTime: { type: string }
+                abnormalTemp: { type: string }
+                normalTemperatureRange: { type: string }
+                handCheckResult: { type: string }
+                healthAskResult: { type: string }
+                health: { oneOf: [{ type: string }, { type: integer }] }
+                faceFile: { type: string, format: binary }
+                palmFile: { type: string, format: binary }
+                backOfHandFile: { type: string, format: binary }
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckData'
+      responses:
+        '200':
+          description: OK
+  /device/morningChecker/heartbeatInfo:
+    post:
+      summary: Heartbeat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                machineCode: { type: string }
+                equipmentCode: { type: string }
+      responses:
+        '200': { description: OK }
+  /device/morning/getSymptomList:
+    get:
+      summary: Get symptom list
+      parameters:
+        - name: equipmentCode
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+  /device/face/employeeupload:
+    post:
+      summary: Upload face
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                deviceId: { type: string }
+                userId: { type: string }
+                multipartFiles: { type: string, format: binary }
+      responses:
+        '200': { description: OK }
+components:
+  schemas:
+    CheckData:
+      type: object
+      properties:
+        equipmentCode: { type: string }
+        uuid: { type: string }
+        userId: { type: string }
+        foreheadTemp: { type: number }
+        checkTime: { type: string }
+        abnormalTemp: { type: string }
+        normalTemperatureRange: { type: string }
+        handCheckResult: { type: string }
+        healthAskResult: { type: string }
+        health: { oneOf: [{ type: string }, { type: integer }] }
+  securitySchemes:
+    mg_md5:
+      type: http
+      scheme: bearer
+      description: MD5 signature (ASCII sort + key), controlled by x-feature-flags.signature
+x-feature-flags:
+  signature: false

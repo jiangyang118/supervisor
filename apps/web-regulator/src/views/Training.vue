@@ -3,34 +3,87 @@
     <template #header>
       <div style="display: flex; align-items: center; justify-content: space-between">
         <span>培训考试监管</span>
-        <div>
-          <el-button @click="onExportCsv">导出台账</el-button>
-        </div>
       </div>
     </template>
     <el-tabs v-model="tab">
-      <el-tab-pane label="培训课程" name="courses">
+      <el-tab-pane label="培训台账" name="courses">
+        <div style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center">
+          <el-select
+            v-model="filters.schoolId"
+            placeholder="选择学校(可选)"
+            clearable
+            style="min-width: 240px"
+          >
+            <el-option v-for="s in schools" :key="s.id" :label="s.name" :value="s.id" />
+          </el-select>
+          <el-button @click="loadCourses">查询</el-button>
+          <el-button @click="exportCoursesCsv">导出 CSV</el-button>
+        </div>
         <el-table :data="courses" size="small" border>
-          <el-table-column prop="id" label="课程ID" width="140" />
-          <el-table-column prop="title" label="标题" />
-          <el-table-column prop="school" label="学校" />
+          <el-table-column prop="id" label="课程ID" width="160" />
+          <el-table-column prop="title" label="课程标题" />
+          <el-table-column prop="school" label="学校" width="180" />
+          <el-table-column prop="status" label="状态" width="120" />
+          <el-table-column prop="createdAt" label="创建时间" width="200" />
         </el-table>
       </el-tab-pane>
-      <el-tab-pane label="考试" name="exams">
+      <el-tab-pane label="考试台账" name="exams">
+        <div style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center">
+          <el-select
+            v-model="filters.schoolId"
+            placeholder="选择学校(可选)"
+            clearable
+            style="min-width: 240px"
+          >
+            <el-option v-for="s in schools" :key="s.id" :label="s.name" :value="s.id" />
+          </el-select>
+          <el-button @click="loadExams">查询</el-button>
+          <el-button @click="exportExamsCsv">导出 CSV</el-button>
+        </div>
         <el-table :data="exams" size="small" border>
-          <el-table-column prop="id" label="考试ID" width="140" />
-          <el-table-column prop="title" label="标题" />
-          <el-table-column prop="strategy" label="策略" />
+          <el-table-column prop="id" label="考试ID" width="160" />
+          <el-table-column prop="title" label="考试标题" />
+          <el-table-column prop="school" label="学校" width="180" />
+          <el-table-column prop="passScore" label="及格分" width="100" />
           <el-table-column prop="status" label="状态" width="120" />
+          <el-table-column prop="createdAt" label="创建时间" width="200" />
         </el-table>
       </el-tab-pane>
       <el-tab-pane label="成绩结果" name="results">
+        <div
+          style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap"
+        >
+          <el-select
+            v-model="filters.schoolId"
+            placeholder="选择学校(可选)"
+            clearable
+            style="min-width: 240px"
+          >
+            <el-option v-for="s in schools" :key="s.id" :label="s.name" :value="s.id" />
+          </el-select>
+          <el-input
+            v-model="filters.examId"
+            placeholder="考试ID(可选)"
+            clearable
+            style="width: 220px"
+          />
+          <el-input
+            v-model="filters.user"
+            placeholder="人员(可选)"
+            clearable
+            style="width: 220px"
+          />
+          <el-button @click="loadResults">查询</el-button>
+          <el-button @click="exportResultsCsv">导出 CSV</el-button>
+        </div>
         <el-table :data="results" size="small" border>
-          <el-table-column prop="id" label="记录ID" width="140" />
-          <el-table-column prop="school" label="学校" />
-          <el-table-column prop="user" label="人员" />
-          <el-table-column prop="score" label="得分" width="120" />
-          <el-table-column prop="passed" label="结果" width="120" />
+          <el-table-column prop="id" label="记录ID" width="160" />
+          <el-table-column prop="school" label="学校" width="180" />
+          <el-table-column prop="examId" label="考试ID" width="160" />
+          <el-table-column prop="user" label="人员" width="160" />
+          <el-table-column prop="score" label="得分" width="100" />
+          <el-table-column prop="passed" label="结果" width="100" />
+          <el-table-column prop="submittedAt" label="提交时间" width="200" />
         </el-table>
       </el-tab-pane>
     </el-tabs>
@@ -38,22 +91,84 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { exportCsv } from '../utils/export';
-const tab = ref('courses');
-const courses = ref([{ id: 'CRS-001', title: '后厨卫生规范', school: '示例一中' }]);
-const exams = ref([
-  { id: 'EX-001', title: '卫生规范考试', strategy: '乱序+自动判卷', status: '进行中' },
-]);
-const results = ref([
-  { id: 'RES-001', school: '示例二小', user: '张三', score: 92, passed: '合格' },
-]);
-const onExportCsv = () =>
-  exportCsv('培训考试台账', results.value as any, {
-    id: '记录ID',
-    school: '学校',
-    user: '人员',
-    score: '得分',
-    passed: '结果',
+import { ref, onMounted } from 'vue';
+import { api } from '../services/api';
+
+const tab = ref<'courses' | 'exams' | 'results'>('courses');
+const schools = ref<Array<{ id: string; name: string }>>([]);
+const filters = ref<{ schoolId?: string; examId?: string; user?: string }>({
+  schoolId: undefined,
+  examId: '',
+  user: '',
+});
+
+const courses = ref<any[]>([]);
+const exams = ref<any[]>([]);
+const results = ref<any[]>([]);
+
+async function loadSchools() {
+  const stats = await api.schools();
+  schools.value = (stats || []).map((s: any) => ({ id: s.id, name: s.name }));
+}
+async function loadCourses() {
+  const { items } = await api.ledgerTraining({ schoolId: filters.value.schoolId });
+  courses.value = items;
+}
+async function loadExams() {
+  const { items } = await api.ledgerExams({ schoolId: filters.value.schoolId });
+  exams.value = items;
+}
+async function loadResults() {
+  const { items } = await api.ledgerResults({
+    schoolId: filters.value.schoolId,
+    examId: filters.value.examId || undefined,
+    user: filters.value.user || undefined,
   });
+  results.value = items;
+}
+async function exportCoursesCsv() {
+  const csv = await api.ledgerTrainingExportCsv({ schoolId: filters.value.schoolId });
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '培训台账.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+async function exportExamsCsv() {
+  const csv = await api.ledgerExamsExportCsv({ schoolId: filters.value.schoolId });
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '考试台账.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+onMounted(async () => {
+  await loadSchools();
+  await loadCourses();
+  await loadExams();
+});
+// optionally lazy load results when tab selected, but prefetch here for simplicity
+onMounted(async () => {
+  await loadResults();
+});
+
+async function exportResultsCsv() {
+  const csv = await api.ledgerResultsExportCsv({
+    schoolId: filters.value.schoolId,
+    examId: filters.value.examId || undefined,
+    user: filters.value.user || undefined,
+  });
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = '培训考试成绩.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
 </script>

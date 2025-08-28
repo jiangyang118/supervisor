@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/main.js",
     "build": "tsc -p tsconfig.build.json",
-    "dev": "ts-node --swc src/main.ts"
+    "dev": "nodemon"
   },
   "dependencies": {
     "@nestjs/common": "^10.4.4",
@@ -18,8 +18,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "ts-node": "^10.9.2",
     "@swc/core": "^1.7.18",
+    "nodemon": "^3.1.4",
+    "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   }
 }

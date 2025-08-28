@@ -14,12 +14,14 @@
 </template>
 
 <script setup lang="ts">
-import { reactive } from 'vue';
-const form = reactive({
-  name: '示例市市场监管局',
-  contact: '李监管',
-  phone: '010-123456',
-  address: '示例市XX路100号',
-});
-const save = () => alert('已保存（演示）');
+import { reactive, onMounted } from 'vue';
+import { api } from '../services/api';
+const form = reactive<any>({ name: '', contact: '', phone: '', address: '' });
+async function load() {
+  Object.assign(form, await api.sysInfoGet());
+}
+async function save() {
+  await api.sysInfoSave(form);
+}
+onMounted(load);
 </script>

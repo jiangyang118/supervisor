@@ -41,6 +41,7 @@
             <el-menu-item index="/hygiene/inspections">卫生检查台账</el-menu-item>
             <el-menu-item index="/hygiene/assets">固定资产维护</el-menu-item>
           </el-sub-menu>
+          <el-menu-item index="/inspections/tasks">监督检查任务</el-menu-item>
           <el-sub-menu index="inventory">
             <template #title>出入库/食材</template>
             <el-menu-item index="/inventory/items">商品管理</el-menu-item>
@@ -81,6 +82,8 @@
           <el-menu-item index="/food-index">食安指数</el-menu-item>
           <el-sub-menu index="system">
             <template #title>系统配置</template>
+            <el-menu-item index="/system/news">食安资讯</el-menu-item>
+            <el-menu-item index="/system/info-center">资讯中心</el-menu-item>
             <el-menu-item index="/system/announcements">公告公文</el-menu-item>
             <el-menu-item index="/system/canteen">食堂信息</el-menu-item>
             <el-menu-item index="/system/linkage">关联监管端</el-menu-item>

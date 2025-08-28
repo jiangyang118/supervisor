@@ -9,6 +9,7 @@ export type PesticideRecord = {
   sample: string;
   device: string;
   result: PesticideResult;
+  imageUrl?: string;
   remark?: string;
   at: string; // ISO
   source: 'manual' | 'device';
@@ -69,6 +70,7 @@ export class PesticideService {
     sample: string;
     device: string;
     result: PesticideResult;
+    imageUrl?: string;
     remark?: string;
     source?: 'manual' | 'device';
   }) {
@@ -83,6 +85,7 @@ export class PesticideService {
       sample: body.sample,
       device: body.device,
       result: body.result,
+      imageUrl: body.imageUrl,
       remark: body.remark,
       at: this.nowIso(),
       source: body.source || 'manual',

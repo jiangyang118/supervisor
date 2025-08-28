@@ -11,7 +11,8 @@
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="结果">
-        <el-select v-model="filters.result" clearable style="width: 120px">
+        <el-select v-model="filters.result" clearable placeholder="全部" style="width: 120px">
+          <el-option label="全部" value="" />
           <el-option label="合格" value="合格" />
           <el-option label="不合格" value="不合格" />
         </el-select>
@@ -43,7 +44,7 @@
   <el-dialog v-model="createVisible" title="新建卫生检查" width="520px">
     <el-form :model="form" label-width="96px">
       <el-form-item label="结果">
-        <el-select v-model="form.result">
+        <el-select v-model="form.result" placeholder="请选择">
           <el-option label="合格" value="合格" />
           <el-option label="不合格" value="不合格" />
         </el-select>
@@ -66,14 +67,15 @@
 import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 import { ElMessage } from 'element-plus';
 const rows = ref<any[]>([]);
 const filters = reactive<{ result: '' | '合格' | '不合格' | null; range: [Date, Date] | null }>({
-  result: null,
+  result: '' as any,
   range: null,
 });
 async function load() {
-  const params: any = {};
+  const params: any = { schoolId: getCurrentSchoolId() };
   if (filters.result) params.result = filters.result;
   if (filters.range && filters.range.length === 2) {
     params.start = filters.range[0].toISOString();
@@ -105,6 +107,7 @@ async function save() {
   }
   try {
     await api.hygieneCreate({
+      schoolId: getCurrentSchoolId(),
       result: form.result as any,
       by: form.by,
       remark: form.remark || undefined,
@@ -131,5 +134,11 @@ function formatTime(iso: string) {
     return iso;
   }
 }
-onMounted(() => load());
+let off: any = null;
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
+});
 </script>

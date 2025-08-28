@@ -37,6 +37,7 @@ export class PesticideController {
       sample: string;
       device: string;
       result: PesticideResult;
+      imageUrl?: string;
       remark?: string;
     },
   ) {
@@ -51,6 +52,7 @@ export class PesticideController {
       sample: string;
       device: string;
       result: PesticideResult;
+      imageUrl?: string;
       remark?: string;
     },
   ) {

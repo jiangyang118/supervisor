@@ -110,3 +110,9 @@ export const Models = {
   AIEvent,
   Alert,
 };
+
+// Devices (shared enums)
+export const DeviceTypeEnum = z.enum(['GATEWAY', 'CAMERA', 'SCALE', 'SENSOR', 'SMOKE']);
+export type DeviceType = z.infer<typeof DeviceTypeEnum>;
+export const DeviceStatusEnum = z.enum(['ONLINE', 'OFFLINE', 'FAULT']);
+export type DeviceStatus = z.infer<typeof DeviceStatusEnum>;

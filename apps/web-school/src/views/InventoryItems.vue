@@ -13,7 +13,9 @@
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="name" label="名称" />
       <el-table-column prop="unit" label="单位" width="100" />
-      <el-table-column label="分类"><template #default="{ row }">{{ categoryName(row.categoryId) }}</template></el-table-column>
+      <el-table-column label="分类"
+        ><template #default="{ row }">{{ categoryName(row.categoryId) }}</template></el-table-column
+      >
     </el-table>
   </el-card>
 
@@ -26,7 +28,7 @@
         <el-input v-model="form.unit" />
       </el-form-item>
       <el-form-item label="分类">
-        <el-select v-model="form.categoryId" style="width: 240px">
+        <el-select v-model="form.categoryId" placeholder="请选择" style="width: 240px">
           <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
         </el-select>
       </el-form-item>
@@ -39,17 +41,47 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 const rows = ref<any[]>([]);
 const categories = ref<any[]>([]);
 const createVisible = ref(false);
-const form = reactive<{ name: string; unit: string; categoryId?: string }>({ name: '', unit: 'kg' });
-function categoryName(id?: string){ return categories.value.find((c:any)=>c.id===id)?.name || '-'; }
-async function load(){ rows.value = await api.invProducts(); categories.value = await api.invCategories(); }
-const openCreate = () => { form.name=''; form.unit='kg'; form.categoryId = categories.value[0]?.id; createVisible.value = true; };
-async function save(){ await api.invProductCreate(form as any); createVisible.value=false; load(); }
-const onExportCsv = () => exportCsv('商品管理', rows.value, { id: 'ID', name: '名称', unit: '单位', categoryId: '分类ID' });
-onMounted(()=>load());
+const form = reactive<{ name: string; unit: string; categoryId?: string }>({
+  name: '',
+  unit: 'kg',
+});
+function categoryName(id?: string) {
+  return categories.value.find((c: any) => c.id === id)?.name || '-';
+}
+async function load() {
+  rows.value = await api.invProducts(getCurrentSchoolId());
+  categories.value = await api.invCategories();
+}
+const openCreate = () => {
+  form.name = '';
+  form.unit = 'kg';
+  form.categoryId = categories.value[0]?.id;
+  createVisible.value = true;
+};
+async function save() {
+  await api.invProductCreate({ ...form, schoolId: getCurrentSchoolId() } as any);
+  createVisible.value = false;
+  load();
+}
+const onExportCsv = () =>
+  exportCsv('商品管理', rows.value, { id: 'ID', name: '名称', unit: '单位', categoryId: '分类ID' });
+let off: any = null;
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
+});
+onBeforeUnmount(() => {
+  try {
+    off?.();
+  } catch {}
+});
 </script>

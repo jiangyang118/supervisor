@@ -46,7 +46,7 @@
           <template #header>入库/出库</template>
           <el-tabs v-model="ioTab" type="border-card">
             <el-tab-pane label="入库" name="in">
-              <el-table :data="inbounds" size="small" border>
+              <el-table :data="inventoryInbounds" size="small" border>
                 <el-table-column prop="date" label="日期" width="120" />
                 <el-table-column prop="item" label="商品" />
                 <el-table-column prop="qty" label="数量" width="100" />
@@ -54,7 +54,7 @@
               </el-table>
             </el-tab-pane>
             <el-tab-pane label="出库" name="out">
-              <el-table :data="outbounds" size="small" border>
+              <el-table :data="inventoryOutbounds" size="small" border>
                 <el-table-column prop="date" label="日期" width="120" />
                 <el-table-column prop="item" label="商品" />
                 <el-table-column prop="qty" label="数量" width="100" />
@@ -264,10 +264,10 @@ onMounted(() => {
 watch(tasks, (v) => localStorage.setItem('fs_home_tasks', JSON.stringify(v)), { deep: true });
 watch(doneIds, (v) => localStorage.setItem('fs_home_tasks_done', JSON.stringify(v)));
 
-// 入库/出库数据
+// 入库/出库数据 - 从专用模块获取，确保数据一致性
 const ioTab = ref<'in' | 'out'>('in');
-const inbounds = ref<any[]>([]);
-const outbounds = ref<any[]>([]);
+const inventoryInbounds = ref<any[]>([]);
+const inventoryOutbounds = ref<any[]>([]);
 
 // 卫生上报与设备
 const hygienes = ref<any[]>([]);
@@ -321,44 +321,133 @@ const exportPdf = () => alert('导出 PDF（演示）');
 const exportDailyCsv = () => alert('导出 CSV（演示）');
 const exportFeedbackCsv = () =>
   exportCsv('家长评分明细', feedbacks.value, { parent: '家长', rating: '评分', comment: '评论' });
+
+// 格式化库存数据为概览页所需格式
+const formatInventoryData = (inventoryData: any[], type: 'in' | 'out') => {
+  return inventoryData.map((item) => {
+    // 提取产品名称、供应商名称等显示信息
+    const itemName = item.product?.name || item.productId; // 优先使用关联的产品名称
+    const supplierName = item.supplier?.name || item.supplierId || '未知供应商';
+    const purpose = item.purpose || '日常使用';
+
+    // 构造适合概览页显示的数据结构
+    return {
+      id: item.id,
+      date: item.date || new Date().toISOString().slice(0, 10),
+      item: itemName,
+      qty: item.qty || 0,
+      supplier: type === 'in' ? supplierName : undefined,
+      purpose: type === 'out' ? purpose : undefined,
+      // 保留原始数据，便于后续扩展
+      originalData: item,
+    };
+  });
+};
+
+// 计算KPI数据 - 统一从模块数据计算
+const calculateKpi = (inbounds: any[], outbounds: any[]) => {
+  // 计算今日入库总量
+  const today = new Date().toISOString().slice(0, 10);
+  const todayInbounds = inbounds.filter((item) => item.date === today);
+  const todayOutbounds = outbounds.filter((item) => item.date === today);
+
+  return {
+    inboundQty: todayInbounds.reduce((sum, item) => sum + (item.qty || 0), 0),
+    outboundQty: todayOutbounds.reduce((sum, item) => sum + (item.qty || 0), 0),
+    // 其他KPI指标也可以从各模块数据中计算
+    hygienePassRate: hygienePassRate.value,
+    deviceOnlineRate: deviceOnlineRate.value,
+    ai: aiTotal.value,
+  };
+};
+
+// 优化数据获取逻辑，确保与模块数据一致性
 async function refresh() {
+  const schoolId = getCurrentSchoolId();
   try {
-    const d = await api.schoolDaily(getCurrentSchoolId());
-    inbounds.value = d.inbound || [];
-    outbounds.value = d.outbound || [];
-    hygienes.value = d.hygiene || [];
-    devices.value = d.devices || [];
-    aiTypeData.value = d.aiByType || [];
-    kpi.value = d.kpi || {};
-  } catch {
-    // 回退到拆分接口
-    try {
-      const [inb, outb, hyg, dev, evs] = await Promise.all([
-        api.inbound(),
-        api.outbound(),
-        api.hygiene(),
-        api.devices(),
-        api.schoolEvents(getCurrentSchoolId()),
-      ]);
-      inbounds.value = inb;
-      outbounds.value = outb;
-      hygienes.value = hyg;
-      devices.value = dev;
-      const m: Record<string, number> = {};
-      for (const e of evs) m[e.type] = (m[e.type] || 0) + 1;
-      aiTypeData.value = Object.entries(m).map(([type, count]) => ({
-        type,
-        count: count as number,
-      }));
-    } catch {
-      aiTypeData.value = [];
+    // 并行获取各个模块的数据
+    const [
+      inventoryInboundData,
+      inventoryOutboundData,
+      hygieneData,
+      deviceData,
+      eventData,
+      feedbackData,
+      stockData,
+    ] = await Promise.all([
+      api.invInboundList(schoolId), // 使用入库模块的API
+      api.invOutboundList(schoolId), // 使用出库模块的API
+      api.hygiene(),
+      api.devices(),
+      api.schoolEvents(schoolId),
+      api.feedback(),
+      api.invStock(schoolId), // 获取库存数据，用于完整性检查
+    ]);
+
+    // 格式化模块数据为概览页所需格式
+    inventoryInbounds.value = formatInventoryData(inventoryInboundData || [], 'in');
+    inventoryOutbounds.value = formatInventoryData(inventoryOutboundData || [], 'out');
+
+    // 设置其他模块数据
+    hygienes.value = hygieneData || [];
+    devices.value = deviceData || [];
+    feedbacks.value = feedbackData || [];
+
+    // 处理AI事件数据
+    const eventMap: Record<string, number> = {};
+    // 确保eventData是可迭代的数组
+    const safeEventData = Array.isArray(eventData) ? eventData : [];
+    for (const e of safeEventData) {
+      eventMap[e.type] = (eventMap[e.type] || 0) + 1;
     }
-  }
-  // 家长反馈可单独获取
-  try {
-    feedbacks.value = await api.feedback();
-  } catch {
-    feedbacks.value = [];
+    aiTypeData.value = Object.entries(eventMap).map(([type, count]) => ({
+      type,
+      count: count as number,
+    }));
+
+    // 从模块数据计算KPI指标，确保数据一致性
+    kpi.value = calculateKpi(inventoryInbounds.value, inventoryOutbounds.value);
+
+    console.log('数据刷新完成，概览页数据已与模块数据同步');
+  } catch (error) {
+    console.error('数据刷新失败:', error);
+
+    // 回退方案: 尝试使用原来的API获取数据
+    try {
+      const d = await api.schoolDaily(schoolId);
+
+      // 格式化备用数据
+      inventoryInbounds.value = d.inbound
+        ? d.inbound.map((item: any) => ({
+            ...item,
+            originalData: item,
+          }))
+        : [];
+
+      inventoryOutbounds.value = d.outbound
+        ? d.outbound.map((item: any) => ({
+            ...item,
+            originalData: item,
+          }))
+        : [];
+
+      hygienes.value = d.hygiene || [];
+      devices.value = d.devices || [];
+      aiTypeData.value = d.aiByType || [];
+      kpi.value = d.kpi || {};
+
+      // 单独获取家长反馈
+      feedbacks.value = await api.feedback();
+    } catch {
+      // 彻底失败时的空数据处理
+      inventoryInbounds.value = [];
+      inventoryOutbounds.value = [];
+      hygienes.value = [];
+      devices.value = [];
+      aiTypeData.value = [];
+      feedbacks.value = [];
+      kpi.value = {};
+    }
   }
 }
 onMounted(() => {

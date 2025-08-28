@@ -11,11 +11,39 @@
       </el-table-column>
     </el-table>
   </el-card>
+  <el-dialog v-model="playerVisible" title="实时预览" width="720px">
+    <div style="width: 100%; height: 400px">
+      <VideoPlayer :hls-url="current?.hlsUrl" :title="current?.name" />
+    </div>
+    <template #footer><el-button @click="playerVisible = false">关闭</el-button></template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-type Cam = { id: string; name: string };
-const cameras = ref<Cam[]>([{ id: 'S-CH-001', name: '后厨-操作台' }]);
-const preview = (row: Cam) => alert(`预览 ${row.name}（演示）`);
+import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { api } from '../../services/api';
+import { getCurrentSchoolId } from '../../utils/school';
+import VideoPlayer from '../../components/VideoPlayer.vue';
+type Cam = { id: string; name: string; hlsUrl: string };
+const cameras = ref<Cam[]>([]);
+const playerVisible = ref(false);
+const current = ref<Cam | null>(null);
+function preview(row: Cam) {
+  current.value = row;
+  playerVisible.value = true;
+}
+let off: any = null;
+onMounted(async () => {
+  cameras.value = await api.brightCameras(getCurrentSchoolId());
+  const h = async () => {
+    cameras.value = await api.brightCameras(getCurrentSchoolId());
+  };
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
+});
+onBeforeUnmount(() => {
+  try {
+    off?.();
+  } catch {}
+});
 </script>

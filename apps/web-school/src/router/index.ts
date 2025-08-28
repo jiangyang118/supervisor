@@ -39,6 +39,10 @@ const routes: RouteRecordRaw[] = [
   { path: '/disinfection', component: () => import('../views/Disinfection.vue') },
   { path: '/waste', component: () => import('../views/Waste.vue') },
   { path: '/hygiene/inspections', component: () => import('../views/HygieneInspections.vue') },
+  // Inspections tasks
+  { path: '/inspections/tasks', component: () => import('../views/InspectionsTasks.vue') },
+  { path: '/system/news', component: () => import('../views/SystemNews.vue') },
+  { path: '/system/info-center', component: () => import('../views/InfoCenter.vue') },
   { path: '/hygiene/assets', component: () => import('../views/AssetMaintenance.vue') },
 
   // Inventory & suppliers
@@ -74,6 +78,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/devices', component: () => import('../views/Devices.vue') },
   { path: '/analytics', component: () => import('../views/Analytics.vue') },
   { path: '/food-index', component: () => import('../views/FoodIndex.vue') },
+  // Mobile H5 for risk task
+  { path: '/risk/task/:id', component: () => import('../views/RiskTaskH5.vue') },
 
   // System
   { path: '/system/announcements', component: () => import('../views/SystemAnnouncements.vue') },

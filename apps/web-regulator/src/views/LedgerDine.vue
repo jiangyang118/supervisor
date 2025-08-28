@@ -10,7 +10,15 @@
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="学校">
-        <el-input v-model="filters.school" />
+        <el-select
+          v-model="filters.schoolId"
+          filterable
+          clearable
+          placeholder="全部学校"
+          style="min-width: 220px"
+        >
+          <el-option v-for="s in schools" :key="s.id" :label="s.name" :value="s.id" />
+        </el-select>
       </el-form-item>
       <el-form-item label="餐次">
         <el-select v-model="filters.meal" clearable>
@@ -19,6 +27,10 @@
           <el-option label="晚餐" value="晚餐" />
         </el-select>
       </el-form-item>
+      <el-form-item label="日期">
+        <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+      </el-form-item>
+      <el-form-item><el-button type="primary" @click="applyFilters">查询</el-button></el-form-item>
     </el-form>
     <el-table :data="rows" size="small" border>
       <el-table-column prop="id" label="ID" width="140" />
@@ -32,8 +44,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
+import { api } from '../services/api';
 type Row = {
   id: string;
   school: string;
@@ -42,19 +55,28 @@ type Row = {
   comment: string;
   at: string;
 };
-const rows = ref<Row[]>([
-  {
-    id: 'DW-001',
-    school: '示例二小',
-    meal: '午餐',
-    people: '校长,家长代表',
-    comment: '满意',
-    at: new Date().toLocaleString(),
-  },
-]);
-const filters = reactive<{ school: string; meal: string | undefined }>({
-  school: '',
+const rows = ref<Row[]>([]);
+const schools = ref<Array<{ id: string; name: string }>>([]);
+const filters = reactive<{ schoolId?: string; meal?: string; range: [Date, Date] | null }>({
+  schoolId: undefined,
   meal: undefined,
+  range: null,
+});
+async function load() {
+  const params: any = {};
+  if (filters.schoolId) params.schoolId = filters.schoolId;
+  if (filters.meal) params.meal = filters.meal;
+  if (filters.range && filters.range.length === 2) {
+    params.start = filters.range[0].toISOString();
+    params.end = filters.range[1].toISOString();
+  }
+  const res = await api.ledgerDine(params);
+  rows.value = res.items as any;
+}
+const applyFilters = () => load();
+onMounted(async () => {
+  schools.value = await api.schools();
+  await load();
 });
 const onExportCsv = () =>
   exportCsv('陪餐台账-监管', rows.value, {

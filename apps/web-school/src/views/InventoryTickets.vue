@@ -24,7 +24,7 @@
         <el-input v-model="form.item" />
       </el-form-item>
       <el-form-item label="类型">
-        <el-select v-model="form.type">
+        <el-select v-model="form.type" placeholder="请选择">
           <el-option label="检验报告" value="检验报告" />
           <el-option label="合格证" value="合格证" />
           <el-option label="发票" value="发票" />

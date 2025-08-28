@@ -10,13 +10,21 @@
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="学校">
-        <el-input v-model="filters.school" />
+        <el-select
+          v-model="filters.schoolId"
+          filterable
+          clearable
+          placeholder="全部学校"
+          style="min-width: 220px"
+        >
+          <el-option v-for="s in schools" :key="s.id" :label="s.name" :value="s.id" />
+        </el-select>
       </el-form-item>
       <el-form-item label="日期">
         <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
       </el-form-item>
       <el-form-item>
-        <el-button @click="applyFilters">查询</el-button>
+        <el-button type="primary" @click="applyFilters">查询</el-button>
       </el-form-item>
     </el-form>
     <el-table :data="rows" size="small" border>
@@ -31,8 +39,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
+import { api } from '../services/api';
 type Row = {
   id: string;
   school: string;
@@ -41,21 +50,27 @@ type Row = {
   duration: number;
   at: string;
 };
-const rows = ref<Row[]>([
-  {
-    id: 'SP-001',
-    school: '示例一中',
-    sample: '午餐菜品A',
-    weight: 150,
-    duration: 48,
-    at: new Date().toLocaleString(),
-  },
-]);
-const filters = reactive<{ school: string; range: [Date, Date] | null }>({
-  school: '',
+const rows = ref<Row[]>([]);
+const schools = ref<Array<{ id: string; name: string }>>([]);
+const filters = reactive<{ schoolId?: string; range: [Date, Date] | null }>({
+  schoolId: undefined,
   range: null,
 });
-const applyFilters = () => {};
+async function load() {
+  const params: any = {};
+  if (filters.schoolId) params.schoolId = filters.schoolId;
+  if (filters.range && filters.range.length === 2) {
+    params.start = filters.range[0].toISOString();
+    params.end = filters.range[1].toISOString();
+  }
+  const res = await api.ledgerSampling(params);
+  rows.value = res.items as any;
+}
+const applyFilters = () => load();
+onMounted(async () => {
+  schools.value = await api.schools();
+  await load();
+});
 const onExportCsv = () =>
   exportCsv('留样台账-监管', rows.value, {
     id: 'ID',

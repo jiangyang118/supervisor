@@ -37,7 +37,12 @@
           <el-menu-item index="/training">培训考试监管</el-menu-item>
           <el-menu-item index="/food-waste">食品浪费监管</el-menu-item>
           <el-menu-item index="/public">公示监管</el-menu-item>
-          <el-menu-item index="/inspections">监督检查</el-menu-item>
+          <el-sub-menu index="inspections">
+            <template #title>监督检查</template>
+            <el-menu-item index="/inspections">任务管理</el-menu-item>
+            <el-menu-item index="/inspections/inspectors">检查人员配置</el-menu-item>
+            <el-menu-item index="/inspections/config">检查配置</el-menu-item>
+          </el-sub-menu>
           <el-menu-item index="/warnings">预警汇总</el-menu-item>
           <el-menu-item index="/analytics">大数据统计</el-menu-item>
           <el-menu-item index="/food-index">食安指数</el-menu-item>
@@ -46,6 +51,9 @@
             <el-menu-item index="/system/info">监管单位信息</el-menu-item>
             <el-menu-item index="/system/users">用户与角色</el-menu-item>
             <el-menu-item index="/system/app">APP 下载</el-menu-item>
+            <el-menu-item index="/system/news">食安资讯</el-menu-item>
+            <el-menu-item index="/system/linkage">平台关联</el-menu-item>
+            <el-menu-item index="/system/roles">角色权限</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>

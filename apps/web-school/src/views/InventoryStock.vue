@@ -19,14 +19,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 const rows = ref<any[]>([]);
 const products = ref<any[]>([]);
-function productName(id: string){ return products.value.find((p:any)=>p.id===id)?.name || id; }
-async function load(){ rows.value = await api.invStock(); products.value = await api.invProducts(); }
-async function doCheck(){ if (rows.value.length>0) await api.invStocktake({ productId: rows.value[0].productId, qty: rows.value[0].qty }); await load(); }
-const onExportCsv = () => exportCsv('库存盘点', rows.value, { productId: '商品ID', qty: '库存', updatedAt: '更新时间' });
-onMounted(()=>load());
+function productName(id: string) {
+  return products.value.find((p: any) => p.id === id)?.name || id;
+}
+async function load() {
+  rows.value = await api.invStock(getCurrentSchoolId());
+  products.value = await api.invProducts(getCurrentSchoolId());
+}
+async function doCheck() {
+  if (rows.value.length > 0)
+    await api.invStocktake({
+      productId: rows.value[0].productId,
+      qty: rows.value[0].qty,
+      schoolId: getCurrentSchoolId(),
+    });
+  await load();
+}
+const onExportCsv = () =>
+  exportCsv('库存盘点', rows.value, { productId: '商品ID', qty: '库存', updatedAt: '更新时间' });
+let off: any = null;
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
+});
+onBeforeUnmount(() => {
+  try {
+    off?.();
+  } catch {}
+});
 </script>

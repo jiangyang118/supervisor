@@ -18,7 +18,8 @@
         <el-input v-model="filters.sample" />
       </el-form-item>
       <el-form-item label="异常">
-        <el-select v-model="filters.exception" clearable style="width: 120px">
+        <el-select v-model="filters.exception" clearable placeholder="全部" style="width: 120px">
+          <el-option label="全部" value="" />
           <el-option label="仅异常" value="true" />
           <el-option label="仅正常" value="false" />
         </el-select>
@@ -125,6 +126,7 @@
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api, API_BASE } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 import { ElMessage } from 'element-plus';
 
 const handlePageChange = (p: number) => {
@@ -143,10 +145,14 @@ const filters = reactive<{
   sample: string;
   exception: '' | 'true' | 'false' | null;
   range: [Date, Date] | null;
-}>({ sample: '', exception: 'true', range: null });
+}>({ sample: '', exception: '' as any, range: null });
 
 async function load() {
-  const params: any = { page: page.value, pageSize: pageSize.value };
+  const params: any = {
+    page: page.value,
+    pageSize: pageSize.value,
+    schoolId: getCurrentSchoolId(),
+  };
   if (filters.sample) params.sample = filters.sample;
   if (filters.exception) params.exception = filters.exception;
   if (filters.range && filters.range.length === 2) {
@@ -184,7 +190,7 @@ async function save() {
     return;
   }
   try {
-    await api.samplingCreate(form as any);
+    await api.samplingCreate({ ...form, schoolId: getCurrentSchoolId() } as any);
     ElMessage.success('已上报');
     createVisible.value = false;
     load();
@@ -256,12 +262,22 @@ function onExportExceptions() {
   });
 }
 
+let off: any = null;
 onMounted(() => {
   load();
   connectSSE();
+  const h = () => {
+    page.value = 1;
+    load();
+  };
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
 });
 onBeforeUnmount(() => {
   es?.close();
+  try {
+    off?.();
+  } catch {}
 });
 </script>
 

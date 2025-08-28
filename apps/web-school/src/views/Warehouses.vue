@@ -14,10 +14,16 @@
       <el-table-column prop="name" label="名称" />
       <el-table-column prop="location" label="位置" />
       <el-table-column prop="capacity" label="容量(立方米)" width="160" />
+      <el-table-column label="操作" width="200">
+        <template #default="{ row }">
+          <el-button size="small" @click="openEdit(row)">编辑</el-button>
+          <el-button size="small" type="danger" @click="del(row)">删除</el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </el-card>
 
-  <el-dialog v-model="createVisible" title="新增仓库" width="520px">
+  <el-dialog v-model="createVisible" :title="editId ? '编辑仓库' : '新增仓库'" width="520px">
     <el-form :model="form" label-width="120px">
       <el-form-item label="名称">
         <el-input v-model="form.name" />
@@ -37,24 +43,59 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { id: string; name: string; location: string; capacity: number };
-const rows = ref<Row[]>([{ id: 'WH-001', name: '主仓库', location: '食堂东侧', capacity: 100 }]);
+import { api } from '../services/api';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { getCurrentSchoolId } from '../utils/school';
+type Row = { id: string; name: string; location?: string; capacity?: number };
+const rows = ref<Row[]>([]);
 const createVisible = ref(false);
+const editId = ref<string | null>(null);
 const form = reactive({ name: '', location: '', capacity: 0 });
+async function load() {
+  rows.value = await api.invWarehouses(getCurrentSchoolId());
+}
 const openCreate = () => {
+  editId.value = null;
+  Object.assign(form, { name: '', location: '', capacity: 0 });
   createVisible.value = true;
 };
-const save = () => {
-  rows.value.unshift({
-    id: `WH-${String(rows.value.length + 1).padStart(3, '0')}`,
-    name: form.name,
-    location: form.location,
-    capacity: form.capacity,
+const openEdit = (row: Row) => {
+  editId.value = row.id;
+  Object.assign(form, {
+    name: row.name,
+    location: row.location || '',
+    capacity: row.capacity || 0,
   });
+  createVisible.value = true;
+};
+const save = async () => {
+  if (!form.name) return ElMessage.warning('请填写名称');
+  if (editId.value) await api.invWarehouseUpdate(editId.value, form);
+  else await api.invWarehouseCreate({ ...form, schoolId: getCurrentSchoolId() });
+  ElMessage.success('已保存');
   createVisible.value = false;
+  await load();
+};
+const del = async (row: Row) => {
+  await ElMessageBox.confirm(`确认删除仓库“${row.name}”？`, '提示');
+  await api.invWarehouseDelete(row.id);
+  ElMessage.success('已删除');
+  await load();
 };
 const onExportCsv = () =>
   exportCsv('仓库信息', rows.value, { id: 'ID', name: '名称', location: '位置', capacity: '容量' });
+let off: any = null;
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
+});
+onBeforeUnmount(() => {
+  try {
+    off?.();
+  } catch {}
+});
 </script>

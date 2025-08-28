@@ -16,14 +16,16 @@
     </template>
     <el-form :inline="true" :model="filters" class="filters">
       <el-form-item label="餐次">
-        <el-select v-model="filters.meal" clearable>
+        <el-select v-model="filters.meal" clearable placeholder="全部">
+          <el-option label="全部" value="" />
           <el-option label="早餐" value="早餐" />
           <el-option label="午餐" value="午餐" />
           <el-option label="晚餐" value="晚餐" />
         </el-select>
       </el-form-item>
       <el-form-item label="异常">
-        <el-select v-model="filters.exception" clearable style="width: 120px">
+        <el-select v-model="filters.exception" clearable placeholder="全部" style="width: 120px">
+          <el-option label="全部" value="" />
           <el-option label="仅异常" value="true" />
           <el-option label="仅正常" value="false" />
         </el-select>
@@ -92,7 +94,7 @@
   <el-dialog v-model="createVisible" title="新增陪餐" width="520px">
     <el-form :model="form" label-width="96px">
       <el-form-item label="餐次" required>
-        <el-select v-model="form.meal">
+        <el-select v-model="form.meal" placeholder="请选择">
           <el-option label="早餐" value="早餐" />
           <el-option label="午餐" value="午餐" />
           <el-option label="晚餐" value="晚餐" />
@@ -139,6 +141,7 @@
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api, API_BASE } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 import { ElMessage } from 'element-plus';
 
 const handlePageChange = (p: number) => {
@@ -157,10 +160,14 @@ const filters = reactive<{
   meal: string | undefined;
   exception: '' | 'true' | 'false' | null;
   range: [Date, Date] | null;
-}>({ meal: '早餐', exception: 'true', range: null });
+}>({ meal: '' as any, exception: '' as any, range: null });
 
 async function load() {
-  const params: any = { page: page.value, pageSize: pageSize.value };
+  const params: any = {
+    page: page.value,
+    pageSize: pageSize.value,
+    schoolId: getCurrentSchoolId(),
+  };
   if (filters.meal) params.meal = filters.meal;
   if (filters.exception) params.exception = filters.exception;
   if (filters.range && filters.range.length === 2) {
@@ -200,6 +207,7 @@ async function save() {
       return;
     }
     await api.dineCreate({
+      schoolId: getCurrentSchoolId(),
       meal: form.meal,
       people,
       imageUrl: form.imageUrl || undefined,
@@ -217,7 +225,7 @@ const qrVisible = ref(false);
 const qr = reactive<{ link: string; token?: string }>({ link: '' });
 async function generateQr() {
   try {
-    const r = await api.dineQrCreate(filters.meal || '午餐');
+    const r = await api.dineQrCreate(filters.meal || '午餐', getCurrentSchoolId());
     qr.link = `${API_BASE}${r.link}`;
     qr.token = r.token;
     qrVisible.value = true;
@@ -284,12 +292,22 @@ function formatTime(iso: string) {
   }
 }
 
+let off: any = null;
 onMounted(() => {
   load();
   connectSSE();
+  const h = () => {
+    page.value = 1;
+    load();
+  };
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
 });
 onBeforeUnmount(() => {
   es?.close();
+  try {
+    off?.();
+  } catch {}
 });
 </script>
 

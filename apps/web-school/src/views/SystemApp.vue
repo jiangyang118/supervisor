@@ -1,27 +1,34 @@
 <template>
   <el-card>
     <template #header>APP 下载</template>
-    <p>学校端移动 APP 下载（演示占位）</p>
-    <el-row :gutter="12">
-      <el-col :span="8"
-        ><el-card
-          ><template #header>Android</template
-          ><el-button type="primary">下载 APK</el-button></el-card
-        ></el-col
-      >
-      <el-col :span="8"
-        ><el-card
-          ><template #header>iOS</template><el-button type="primary">App Store</el-button></el-card
-        ></el-col
-      >
-      <el-col :span="8"
-        ><el-card
-          ><template #header>版本</template>
-          <div>v0.1.0</div></el-card
-        ></el-col
-      >
-    </el-row>
+    <el-table :data="apps" size="small" border>
+      <el-table-column prop="platform" label="平台" width="140" />
+      <el-table-column prop="version" label="版本" width="120" />
+      <el-table-column prop="url" label="下载链接" />
+      <el-table-column label="操作" width="260"
+        ><template #default="{ row }">
+          <a :href="row.url" target="_blank"
+            ><el-button size="small" type="primary">下载</el-button></a
+          >
+          <img
+            :src="qr(row.url)"
+            alt="QR"
+            style="width: 90px; height: 90px; margin-left: 8px"
+          /> </template
+      ></el-table-column>
+    </el-table>
   </el-card>
 </template>
 
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { ref } from 'vue';
+import { api } from '../services/api';
+const apps = ref<any[]>([]);
+async function load() {
+  apps.value = await api.sysApps();
+}
+function qr(url: string) {
+  return `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent(url)}`;
+}
+load();
+</script>

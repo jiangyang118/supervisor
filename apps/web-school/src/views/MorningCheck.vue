@@ -19,7 +19,7 @@
         <el-input v-model="filters.staff" placeholder="姓名/工号" />
       </el-form-item>
       <el-form-item label="结果">
-        <el-select v-model="filters.result" clearable style="width: 120px">
+        <el-select v-model="filters.result" clearable placeholder="请选择" style="width: 120px">
           <el-option label="正常" value="正常" />
           <el-option label="异常" value="异常" />
         </el-select>
@@ -119,6 +119,7 @@
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api, API_BASE } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 import { ElMessage } from 'element-plus';
 
 type Row = {
@@ -152,7 +153,11 @@ const filters = reactive<{
 
 async function load() {
   try {
-    const params: any = { page: page.value, pageSize: pageSize.value };
+    const params: any = {
+      page: page.value,
+      pageSize: pageSize.value,
+      schoolId: getCurrentSchoolId(),
+    };
     if (filters.staff) params.staff = filters.staff;
     if (filters.result) params.result = filters.result;
     if (filters.range && filters.range.length === 2) {
@@ -186,7 +191,7 @@ async function save() {
     return;
   }
   try {
-    await api.morningCreate({ staff: form.staff, temp: form.temp });
+    await api.morningCreate({ staff: form.staff, temp: form.temp, schoolId: getCurrentSchoolId() });
     createVisible.value = false;
     ElMessage.success('已保存并上报');
     load();
@@ -278,12 +283,22 @@ function onExportExceptions() {
   });
 }
 
+let off: any = null;
 onMounted(() => {
   load();
   connectSSE();
+  const h = () => {
+    page.value = 1;
+    load();
+  };
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
 });
 onBeforeUnmount(() => {
   es?.close();
+  try {
+    off?.();
+  } catch {}
 });
 </script>
 

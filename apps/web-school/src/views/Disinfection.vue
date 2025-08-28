@@ -15,14 +15,16 @@
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="方式">
-        <el-select v-model="filters.method" clearable>
+        <el-select v-model="filters.method" clearable placeholder="请选择">
+          <el-option label="全部" value="" />
           <el-option label="酒精" value="酒精" />
           <el-option label="紫外" value="紫外" />
           <el-option label="高温" value="高温" />
         </el-select>
       </el-form-item>
       <el-form-item label="异常">
-        <el-select v-model="filters.exception" clearable style="width: 120px">
+        <el-select v-model="filters.exception" clearable placeholder="请选择" style="width: 120px">
+          <el-option label="全部" value="" />
           <el-option label="仅异常" value="true" />
           <el-option label="仅正常" value="false" />
         </el-select>
@@ -74,7 +76,7 @@
   <el-dialog v-model="createVisible" title="新建消毒记录" width="520px">
     <el-form :model="form" label-width="96px">
       <el-form-item label="方式">
-        <el-select v-model="form.method">
+        <el-select v-model="form.method" placeholder="请选择">
           <el-option label="酒精" value="酒精" />
           <el-option label="紫外" value="紫外" />
           <el-option label="高温" value="高温" />
@@ -109,6 +111,7 @@
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api, API_BASE } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 import { ElMessage } from 'element-plus';
 
 const rows = ref<any[]>([]);
@@ -119,9 +122,9 @@ const filters = reactive<{
   method: string | undefined;
   exception: '' | 'true' | 'false' | null;
   range: [Date, Date] | null;
-}>({ method: '酒精', exception: null, range: null });
+}>({ method: '', exception: '', range: null });
 async function load() {
-  const params: any = {};
+  const params: any = { schoolId: getCurrentSchoolId() };
   if (filters.method) params.method = filters.method;
   if (filters.exception) params.exception = filters.exception;
   if (filters.range && filters.range.length === 2) {
@@ -155,6 +158,7 @@ async function save() {
   }
   try {
     await api.disinfectionCreate({
+      schoolId: getCurrentSchoolId(),
       method: form.method,
       duration: form.duration,
       items: form.items,
@@ -228,11 +232,18 @@ function formatTime(iso: string) {
   }
 }
 
+let off: any = null;
 onMounted(() => {
   load();
   connectSSE();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
 });
 onBeforeUnmount(() => {
   es?.close();
+  try {
+    off?.();
+  } catch {}
 });
 </script>

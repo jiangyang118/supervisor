@@ -29,7 +29,12 @@
 
 1. 使用 npm（免 Corepack）：确保 Node 20，运行 `npm --version` 验证
 2. 安装依赖（工作区）：`npm install --workspaces`
-3. 本地开发（多包并行）：`npm run dev --workspaces --if-present`
+3. 本地开发（多包并行）：
+   - 一键启动（全仓库热更新/HMR）：`make dev-all` 或 `npm run dev:all`
+   - Web（HMR）：`make dev-web` 或分别在 `apps/web-*` 里 `npm run dev`
+   - 后端（热更新）：`make dev-services`（nodemon + ts-node + swc 监听 TS 变更自动重启）
+   - 后端（稳定运行，无热更新）：`make start-services`（编译后跑 dist）
+   - 也可运行：`npm run dev --workspaces --if-present`（顺序启动，可能只保留第一个阻塞的服务）
 4. 构建：`npm run build --workspaces --if-present`
 5. 一键演示（容器）：`bash scripts/demo.sh`
 
@@ -41,8 +46,11 @@
 
 ## 运行
 
-- 学校端：`cd apps/web-school && npm run dev` 打开 http://localhost:4200
-- 监管端：`cd apps/web-regulator && npm run dev` 打开 http://localhost:4300
+- 学校端：`cd apps/web-school && npm run dev` 打开 http://localhost:4200（含 HMR）
+- 监管端：`cd apps/web-regulator && npm run dev` 打开 http://localhost:4300（含 HMR）
+- 后端服务热更新：`make dev-services`（基于 nodemon + ts-node + swc）
+- 全部一键：`make dev-all` 或 `npm run dev:all`（同时起 Web 与服务，支持热更新/HMR）
+- 后端稳定启动：`make start-services`（编译后运行，避免文件监听限制）
 
 ### 学校端快速体验（推荐给一线用户演示）
 

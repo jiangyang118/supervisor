@@ -31,7 +31,8 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
+import { api } from '../services/api';
 type Rec = { id: string; school: string; camera: string; text: string; status: string; at: string };
 const form = reactive({
   school: '',
@@ -40,15 +41,15 @@ const form = reactive({
   voice: 'female',
 });
 const records = ref<Rec[]>([]);
-const send = () => {
-  records.value.unshift({
-    id: `BC-${String(records.value.length + 1).padStart(3, '0')}`,
+const send = async () => {
+  const rec = await api.aiBroadcast({
     school: form.school || '示例学校',
     camera: form.camera || '1# 操作台',
     text: form.text,
-    status: '已发送',
-    at: new Date().toLocaleString(),
   });
-  alert('已发送（演示）');
+  records.value.unshift(rec);
 };
+onMounted(async () => {
+  records.value = await api.aiBroadcastLogs();
+});
 </script>

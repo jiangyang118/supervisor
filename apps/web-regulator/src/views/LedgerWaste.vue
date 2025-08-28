@@ -10,7 +10,15 @@
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="学校">
-        <el-input v-model="filters.school" />
+        <el-select
+          v-model="filters.schoolId"
+          filterable
+          clearable
+          placeholder="全部学校"
+          style="min-width: 220px"
+        >
+          <el-option v-for="s in schools" :key="s.id" :label="s.name" :value="s.id" />
+        </el-select>
       </el-form-item>
       <el-form-item label="种类">
         <el-select v-model="filters.category" clearable>
@@ -18,6 +26,10 @@
           <el-option label="过期食材" value="过期食材" />
         </el-select>
       </el-form-item>
+      <el-form-item label="日期"
+        ><el-date-picker v-model="filters.range" type="daterange" unlink-panels
+      /></el-form-item>
+      <el-form-item><el-button type="primary" @click="applyFilters">查询</el-button></el-form-item>
     </el-form>
     <el-table :data="rows" size="small" border>
       <el-table-column prop="id" label="ID" width="140" />
@@ -32,8 +44,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
+import { api } from '../services/api';
 type Row = {
   id: string;
   school: string;
@@ -43,20 +56,28 @@ type Row = {
   buyer: string;
   person: string;
 };
-const rows = ref<Row[]>([
-  {
-    id: 'WS-001',
-    school: '示例一中',
-    date: new Date().toLocaleDateString(),
-    category: '餐厨垃圾',
-    amount: 30,
-    buyer: '回收公司A',
-    person: '李四',
-  },
-]);
-const filters = reactive<{ school: string; category: string | undefined }>({
-  school: '',
+const rows = ref<Row[]>([]);
+const schools = ref<Array<{ id: string; name: string }>>([]);
+const filters = reactive<{ schoolId?: string; category?: string; range: [Date, Date] | null }>({
+  schoolId: undefined,
   category: undefined,
+  range: null,
+});
+async function load() {
+  const params: any = {};
+  if (filters.schoolId) params.schoolId = filters.schoolId;
+  if (filters.category) params.category = filters.category;
+  if (filters.range && filters.range.length === 2) {
+    params.start = filters.range[0].toISOString();
+    params.end = filters.range[1].toISOString();
+  }
+  const res = await api.ledgerWaste(params);
+  rows.value = res.items as any;
+}
+const applyFilters = () => load();
+onMounted(async () => {
+  schools.value = await api.schools();
+  await load();
 });
 const onExportCsv = () =>
   exportCsv('废弃物台账-监管', rows.value, {

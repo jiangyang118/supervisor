@@ -44,7 +44,7 @@
         <el-input v-model="form.imageUrl" placeholder="http(s)://..." />
       </el-form-item>
       <el-form-item label="处理方式" required>
-        <el-select v-model="form.method">
+        <el-select v-model="form.method" placeholder="请选择">
           <el-option label="销毁" value="销毁" />
           <el-option label="回收" value="回收" />
         </el-select>
@@ -64,6 +64,7 @@
 import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 import { ElMessage } from 'element-plus';
 
 const rows = ref<any[]>([]);
@@ -72,7 +73,7 @@ const form = reactive({ sample: '', weight: 0, imageUrl: '', method: '销毁', b
 
 async function load() {
   try {
-    const res = await api.samplingCleanupList();
+    const res = await api.samplingCleanupList({ schoolId: getCurrentSchoolId() });
     rows.value = res.items;
   } catch (e) {
     ElMessage.error('加载清理记录失败');
@@ -93,7 +94,7 @@ async function save() {
     return;
   }
   try {
-    await api.samplingCleanupCreate(form as any);
+    await api.samplingCleanupCreate({ ...form, schoolId: getCurrentSchoolId() } as any);
     ElMessage.success('已上报');
     createVisible.value = false;
     load();
@@ -122,5 +123,11 @@ function onExportCsv() {
   });
 }
 
-onMounted(() => load());
+let off: any = null;
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
+});
 </script>

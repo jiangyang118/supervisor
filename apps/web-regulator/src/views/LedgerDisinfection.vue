@@ -11,7 +11,15 @@
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="学校">
-        <el-input v-model="filters.school" placeholder="学校名称" />
+        <el-select
+          v-model="filters.schoolId"
+          filterable
+          clearable
+          placeholder="全部学校"
+          style="min-width: 220px"
+        >
+          <el-option v-for="s in schools" :key="s.id" :label="s.name" :value="s.id" />
+        </el-select>
       </el-form-item>
       <el-form-item label="方式">
         <el-select v-model="filters.method" clearable>
@@ -24,7 +32,7 @@
         <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
       </el-form-item>
       <el-form-item>
-        <el-button @click="applyFilters">查询</el-button>
+        <el-button type="primary" @click="applyFilters">查询</el-button>
       </el-form-item>
     </el-form>
     <el-table :data="rows" size="small" border>
@@ -40,8 +48,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
+import { api } from '../services/api';
 type Row = {
   id: string;
   school: string;
@@ -51,32 +60,29 @@ type Row = {
   status: string;
   at: string;
 };
-const rows = ref<Row[]>([
-  {
-    id: 'DS-001',
-    school: '示例一中',
-    method: '酒精',
-    duration: 30,
-    items: '案板/台面',
-    status: '正常',
-    at: new Date().toLocaleString(),
-  },
-  {
-    id: 'DS-002',
-    school: '示例二小',
-    method: '紫外',
-    duration: 15,
-    items: '餐具',
-    status: '正常',
-    at: new Date().toLocaleString(),
-  },
-]);
-const filters = reactive<{
-  school: string;
-  method: string | undefined;
-  range: [Date, Date] | null;
-}>({ school: '', method: undefined, range: null });
-const applyFilters = () => {};
+const rows = ref<Row[]>([]);
+const schools = ref<Array<{ id: string; name: string }>>([]);
+const filters = reactive<{ schoolId?: string; method?: string; range: [Date, Date] | null }>({
+  schoolId: undefined,
+  method: undefined,
+  range: null,
+});
+async function load() {
+  const params: any = {};
+  if (filters.schoolId) params.schoolId = filters.schoolId;
+  if (filters.method) params.method = filters.method;
+  if (filters.range && filters.range.length === 2) {
+    params.start = filters.range[0].toISOString();
+    params.end = filters.range[1].toISOString();
+  }
+  const res = await api.ledgerDisinfection(params);
+  rows.value = res.items as any;
+}
+const applyFilters = () => load();
+onMounted(async () => {
+  schools.value = await api.schools();
+  await load();
+});
 const onExportCsv = () =>
   exportCsv('消毒台账', rows.value, {
     id: 'ID',

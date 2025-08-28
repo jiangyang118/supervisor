@@ -19,6 +19,7 @@
       </el-form-item>
       <el-form-item label="结果">
         <el-select v-model="filters.result" placeholder="全部" clearable>
+          <el-option label="全部" value="" />
           <el-option label="合格" value="合格" />
           <el-option label="不合格" value="不合格" />
         </el-select>
@@ -34,6 +35,17 @@
       <el-table-column prop="id" label="ID" width="160" />
       <el-table-column prop="sample" label="样品" />
       <el-table-column prop="device" label="检测仪" />
+      <el-table-column label="图片" width="120">
+        <template #default="{ row }">
+          <el-image
+            v-if="row.imageUrl"
+            :src="row.imageUrl"
+            :preview-src-list="[row.imageUrl]"
+            fit="cover"
+            style="width: 80px; height: 48px"
+          />
+        </template>
+      </el-table-column>
       <el-table-column label="结果" width="120">
         <template #default="{ row }">
           <el-tag :type="row.result === '合格' ? 'success' : 'danger'" effect="plain">{{
@@ -65,10 +77,28 @@
         <el-input v-model="form.device" data-testid="dlg-device" />
       </el-form-item>
       <el-form-item label="结果" required>
-        <el-select v-model="form.result" data-testid="dlg-result" :teleported="false">
+        <el-select
+          v-model="form.result"
+          data-testid="dlg-result"
+          :teleported="false"
+          placeholder="请选择"
+        >
           <el-option label="合格" value="合格" />
           <el-option label="不合格" value="不合格" />
         </el-select>
+      </el-form-item>
+      <el-form-item label="检测图片">
+        <div style="display: flex; align-items: center; gap: 8px">
+          <el-upload :show-file-list="false" :auto-upload="false" :http-request="onUpload">
+            <el-button>选择图片</el-button>
+          </el-upload>
+          <el-image
+            v-if="form.imageUrl"
+            :src="form.imageUrl"
+            fit="cover"
+            style="width: 80px; height: 48px"
+          />
+        </div>
       </el-form-item>
       <el-form-item label="备注">
         <el-input v-model="form.remark" type="textarea" />
@@ -93,6 +123,7 @@
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api, API_BASE } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 import { ElMessage } from 'element-plus';
 
 const rows = ref<any[]>([]);
@@ -103,10 +134,10 @@ const filters = reactive<{
   q: string;
   result: '' | '合格' | '不合格' | null;
   range: [Date, Date] | null;
-}>({ q: '', result: '合格', range: null });
+}>({ q: '', result: '' as any, range: null });
 
 async function load() {
-  const params: any = {};
+  const params: any = { schoolId: getCurrentSchoolId() };
   if (filters.q) params.q = filters.q;
   if (filters.result) params.result = filters.result;
   if (filters.range && filters.range.length === 2) {
@@ -125,11 +156,12 @@ function applyFilters() {
 }
 
 const createVisible = ref(false);
-const form = reactive({ sample: '', device: '', result: '合格', remark: '' });
+const form = reactive({ sample: '', device: '', result: '合格', imageUrl: '', remark: '' });
 function openCreate() {
   form.sample = '';
   form.device = '';
   form.result = '合格';
+  form.imageUrl = '';
   form.remark = '';
   createVisible.value = true;
 }
@@ -140,9 +172,11 @@ async function save() {
   }
   try {
     await api.pesticideCreate({
+      schoolId: getCurrentSchoolId(),
       sample: form.sample,
       device: form.device,
       result: form.result as any,
+      imageUrl: form.imageUrl || undefined,
       remark: form.remark || undefined,
     });
     ElMessage.success('已上报');
@@ -150,6 +184,24 @@ async function save() {
     load();
   } catch {
     ElMessage.error('保存失败');
+  }
+}
+
+async function onUpload(opts: any) {
+  try {
+    const file: File = opts.file;
+    const reader = new FileReader();
+    const p = new Promise<string>((resolve, reject) => {
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error('读取文件失败'));
+    });
+    reader.readAsDataURL(file);
+    const content = await p;
+    const { url } = await api.uploadFile(file.name, content);
+    form.imageUrl = url;
+    ElMessage.success('图片已上传');
+  } catch (e) {
+    ElMessage.error('上传失败');
   }
 }
 
@@ -194,6 +246,7 @@ function onExportCsv() {
     id: 'ID',
     sample: '样品',
     device: '检测仪',
+    imageUrl: '图片',
     result: '结果',
     remark: '备注',
     at: '时间',
@@ -206,6 +259,7 @@ function onExportExceptions() {
     id: 'ID',
     sample: '样品',
     device: '检测仪',
+    imageUrl: '图片',
     result: '结果',
     remark: '备注',
     at: '时间',
@@ -213,11 +267,18 @@ function onExportExceptions() {
   });
 }
 
+let off: any = null;
 onMounted(() => {
   load();
   connectSSE();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
 });
 onBeforeUnmount(() => {
   es?.close();
+  try {
+    off?.();
+  } catch {}
 });
 </script>

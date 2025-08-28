@@ -1,38 +1,89 @@
 import { Controller, Get } from '@nestjs/common';
+import { MorningCheckService } from './morning-check.service';
+import { SamplingService } from './sampling.service';
+import { DisinfectionService } from './disinfection.service';
+import { DineService } from './dine.service';
+import { WasteService } from './waste.service';
+import { DevicesService } from './devices.service';
+import { PublicFeedbackService } from './public-feedback.service';
+import { DataStore } from './data.store';
 
 @Controller('reg')
 export class RegOverviewController {
+  constructor(
+    private readonly morning: MorningCheckService,
+    private readonly sampling: SamplingService,
+    private readonly disinfection: DisinfectionService,
+    private readonly dine: DineService,
+    private readonly waste: WasteService,
+    private readonly devices: DevicesService,
+    private readonly feedback: PublicFeedbackService,
+  ) {}
   @Get('overview')
   overview() {
-    const rnd = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
-    const schools = 42;
-    const canteens = 58;
-    const todayReports = rnd(60, 120);
-    const aiWarnings = rnd(5, 25);
-    const hygienePassRate = rnd(90, 99);
-    const devicesOnlineRate = rnd(85, 98);
-    const aiByType = [
-      { type: '未戴帽', count: rnd(1, 12) },
-      { type: '未戴口罩', count: rnd(0, 8) },
-      { type: '打电话', count: rnd(0, 6) },
-      { type: '吸烟', count: rnd(0, 3) },
-    ];
-    const dailyReports = Array.from({ length: 7 }).map((_, i) => ({
-      day: `D-${6 - i}`,
-      count: rnd(40, 100),
-    }));
-    const topWarnings = Array.from({ length: 5 }).map((_, i) => ({
-      rank: i + 1,
-      school: `示例学校${i + 1}`,
-      warnings: rnd(1, 12),
-    }));
-    const expiringCerts = Array.from({ length: 5 }).map((_, i) => ({
-      owner: `人员${i + 1}`,
-      type: '健康证',
-      expireAt: new Date(Date.now() + (i + 3) * 86400000).toISOString().slice(0, 10),
-    }));
+    const schoolsList = this.schools();
+    const schools = schoolsList.length;
+    const canteens = schools; // 可替换为真实食堂数
+    // 今日 00:00 开始
+    const now = new Date();
+    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const sliceAll = <T>(x: { items: T[] }) => (x?.items || []) as T[];
+    const mc = sliceAll(this.morning.list({ start: dayStart, page: 1, pageSize: 100000 }));
+    const sp = sliceAll(this.sampling.listSamples({ start: dayStart, page: 1, pageSize: 100000 }));
+    const df = sliceAll(this.disinfection.list({ start: dayStart, page: 1, pageSize: 100000 }));
+    const dn = sliceAll(this.dine.list({ start: dayStart, page: 1, pageSize: 100000 }));
+    const ws = sliceAll(this.waste.list({ start: dayStart, page: '1', pageSize: '100000' }));
+    const todayReports = mc.length + sp.length + df.length + dn.length + ws.length;
+    // AI 预警（OPEN）
+    const aiOpen = (DataStore.aiEvents || []).filter((e) => e.status === 'OPEN').length;
+    // 卫生合格率（以晨检为例）
+    const ok = mc.filter((e: any) => e.result === '正常').length;
+    const hygienePassRate = mc.length ? Math.round((ok / mc.length) * 100) : 100;
+    // 设备在线率
+    const devs = this.devices.list({});
+    const online = devs.filter((d) => d.status === 'ONLINE').length;
+    const devicesOnlineRate = devs.length ? Math.round((online / devs.length) * 100) : 100;
+    // AI 类型分布
+    const aiByTypeMap = new Map<string, number>();
+    (DataStore.aiEvents || []).forEach((e) => {
+      if (e.status !== 'OPEN') return;
+      aiByTypeMap.set(e.type, (aiByTypeMap.get(e.type) || 0) + 1);
+    });
+    const aiByType = Array.from(aiByTypeMap.entries()).map(([type, count]) => ({ type, count }));
+    // 近 7 天上报数量（按晨检）
+    const dailyReports = Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - i));
+      const s = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
+      const sNext = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).toISOString();
+      const cnt = this.morning.list({ start: s, end: sNext, page: 1, pageSize: 100000 }).total;
+      return { day: s.slice(5, 10), count: cnt };
+    });
+    // 投诉待处理 Top（学校）
+    const pending = this.feedback.list({ status: '待处理', page: 1, pageSize: 100000 })
+      .items as any[];
+    const bySchool = new Map<string, number>();
+    pending.forEach((r) =>
+      bySchool.set(r.schoolId || '-', (bySchool.get(r.schoolId || '-') || 0) + 1),
+    );
+    const topWarnings = Array.from(bySchool.entries())
+      .map(([id, warnings]) => ({
+        school: this.schools().find((s) => s.id === id)?.name || id,
+        warnings,
+      }))
+      .sort((a, b) => b.warnings - a.warnings)
+      .slice(0, 5)
+      .map((x, i) => ({ rank: i + 1, ...x }));
+    // 证件临期占位（后续接入证件服务到期扫描）
+    const expiringCerts: any[] = [];
     return {
-      kpis: { schools, canteens, todayReports, aiWarnings, hygienePassRate, devicesOnlineRate },
+      kpis: {
+        schools,
+        canteens,
+        todayReports,
+        aiWarnings: aiOpen,
+        hygienePassRate,
+        devicesOnlineRate,
+      },
       aiByType,
       dailyReports,
       topWarnings,

@@ -11,10 +11,15 @@
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="种类">
-        <el-select v-model="filters.category" clearable>
-          <el-option label="餐厨垃圾" value="餐厨垃圾" />
-          <el-option label="过期食材" value="过期食材" />
+        <el-select v-model="filters.category" clearable placeholder="请选择">
+          <el-option
+            v-for="c in categories"
+            :key="c.id || c"
+            :label="c.name || c"
+            :value="c.name || c"
+          />
         </el-select>
+        <el-button link type="primary" @click="openCategoryDialog">新增类别</el-button>
       </el-form-item>
       <el-form-item label="日期">
         <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
@@ -39,9 +44,13 @@
         <el-date-picker v-model="form.date" type="date" />
       </el-form-item>
       <el-form-item label="种类">
-        <el-select v-model="form.category">
-          <el-option label="餐厨垃圾" value="餐厨垃圾" />
-          <el-option label="过期食材" value="过期食材" />
+        <el-select v-model="form.category" placeholder="请选择">
+          <el-option
+            v-for="c in categories"
+            :key="c.id || c"
+            :label="c.name || c"
+            :value="c.name || c"
+          />
         </el-select>
       </el-form-item>
       <el-form-item label="数量(kg)">
@@ -59,11 +68,42 @@
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
+  <el-dialog v-model="categoryDialogVisible" title="类别管理" width="520px">
+    <div style="margin-bottom: 12px">
+      <el-input
+        v-model="newCategory"
+        placeholder="输入新类别名称后点击添加"
+        style="width: 320px; margin-right: 8px"
+      />
+      <el-button type="primary" @click="addCategory">添加</el-button>
+    </div>
+    <el-table :data="categories as any" size="small" border>
+      <el-table-column label="名称" prop="name" />
+      <el-table-column label="启用" width="120">
+        <template #default="{ row }">
+          <el-switch :model-value="row.enabled" @change="(v: boolean) => setEnabled(row, v)" />
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="140">
+        <template #default="{ row }">
+          <el-button type="danger" size="small" @click="deleteCategory(row)">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+    <template #footer>
+      <el-button @click="categoryDialogVisible = false">关闭</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { onMounted, reactive, ref, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
+import { api } from '../services/api';
+import { ElMessage, ElMessageBox } from 'element-plus';
+import { getCurrentSchoolId } from '../utils/school';
+type Category = { id: string; name: string; enabled: boolean } | string;
+const categories = ref<Category[]>([]);
 type Row = {
   id: string;
   date: string;
@@ -72,36 +112,86 @@ type Row = {
   buyer: string;
   person: string;
 };
-const rows = ref<Row[]>([
-  {
-    id: 'WS-001',
-    date: new Date().toLocaleDateString(),
-    category: '餐厨垃圾',
-    amount: 20,
-    buyer: '示例回收公司',
-    person: '王五',
-  },
-]);
+const rows = ref<Row[]>([]);
 const filters = reactive<{ category: string | undefined; range: [Date, Date] | null }>({
-  category: '餐厨垃圾',
+  category: undefined,
   range: null,
 });
-const applyFilters = () => {};
+const applyFilters = async () => {
+  const params: any = { schoolId: getCurrentSchoolId() };
+  if (filters.category) params.category = filters.category;
+  if (filters.range && filters.range.length === 2) {
+    const [s, e] = filters.range;
+    if (s) params.start = s.toISOString();
+    if (e) params.end = e.toISOString();
+  }
+  const res = await api.wasteList(params);
+  rows.value = res.items.map((r: any) => ({
+    id: r.id,
+    date: r.date,
+    category: r.category,
+    amount: r.amount,
+    buyer: r.buyer,
+    person: r.person,
+  }));
+};
 const createVisible = ref(false);
-const form = reactive({ date: new Date(), category: '餐厨垃圾', amount: 0, buyer: '', person: '' });
+const form = reactive({ date: new Date(), category: '', amount: 0, buyer: '', person: '' });
+const categoryDialogVisible = ref(false);
+const newCategory = ref('');
+const openCategoryDialog = () => {
+  newCategory.value = '';
+  categoryDialogVisible.value = true;
+};
+const addCategory = async () => {
+  const name = newCategory.value.trim();
+  if (!name) {
+    ElMessage.warning('请输入类别名称');
+    return;
+  }
+  try {
+    await api.wasteCategoryCreate(name);
+    ElMessage.success('已添加');
+    categoryDialogVisible.value = false;
+    await loadCategories();
+  } catch (e: any) {
+    const msg = String(e?.message || '添加失败');
+    if (msg.includes('409')) ElMessage.error('类别已存在');
+    else ElMessage.error(msg);
+  }
+};
+const loadCategories = async () => {
+  const list = await api.wasteCategories();
+  categories.value = list;
+  const first = (categories.value[0] as any)?.name || categories.value[0];
+  if (!filters.category && categories.value.length) filters.category = first;
+  if (!form.category && categories.value.length) form.category = first as string;
+};
+
+const setEnabled = async (c: any, enabled: boolean) => {
+  await api.wasteCategorySetEnabled(c.id, enabled);
+  await loadCategories();
+};
+const deleteCategory = async (c: any) => {
+  await ElMessageBox.confirm(`确认删除类别“${c.name}”？`, '提示');
+  await api.wasteCategoryDelete(c.id);
+  ElMessage.success('已删除');
+  await loadCategories();
+};
 const openCreate = () => {
   createVisible.value = true;
 };
-const save = () => {
-  rows.value.unshift({
-    id: `WS-${String(rows.value.length + 1).padStart(3, '0')}`,
-    date: (form.date as any)?.toLocaleDateString?.() ?? String(form.date),
+const save = async () => {
+  await api.wasteCreate({
+    date: (form.date as any)?.toISOString?.() ?? undefined,
     category: form.category,
     amount: form.amount,
     buyer: form.buyer,
     person: form.person,
+    schoolId: getCurrentSchoolId(),
   });
   createVisible.value = false;
+  await applyFilters();
 };
 const onExportCsv = () =>
   exportCsv('废弃物管理', rows.value, {
@@ -112,4 +202,20 @@ const onExportCsv = () =>
     buyer: '收购单位',
     person: '收运人',
   });
+
+let off: any = null;
+onMounted(async () => {
+  await loadCategories();
+  await applyFilters();
+  const h = async () => {
+    await applyFilters();
+  };
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
+});
+onBeforeUnmount(() => {
+  try {
+    off?.();
+  } catch {}
+});
 </script>

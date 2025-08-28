@@ -1,8 +1,109 @@
 import { Controller, Get, Res, Query } from '@nestjs/common';
+import { MorningCheckService } from './morning-check.service';
+import { SamplingService } from './sampling.service';
+import { DisinfectionService } from './disinfection.service';
+import { DineService } from './dine.service';
+import { WasteService } from './waste.service';
 // 使用 any 避免本地缺少 @types/express 造成编译失败
 
 @Controller('reg/reports')
 export class ReportsController {
+  constructor(
+    private readonly morning: MorningCheckService,
+    private readonly sampling: SamplingService,
+    private readonly disinfection: DisinfectionService,
+    private readonly dine: DineService,
+    private readonly waste: WasteService,
+  ) {}
+
+  private schoolList() {
+    return [
+      { id: 'sch-001', name: '示例一中' },
+      { id: 'sch-002', name: '示例二小' },
+      { id: 'sch-003', name: '示例三幼' },
+      { id: 'sch-004', name: '示例四小' },
+      { id: 'sch-005', name: '示例五中' },
+    ];
+  }
+
+  @Get('daily')
+  daily(
+    @Query('start') start?: string,
+    @Query('end') end?: string,
+    @Query('schoolId') schoolId?: string,
+  ) {
+    const schools = schoolId
+      ? this.schoolList().filter((s) => s.id === schoolId)
+      : this.schoolList();
+    const s = start;
+    const e = end;
+    const rows = schools.map((sc) => {
+      const morning = this.morning.list({
+        schoolId: sc.id,
+        start: s,
+        end: e,
+        page: 1,
+        pageSize: 100000,
+      }).total;
+      const sampling = this.sampling.listSamples({
+        schoolId: sc.id,
+        start: s,
+        end: e,
+        page: 1,
+        pageSize: 100000,
+      }).total;
+      const disinfection = this.disinfection.list({
+        schoolId: sc.id,
+        start: s,
+        end: e,
+        page: 1,
+        pageSize: 100000,
+      }).total;
+      const dine = this.dine.list({
+        schoolId: sc.id,
+        start: s,
+        end: e,
+        page: 1,
+        pageSize: 100000,
+      }).total;
+      const waste = this.waste.list({
+        schoolId: sc.id,
+        start: s,
+        end: e,
+        page: '1',
+        pageSize: '100000',
+      }).total;
+      return { schoolId: sc.id, school: sc.name, morning, sampling, disinfection, dine, waste };
+    });
+    const totalSchools = rows.length;
+    const sum = (k: keyof (typeof rows)[number]) =>
+      rows.reduce((acc, r) => acc + Number(r[k] || 0), 0);
+    const morningReported = rows.filter((r) => r.morning > 0).length;
+    const samplingReported = rows.filter((r) => r.sampling > 0).length;
+    const disinfectionReported = rows.filter((r) => r.disinfection > 0).length;
+    const dineReported = rows.filter((r) => r.dine > 0).length;
+    const wasteReported = rows.filter((r) => r.waste > 0).length;
+    const summary = {
+      schools: totalSchools,
+      // totals across all schools (counts of records)
+      totals: {
+        morning: sum('morning'),
+        sampling: sum('sampling'),
+        disinfection: sum('disinfection'),
+        dine: sum('dine'),
+        waste: sum('waste'),
+      },
+      // number of schools that did not report for the period
+      missing: {
+        morning: totalSchools - morningReported,
+        sampling: totalSchools - samplingReported,
+        disinfection: totalSchools - disinfectionReported,
+        dine: totalSchools - dineReported,
+        waste: totalSchools - wasteReported,
+      },
+    };
+    return { rows, summary };
+  }
   @Get('export')
   export(
     @Query('format') format = 'csv',

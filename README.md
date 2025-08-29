@@ -54,7 +54,7 @@
 - 启动：`bash scripts/mego.sh --host 192.168.11.133`（或省略 host 使用 localhost）
 - 启动并自动生成 10 条晨检：`bash scripts/mego.sh --host 192.168.11.133 --emit`
 - 如不需要监管端：`bash scripts/mego.sh --skip-reg`
-
+- DEMO-EC-0001 此为页面上的equipmentCode
 说明：当前仅为骨架，可启动基础服务与示例接口，后续可逐步补全数据库、鉴权、AI 事件流、导出等能力。
 
 ## 环境变量

@@ -5,7 +5,16 @@
   "type": "module",
   "description": "UniApp device management mobile app (skeleton)",
   "scripts": {
-    "dev": "echo 'Open in HBuilderX or run via uniapp CLI'"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 4210"
   },
-  "dependencies": {}
+  "dependencies": {
+    "vue": "^3.4.38"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "typescript": "^5.5.4",
+    "vite": "^5.4.6"
+  }
 }

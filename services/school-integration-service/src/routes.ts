@@ -20,9 +20,7 @@ export const router = express.Router();
 
 router.get('/health', (_req, res) => res.json({ ok: true }));
 
-router.get('/api/employees', (_req, res) => {
-  res.json({ data: getEmployees() });
-});
+router.get('/api/employees', (_req, res) => { res.json({ data: getEmployees() }); });
 
 router.post('/api/employees/refresh', express.json(), async (req, res) => {
   const envUrls = String(process.env.MEGO_BASE_URLS || '')
@@ -39,24 +37,15 @@ router.post('/api/employees/refresh', express.json(), async (req, res) => {
       const list = await fetchEmployees(baseUrl, equipmentCode);
       setEmployees(list);
       return res.json({ success: true, count: list.length, baseUrl });
-    } catch (e) {
-      // try next
-    }
+    } catch (e) {}
   }
   return res.status(502).json({ success: false, message: 'All upstream fetch attempts failed' });
 });
 
-router.get('/api/devices', (_req, res) => {
-  res.json({ data: getDevices() });
-});
+router.get('/api/devices', (_req, res) => { res.json({ data: getDevices() }); });
 
 router.post('/api/devices/discover', express.json(), async (req, res) => {
-  const body = z
-    .object({
-      equipmentCode: z.string().min(1),
-      candidates: z.array(z.string().url()).min(1),
-    })
-    .safeParse(req.body);
+  const body = z.object({ equipmentCode: z.string().min(1), candidates: z.array(z.string().url()).min(1) }).safeParse(req.body);
   if (!body.success) return res.status(400).json({ error: body.error.flatten() });
   const { equipmentCode, candidates } = body.data;
   const results = await discoverCandidates(candidates, equipmentCode);
@@ -82,13 +71,11 @@ const checkFields = {
   health: 'health',
 } as const;
 
-function pickField(body: any, name: keyof typeof checkFields) {
-  return body[checkFields[name]];
-}
+function pickField(body: any, name: keyof typeof checkFields) { return body[checkFields[name]]; }
 
 router.post('/api/integrations/morning-checks/mego', upload.any(), async (req, res) => {
   try {
-    const body: any = Object.keys(req.body || {}).length ? req.body : req.query; // tolerate odd encodings
+    const body: any = Object.keys(req.body || {}).length ? req.body : req.query;
     const equipmentCode: string = pickField(body, 'equipmentCode') || pickField(body, 'machineCode');
     if (!equipmentCode) return res.status(400).json({ message: 'equipmentCode missing' });
     const uuid: string | undefined = pickField(body, 'uuid');
@@ -119,7 +106,6 @@ router.post('/api/integrations/morning-checks/mego', upload.any(), async (req, r
       raw: body,
     };
 
-    // Save uploaded files if any
     if (Array.isArray((req as any).files)) {
       for (const f of (req as any).files as Express.Multer.File[]) {
         if (f.fieldname === 'faceFile') mc.images!.face = persistUpload(id, 'face', f.buffer, 'jpg');
@@ -135,6 +121,5 @@ router.post('/api/integrations/morning-checks/mego', upload.any(), async (req, r
   }
 });
 
-router.get('/api/morning-checks', (_req, res) => {
-  res.json({ data: listChecks() });
-});
+router.get('/api/morning-checks', (_req, res) => { res.json({ data: listChecks() }); });
+

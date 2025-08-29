@@ -7,9 +7,19 @@ const host = process.env.HOST || process.argv[2] || 'localhost';
 const ECODE = process.env.EQUIPMENT_CODE || 'DEMO-EC-0001';
 
 const roots = {
-  school: path.join(__dirname, '..', 'apps', 'school-api'),
-  regulator: path.join(__dirname, '..', 'apps', 'regulator-api'),
-  mock: path.join(__dirname, '..', 'apps', 'device-mock'),
+  // prefer services/*; fallback to apps/* if present
+  school: [
+    path.join(__dirname, '..', 'services', 'school-integration-service'),
+    path.join(__dirname, '..', 'apps', 'school-api'),
+  ].find((p) => existsSync(p)) || path.join(__dirname, '..', 'services', 'school-integration-service'),
+  regulator: [
+    path.join(__dirname, '..', 'services', 'regulator-service'),
+    path.join(__dirname, '..', 'apps', 'regulator-api'),
+  ].find((p) => existsSync(p)) || path.join(__dirname, '..', 'services', 'regulator-service'),
+  mock: [
+    path.join(__dirname, '..', 'services', 'device-mock'),
+    path.join(__dirname, '..', 'apps', 'device-mock'),
+  ].find((p) => existsSync(p)) || path.join(__dirname, '..', 'services', 'device-mock'),
 };
 
 function installIfNeeded(dir) {
@@ -46,8 +56,8 @@ async function main() {
   installIfNeeded(roots.mock);
 
   const p1 = start('device-mock', roots.mock, 'dev', { PORT_DEVICE_MOCK: '4003' });
-  const p2 = start('regulator-api', roots.regulator, 'dev', { PORT_REGULATOR: '4002' });
-  const p3 = start('school-api', roots.school, 'dev', {
+  const p2 = start('regulator-service', roots.regulator, 'dev', { PORT_REGULATOR: '4002' });
+  const p3 = start('school-integration-service', roots.school, 'dev', {
     PORT_SCHOOL: '4001',
     MEGO_BASE_URLS: MOCK,
     EQUIPMENT_CODE: ECODE,
@@ -83,4 +93,3 @@ main().catch((e) => {
   console.error(e);
   process.exit(1);
 });
-

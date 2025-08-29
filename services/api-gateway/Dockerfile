@@ -1,12 +1,15 @@
 # syntax=docker/dockerfile:1
-FROM node:20-alpine AS builder
+# syntax=docker/dockerfile:1
+ARG NODE_IMAGE=node:20-alpine
+FROM ${NODE_IMAGE} AS builder
 WORKDIR /app
 COPY services/api-gateway/package.json ./package.json
 RUN npm install
 COPY services/api-gateway/ .
 RUN npm run build
 
-FROM node:20-alpine
+ARG NODE_IMAGE=node:20-alpine
+FROM ${NODE_IMAGE}
 WORKDIR /app
 ENV NODE_ENV=production
 COPY services/api-gateway/package.json ./package.json

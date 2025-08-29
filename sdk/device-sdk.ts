@@ -1,5 +1,5 @@
 export type DeviceSdkOptions = { baseURL?: string; timeoutMs?: number };
-let BASE = 'http://localhost:3000';
+let BASE = 'http://localhost:3300';
 let SIGN_ON = false;
 let SIGN_KEY = '';
 export function configure(opts: DeviceSdkOptions) {

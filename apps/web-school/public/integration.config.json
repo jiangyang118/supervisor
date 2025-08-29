@@ -1,0 +1,6 @@
+{
+  "SCHOOL_INTEGRATION_BASE": "http://localhost:4001",
+  "MEGO_CANDIDATES": "http://localhost:4003",
+  "EQUIPMENT_CODE": "DEMO-EC-0001"
+}
+

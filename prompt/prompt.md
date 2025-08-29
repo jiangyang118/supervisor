@@ -79,12 +79,12 @@
 8. Postman 集合
 
 - postman_collection.json 覆盖学校端与监管端“所有页面对应接口”的典型 REST 动作（列/增/改/删/导出/统计）
-- 使用变量 {{baseUrl}}，默认 http://localhost:3000
+- 使用变量 {{baseUrl}}，默认 http://localhost:3300
 
 ## 运行与调试
 
 - 安装依赖：npm i
-- 启动网关：npm --prefix services/api-gateway run dev （默认 3000）
+- 启动网关：npm --prefix services/api-gateway run dev （容器外映射默认 3300，本地默认 3000）
 - 学校端：npm --prefix apps/web-school run dev （默认 4200）
 - 监管端：npm --prefix apps/web-regulator run dev （默认 4300）
 - 内网访问：Vite server.host = true，用 http://<内网IP>:4200/4300；如需固定端口，传 --port
@@ -177,7 +177,7 @@
 
 可配置项
 
-- 网关地址：apps/web-regulator/.env.local 可配置 VITE_API_BASE=http://<你的网关IP>:3000
+- 网关地址：apps/web-regulator/.env.local 可配置 VITE_API_BASE=http://<你的网关IP>:3300
 - wvp 地址：给网关进程设置 WVP_BASE=http://<你的-wvp-地址>（也可在 controller 中直接写死或映射 wvp
   的播放 API）
   如何发 UI 设计图

@@ -139,7 +139,7 @@ async function onExport() {
 }
 onMounted(async () => {
   types.value = await (
-    await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:3000'}/school/ai/types`)
+    await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:3300'}/school/ai/types`)
   ).json();
   load();
 });

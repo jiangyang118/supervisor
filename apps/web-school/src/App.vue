@@ -94,6 +94,29 @@
         </el-menu>
       </el-aside>
       <el-main>
+        <div v-if="!integration.base" class="integration-banner">
+          <el-alert
+            title="未检测到学校端集成服务地址（SCHOOL_INTEGRATION_BASE）"
+            type="warning"
+            :closable="false"
+            description="请在 public/integration.config.json 配置，或在浏览器控制台/本页右侧设置中指定。"
+            show-icon
+          />
+        </div>
+        <div v-else class="integration-banner">
+          <el-alert :closable="false" type="success" show-icon>
+            <template #title>
+              设备集成：{{ integration.base }}
+            </template>
+            <template #default>
+              候选域名：{{ integration.candidates || '未配置' }}
+              <el-button size="small" type="primary" text @click="testHealth">测试连接</el-button>
+              <el-button size="small" text @click="openConfig">设置</el-button>
+              <span v-if="healthOk === true" style="color:#67c23a">已连接</span>
+              <span v-else-if="healthOk === false" style="color:#f56c6c">连接失败</span>
+            </template>
+          </el-alert>
+        </div>
         <PageHeader />
         <router-view />
       </el-main>
@@ -103,16 +126,48 @@
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import PageHeader from './components/PageHeader.vue';
 const route = useRoute();
 const router = useRouter();
 const active = computed(() => route.path);
 const go = (p: string) => router.push(p);
+
+const integration = computed(() => ({
+  base: (window as any).SCHOOL_INTEGRATION_BASE as string | undefined,
+  candidates: (window as any).MEGO_CANDIDATES as string | undefined,
+}));
+
+const healthOk = ref<boolean | null>(null);
+async function testHealth() {
+  healthOk.value = null;
+  const base = integration.value.base;
+  if (!base) return;
+  try {
+    const r = await fetch(`${base.replace(/\/$/, '')}/health`);
+    healthOk.value = r.ok;
+  } catch {
+    healthOk.value = false;
+  }
+}
+
+function openConfig() {
+  const b = prompt('学校端集成服务地址 (SCHOOL_INTEGRATION_BASE):', integration.value.base || '');
+  if (b !== null) {
+    localStorage.setItem('SCHOOL_INTEGRATION_BASE', b);
+    (window as any).SCHOOL_INTEGRATION_BASE = b;
+  }
+  const c = prompt('候选上游域名池 (MEGO_CANDIDATES):', integration.value.candidates || '');
+  if (c !== null) {
+    localStorage.setItem('MEGO_CANDIDATES', c);
+    (window as any).MEGO_CANDIDATES = c;
+  }
+}
 </script>
 
 <style>
 body {
   margin: 0;
 }
+.integration-banner { margin-bottom: 8px; }
 </style>

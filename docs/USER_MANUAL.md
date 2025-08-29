@@ -14,7 +14,7 @@
   - 全局并行开发：`npm run dev --workspaces --if-present`
   - 仅学校端：`npm --prefix apps/web-school run dev`（默认 http://localhost:4200）
   - 仅监管端：`npm --prefix apps/web-regulator run dev`（默认 http://localhost:4300）
-  - 网关后端：`npm --prefix services/api-gateway run dev`（默认 http://localhost:3000，OpenAPI 文档 http://localhost:3000/api/docs）
+  - 网关后端：`npm --prefix services/api-gateway run dev`（默认容器外映射 http://localhost:3300，OpenAPI http://localhost:3300/api/docs；本地开发默认 3000）
 - 环境变量：复制 `.env.example` 为 `.env` 并按需设置（如 `WVP_BASE`）。
 - E2E 测试（可选）：`npx playwright install && npm run test:e2e && npm run e2e:report`
 
@@ -137,7 +137,7 @@
   - `WVP_BASE`：明厨亮灶播放服务基地址（例如 `http://wvp:18080`）。
   - 数据服务（未来）：PostgreSQL/Redis/MinIO/Kafka 连接串。
 - 端口与反向代理：
-  - Web：4200（学校）/4300（监管）；API 网关：3000；Nginx 转发 WebSocket。
+- Web：4200（学校）/4300（监管）；API 网关：3300（容器外）/3000（容器内/本地）；Nginx 转发 WebSocket。
 - 健康检查：
   - 网关：`GET /health` 返回 `{ok, service, time}`。
   - OpenAPI：`GET /api/docs`（Swagger UI）。
@@ -150,7 +150,7 @@
 
 - 端口冲突：前端可 `--port` 指定；Playwright `webServer.timeout` 可调大。
 - 播放失败：检查 `WVP_BASE` 与跨域；HLS Safari 原生、其他浏览器用 hls.js；flv 用 flv.js。
-- Swagger 空白：确认网关已启动且访问 `http://<host>:3000/api/docs`。
+- Swagger 空白：确认网关已启动且访问 `http://<host>:3300/api/docs`（容器外）或 3000（本地）。
 
 ---
 
@@ -182,7 +182,7 @@
   - 提交规范：Husky + Commitlint（需 `npm run prepare` 安装钩子）
   - E2E：`npm run test:e2e`（Playwright 自动启动/复用 4200/4300）
 - 调试与联动
-  - Postman 集合：根目录 `postman_collection.json`（变量 `{{baseUrl}}`，默认 `http://localhost:3000`）
+  - Postman 集合：根目录 `postman_collection.json`（变量 `{{baseUrl}}`，默认 `http://localhost:3300`）
   - OpenAPI 契约：`docs/openapi.yaml` 与 Swagger UI 对应
 
 ---

@@ -1,6 +1,8 @@
-// API基础地址
-const BASE = 'http://localhost:3000';
+// API基础地址（主平台网关）
+const BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:3300';
 export const API_BASE = BASE;
+// 学校端集成服务（MEGO 对接演示服务，默认 4001）
+const SCHOOL_INTEGRATION_BASE = (window as any)?.SCHOOL_INTEGRATION_BASE || 'http://localhost:4001';
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`);
@@ -132,6 +134,35 @@ export const api = {
   },
   schoolDaily: (schoolId?: string) =>
     get<any>(`/reports/school/daily${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`),
+  // MEGO 集成（学校端集成服务：apps/school-api）
+  megoDiscover: async (body: { equipmentCode: string; candidates: string[] }) => {
+    const res = await fetch(`${SCHOOL_INTEGRATION_BASE}/api/devices/discover`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json() as Promise<{ results: Array<{ baseUrl: string; ok: boolean }>; autoSelected: string | null }>;
+  },
+  megoEmployeesRefresh: async (equipmentCode?: string) => {
+    const res = await fetch(`${SCHOOL_INTEGRATION_BASE}/api/employees/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ equipmentCode }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json() as Promise<{ success: boolean; count?: number; message?: string }>;
+  },
+  megoEmployees: async () => {
+    const res = await fetch(`${SCHOOL_INTEGRATION_BASE}/api/employees`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json() as Promise<{ data: Array<{ userId: string; name: string; healthStartTime?: string; healthEndTime?: string }> }>;
+  },
+  megoMorningChecks: async () => {
+    const res = await fetch(`${SCHOOL_INTEGRATION_BASE}/api/morning-checks`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json() as Promise<{ data: any[] }>;
+  },
   // Morning check APIs
   morningList: (
     params: {

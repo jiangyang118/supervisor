@@ -8,6 +8,7 @@
             晨检仪 {{ sseConnected ? '已连接' : '连接中' }}
           </el-tag>
           <el-button type="primary" @click="openCreate">录入晨检</el-button>
+          <el-button type="success" @click="syncFromDevice">同步设备记录</el-button>
           <el-button @click="onExportCsv">导出台账</el-button>
           <el-button @click="onExportExceptions">导出异常</el-button>
         </div>
@@ -300,6 +301,30 @@ onBeforeUnmount(() => {
     off?.();
   } catch {}
 });
+
+// 从学校端集成服务同步设备晨检记录（MEGO 上报）
+async function syncFromDevice() {
+  try {
+    const resp = await api.megoMorningChecks();
+    const mapped: Row[] = (resp.data || []).map((x: any) => ({
+      id: x.id,
+      staff: x.userId || x.raw?.name || x.raw?.userId || '-',
+      temp: Number(x.foreheadTemp || 0),
+      result: x.health === 0 ? '正常' : '异常',
+      at: x.checkTime?.replace(' ', 'T') || new Date().toISOString(),
+      source: 'device',
+      measure: '',
+    }));
+    // 简单合并去重
+    const ids = new Set(rows.value.map((r) => r.id));
+    const add = mapped.filter((m) => !ids.has(m.id));
+    rows.value = [...add, ...rows.value];
+    total.value += add.length;
+    ElMessage.success(`已同步 ${add.length} 条设备记录`);
+  } catch (e) {
+    ElMessage.error('同步失败');
+  }
+}
 </script>
 
 <style scoped>

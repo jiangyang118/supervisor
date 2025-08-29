@@ -4,7 +4,7 @@ info:
   version: 0.1.0
   description: Third-party device interface for morning check integration.
 servers:
-  - url: http://localhost:3000
+  - url: http://localhost:3300
 paths:
   /device/morningChecker/employeeList:
     get:

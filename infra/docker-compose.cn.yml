@@ -32,3 +32,12 @@ services:
       args:
         NODE_IMAGE: docker.m.daocloud.io/library/node:20-alpine
 
+  school-integration:
+    build:
+      args:
+        NODE_IMAGE: docker.m.daocloud.io/library/node:20-alpine
+
+  regulator-service:
+    build:
+      args:
+        NODE_IMAGE: docker.m.daocloud.io/library/node:20-alpine

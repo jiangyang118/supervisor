@@ -44,6 +44,8 @@
 - Kafka UI：`http://localhost:8080`
 - MinIO 控制台：`http://localhost:9001`（默认账号/密码：`minioadmin/minioadmin`，如 `.env` 未覆盖）
 - 远程访问：将 `localhost` 换为宿主机 IP，例如 `http://192.168.11.133/api/docs`
+- 学校端对接服务健康：`http://localhost:4001/health`
+- 监管端接收服务健康：`http://localhost:4002/health`
 
 前端 Web（容器未包含，需要本地启动）
 - 学校端：`cd apps/web-school && npm i && npm run dev`（默认 `http://localhost:5173`）
@@ -124,8 +126,10 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 本仓库基于 `prompt/miguo_dev.md` 落地“米果智能晨检仪”端到端对接（学校端 + 监管端 + 设备端 Mock + Web 界面）。
 
 含以下模块：
-- apps/school-api：学校端对接服务（设备自动搜索、员工缓存、晨检数据接收）
-- apps/regulator-api：监管端接收服务（数据推送与列表）
+- services/school-integration-service：学校端对接服务（设备自动搜索、员工缓存、晨检数据接收）
+- services/regulator-service：监管端接收服务（数据推送与列表）
+- services/api-gateway：平台网关（可选，OpenAPI 文档/聚合入口）
+- services/user-service：用户服务示例（可选）
 - apps/device-mock：设备端 Mock（心跳/员工/晨检上报 + CLI）
 - apps/web-school：学校端 Web（设备管理增强 + 晨检管理增强 + 集成配置 Banner）
 
@@ -134,7 +138,7 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 ## 一步跑通（推荐）
 
 1) 启动三服务（4001/4002/4003）
-- 本机：`npm run demo:mego`
+- 本机：`npm run demo:mego`（优先从 services/* 启动 school-integration/regulator）
 - 内网（将 192.168.11.133 替换为你的主机 IP）：
   - `HOST=192.168.11.133 npm run demo:mego`
 
@@ -162,6 +166,12 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 - 方式 A（批量自动）在另一个终端生成 10 条数据：
   - 本机：`npm run demo:mego:emit`
   - 内网：`HOST=192.168.11.133 npm run demo:mego:emit`
+  - 命令解读：
+    - 作用：依次执行“心跳 → 员工缓存刷新 → 循环上报 10 条晨检（含占位图片）”。
+    - 默认目标：`SCHOOL_API_BASE=http://localhost:4001`、`REGULATOR_API_BASE=http://localhost:4002`、`DEVICE_MOCK_BASE=http://localhost:4003`、`EQUIPMENT_CODE=DEMO-EC-0001`。
+    - 自定义：可通过环境变量覆盖上述地址，例如
+      - `SCHOOL_API_BASE=http://<IP>:4001 REGULATOR_API_BASE=http://<IP>:4002 DEVICE_MOCK_BASE=http://<IP>:4003 EQUIPMENT_CODE=DEMO-EC-0001 npm run demo:mego:emit`
+    - 监管端可选：未启动 4002 时，监管推送会报错但不影响学校端上报；仅做联调可忽略。
 - 方式 B（单条手动）向学校端直传一条记录：
   - `curl -X POST 'http://192.168.11.133:4001/api/integrations/morning-checks/mego' -H 'Content-Type: application/x-www-form-urlencoded' --data-raw 'equipmentCode=DEMO-EC-0001&uuid=uuid_001&userId=E001&foreheadTemp=36.6&checkTime=2025-08-29 10:15:00&normalTemperatureRange=35.9-37.3&handCheckResult=&healthAskResult=&abnormalTemp=0&health=0'`
 - Web-School → “晨检管理”页面点击“同步设备记录”，即可看到设备来源的晨检数据（体温/判定/时间）。
@@ -170,9 +180,19 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 - 打开 `http://192.168.11.133:4002/api/regulator/morning-checks` 查看推送到监管端的数据。
 
 ## 手动启动（可选）
-- 学校端：`cd apps/school-api && npm i && npm run dev`
-- 监管端：`cd apps/regulator-api && npm i && npm run dev`
-- 设备端：`cd apps/device-mock && npm i && npm run dev`
+- 学校端：`cd services/school-integration-service && npm i && npm run dev`
+- 监管端：`cd services/regulator-service && npm i && npm run dev`
+- 设备端：`cd services/device-mock && npm i && npm run dev`
+
+## 网关与用户服务的区别
+- `services/api-gateway`（API 网关）
+  - 定位：统一入口与路由聚合，统一 OpenAPI 文档；可扩展鉴权、限流、协议适配、BFF 编排等。
+  - 面向对象：前端与对外 API 调用者。
+  - 何时使用：需要统一网关/文档/代理聚合时；米果最小演示链路可不依赖。
+- `services/user-service`（用户服务）
+  - 定位：用户/租户/角色等领域的微服务样例，由网关或其他服务调用。
+  - 面向对象：内部微服务协作（非直接面向前端）。
+  - 何时使用：完整平台化时承载账户体系、RBAC、租户隔离等能力。
 
 ## Web-School 端改动一览
 - 新增设备抽屉（Devices 页面）：
@@ -183,7 +203,7 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 - 集成配置 Banner：
   - 读取 `public/integration.config.json` 或本地存储覆盖；支持“测试连接/设置”。
 
-## 学校端服务（apps/school-api）接口
+## 学校端服务（services/school-integration-service）接口
 - `POST /api/devices/discover`：自动搜索（心跳探测）
 - `POST /api/employees/refresh`、`GET /api/employees`：员工缓存
 - `POST /api/integrations/morning-checks/mego`：接收晨检数据（multipart/form-data 支持 `faceFile/palmFile/backOfHandFile`）
@@ -194,13 +214,13 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 - 幂等键：`equipmentCode + userId + checkTime (+uuid)`；
 - 图片落地 `data/uploads/<recordId>/`，二进制不入日志。
 
-## 设备端 Mock（apps/device-mock）
+## 设备端 Mock（services/device-mock）
 - 上游接口模拟：
   - `POST /device/morningChecker/heartBeatInfo`（返回 `statusCode=200` 且 `text/html`）
   - `GET /device/morningChecker/employeeList?equipmentCode=...`
-- CLI：`npm run demo:online`（在 `apps/device-mock` 内）按环境变量上报至学校/监管端。
+- CLI：`npm run demo:online`（在 `services/device-mock` 内）按环境变量上报至学校/监管端。
 
-## 监管端服务（apps/regulator-api）
+## 监管端服务（services/regulator-service）
 - `POST /api/regulator/morning-checks/push`、`GET /api/regulator/morning-checks`
 
 ## 环境与脚本
@@ -221,4 +241,4 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 - 无法自动搜索：确认候选域名指向设备 Mock（默认 4003）；或在 `school-api` 设 `MEGO_BASE_URLS`。
 - 员工缓存失败：先完成“自动搜索”以记录 `baseUrl`，再刷新；或检查 4003 是否启动。
 - 同步无数据：`GET /api/morning-checks` 检查是否已有记录；如无，请重新上报或运行 emit 脚本。
-- 跨域：school-api/device-mock 默认启用 CORS；确保浏览器可访问 4001/4003。
+- 跨域：school-integration/device-mock 默认启用 CORS；确保浏览器可访问 4001/4003。

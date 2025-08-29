@@ -4,8 +4,8 @@ import { Device, Employee, MorningCheck } from '../types';
 
 type Store = {
   devices: Map<string, Device>;
-  employees: Map<string, Employee>; // key: userId
-  checks: Map<string, MorningCheck>; // key: id
+  employees: Map<string, Employee>;
+  checks: Map<string, MorningCheck>;
   idempotency: Set<string>;
 };
 

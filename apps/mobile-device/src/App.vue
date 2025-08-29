@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { refreshEmployees, listEmployees } from './api';
+import { refreshEmployees, listEmployees, postMorningCheck } from './api';
 
 const base = ref<string>('');
 const equipmentCode = ref<string>('DEMO-EC-0001');
 const loading = ref(false);
 const employees = ref<Array<{ userId: string; name: string; healthStartTime?: string; healthEndTime?: string }>>([]);
 const message = ref<string>('');
+const userId = ref<string>('E001');
+const temp = ref<number>(36.6);
 
 onMounted(() => {
   const lsBase = localStorage.getItem('SCHOOL_INTEGRATION_BASE') || '';
@@ -40,6 +42,25 @@ async function fetchList() {
     loading.value = false;
   }
 }
+
+async function reportCheck() {
+  loading.value = true;
+  message.value = '';
+  try {
+    localStorage.setItem('SCHOOL_INTEGRATION_BASE', base.value);
+    const r = await postMorningCheck({
+      equipmentCode: equipmentCode.value,
+      userId: userId.value,
+      foreheadTemp: temp.value,
+      normalTemperatureRange: '35.9-37.3',
+    });
+    message.value = r.success ? `上报成功：${r.id || ''}` : `上报失败：${r.message || ''}`;
+  } catch (e: any) {
+    message.value = `请求失败：${e?.message || e}`;
+  } finally {
+    loading.value = false;
+  }
+}
 </script>
 <template>
   <div class="container">
@@ -55,8 +76,15 @@ async function fetchList() {
     <div class="actions">
       <button :disabled="loading" @click="doRefresh">刷新员工缓存</button>
       <button :disabled="loading" @click="fetchList">拉取员工列表</button>
+      <button :disabled="loading" @click="reportCheck">上报晨检</button>
     </div>
     <p class="msg">{{ message }}</p>
+    <div class="form">
+      <label>userId：</label>
+      <input v-model="userId" />
+      <label style="margin-left:12px;">体温(℃)：</label>
+      <input v-model.number="temp" type="number" step="0.1" min="34" max="42" style="width:100px" />
+    </div>
     <ul class="emp" v-if="employees.length">
       <li v-for="e in employees" :key="e.userId">
         {{ e.userId }} · {{ e.name }}

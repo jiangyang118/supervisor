@@ -1,7 +1,14 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import type { RegulatedCheck } from './types';
+
+export type RegulatedCheck = {
+  id: string;
+  schoolId?: string;
+  schoolName?: string;
+  payload: any;
+  receivedAt: string;
+};
 
 const app = express();
 app.use(cors());
@@ -25,15 +32,10 @@ app.post('/api/regulator/morning-checks/push', (req, res) => {
   return res.json({ success: true, id });
 });
 
-app.get('/api/regulator/morning-checks', (_req, res) => {
-  res.json({ data: store.list });
-});
+app.get('/api/regulator/morning-checks', (_req, res) => { res.json({ data: store.list }); });
 
-const port = Number(process.env.PORT_REGULATOR || 4002);
-app.listen(port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`[regulator-api] listening on :${port}`);
-});
+const port = Number(process.env.PORT_REGULATOR || process.env.PORT || 4002);
+app.listen(port, () => { console.log(`[regulator-service] listening on :${port}`); });
 
 export default app;
 

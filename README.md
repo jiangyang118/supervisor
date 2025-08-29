@@ -38,6 +38,18 @@
   - 前台查看详细日志：`bash scripts/demo.sh --foreground`
   - 国内镜像加速：`bash scripts/demo.sh --cn`（覆盖 Compose 使用国内镜像与 Node 基础镜像）
 
+容器版启动成功后（浏览器访问）
+- 网关 API 健康检查：`http://localhost:3300/health`
+- OpenAPI 文档（经 Nginx 转发）：`http://localhost/api/docs`
+- Kafka UI：`http://localhost:8080`
+- MinIO 控制台：`http://localhost:9001`（默认账号/密码：`minioadmin/minioadmin`，如 `.env` 未覆盖）
+- 远程访问：将 `localhost` 换为宿主机 IP，例如 `http://192.168.11.133/api/docs`
+
+前端 Web（容器未包含，需要本地启动）
+- 学校端：`cd apps/web-school && npm i && npm run dev`（默认 `http://localhost:5173`）
+- 监管端：`cd apps/web-regulator && npm i && npm run dev`（默认 `http://localhost:5174` 或 Vite 提示）
+- 如网关走容器的 3300 端口，请在前端设置 `VITE_API_BASE=http://<宿主机IP>:3300`（或使用已有默认 `http://localhost:3300`）
+
 同时提供“MEGO 设备对接（本地 Node 版）”一键脚本（无需 Docker）：
 - 启动：`bash scripts/mego.sh --host 192.168.11.133`（或省略 host 使用 localhost）
 - 启动并自动生成 10 条晨检：`bash scripts/mego.sh --host 192.168.11.133 --emit`

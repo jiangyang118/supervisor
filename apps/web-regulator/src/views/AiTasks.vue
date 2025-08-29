@@ -190,7 +190,7 @@ const onExportCsv = () =>
   });
 onMounted(async () => {
   types.value = await (
-    await fetch(`${import.meta.env.VITE_API_BASE || 'http://localhost:3300'}/school/ai/types`)
+    await fetch(`${import.meta.env.VITE_API_BASE || '/api'}/school/ai/types`)
   ).json();
   methods.value = await api.aiMethods();
   schools.value = await api.aiSchools();

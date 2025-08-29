@@ -1,5 +1,5 @@
 // API基础地址（主平台网关）
-const BASE = (import.meta as any).env?.VITE_API_BASE || 'http://localhost:3300';
+const BASE = (import.meta as any).env?.VITE_API_BASE || '/api';
 export const API_BASE = BASE;
 // 学校端集成服务（MEGO 对接演示服务，默认 4001）
 const SCHOOL_INTEGRATION_BASE = (window as any)?.SCHOOL_INTEGRATION_BASE || 'http://localhost:4001';

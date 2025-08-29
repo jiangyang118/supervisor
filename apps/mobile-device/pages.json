@@ -1,9 +1,68 @@
 {
+  "globalStyle": {
+    "backgroundColor": "#F7F8FA",
+    "navigationBarBackgroundColor": "#1677ff",
+    "navigationBarTextStyle": "white"
+  },
   "pages": [
     {
       "path": "pages/index/index",
       "style": {
         "navigationBarTitleText": "设备管理"
+      }
+    },
+    {
+      "path": "pages/schools/index",
+      "style": {
+        "navigationBarTitleText": "选择学校"
+      }
+    },
+    {
+      "path": "pages/canteens/index",
+      "style": {
+        "navigationBarTitleText": "选择食堂"
+      }
+    },
+    {
+      "path": "pages/devices/index",
+      "style": {
+        "navigationBarTitleText": "设备列表"
+      }
+    },
+    {
+      "path": "pages/devices/detail",
+      "style": {
+        "navigationBarTitleText": "设备详情"
+      }
+    },
+    {
+      "path": "pages/inspections/smart",
+      "style": {
+        "navigationBarTitleText": "智能检查"
+      }
+    },
+    {
+      "path": "pages/monitor/index",
+      "style": {
+        "navigationBarTitleText": "实时监控"
+      }
+    },
+    {
+      "path": "pages/reports/daily",
+      "style": {
+        "navigationBarTitleText": "食堂日报"
+      }
+    },
+    {
+      "path": "pages/todos/index",
+      "style": {
+        "navigationBarTitleText": "今日待办"
+      }
+    },
+    {
+      "path": "pages/health/index",
+      "style": {
+        "navigationBarTitleText": "工勤健康"
       }
     }
   ]

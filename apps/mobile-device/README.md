@@ -38,3 +38,10 @@
 - 看不到运行目标：确认 HBuilderX 已安装 “uni-app” 插件或使用完整版本。
 - 识别不到设备：开启 Android USB 调试或改用模拟器运行。
 - 网络请求失败：将接口地址中的 `localhost` 改为电脑的局域网 IP。
+
+## 组件库（Vant）
+- 本项目已集成 Vant（Vue 3 移动端组件库），通过 Vite 插件按需自动引入。
+- 安装：`cd apps/mobile-device && npm i`
+- 使用示例：
+  - 视图中直接写 `<van-button type="primary">按钮</van-button>` 即可使用，无需手动 import。
+  - 配置位置：`vite.config.ts` 中的 `unplugin-vue-components` + `VantResolver`。

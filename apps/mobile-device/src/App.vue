@@ -69,6 +69,8 @@ async function fetchList() {
 </template>
 
 <style>
+@import './styles/theme.css';
+
 .container { padding: 16px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial; }
 .form { margin: 8px 0; }
 label { display: inline-block; width: 120px; }

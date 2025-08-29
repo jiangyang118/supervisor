@@ -1,0 +1,19 @@
+// LESS global variables & mixins for mobile-device
+@brand-primary: #6C5CE7; // modern violet
+@brand-secondary: #A855F7;
+@warning: #FAAD14;
+@error: #F5222D;
+@success: #52C41A;
+
+@radius-sm: 8px;
+@radius-md: 12px;
+@radius-lg: 16px;
+
+// Shadows
+@shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+@shadow-md: 0 6px 12px rgba(0,0,0,.06);
+
+// Mixins
+.rounded(@r: @radius-md) { border-radius: @r; }
+.card() { background: #fff; .rounded(); box-shadow: @shadow-sm; padding: 12px 16px; }
+.hover-lift() { transition: transform .2s ease, box-shadow .2s ease; &:hover { transform: translateY(-2px); box-shadow: @shadow-md; } }

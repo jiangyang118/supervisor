@@ -1,67 +1,46 @@
 <template>
   <view class="page">
-    <van-nav-bar title="实时监控" left-arrow @click-left="goBack" />
-    <view v-if="!canteenId" class="placeholder">请先选择学校与食堂</view>
-    <view v-else>
-      <van-skeleton title :row="3" v-if="loading" />
-      <van-cell-group v-else inset>
-        <van-cell
-          v-for="cam in cameras"
-          :key="cam.id"
-          :title="cam.name"
-        >
-          <template #label>
-            <van-tag :type="cam.online ? 'success' : 'default'">{{ cam.online ? '在线' : '离线' }}</van-tag>
-          </template>
-        </van-cell>
-      </van-cell-group>
-
-      <view v-if="current && current.online" style="margin-top:12px;" class="card">
-        <div style="margin-bottom:8px;" class="title">{{ current.name }}</div>
-        <video
-          v-if="current.stream"
-          :src="current.stream"
-          style="width:100%; border-radius:8px; background:#000;"
-          controls
-          playsinline
-          webkit-playsinline
-        />
-        <van-empty v-else description="无可用视频流" />
+    <view class="card">
+      <view class="header"><text class="title">实时监控</text></view>
+      <view v-if="!canteenId" class="placeholder">请先选择学校与食堂</view>
+      <view v-else>
+        <view class="list">
+          <view class="list-item" v-for="cam in list" :key="cam.id">
+            <view style="flex:1; margin-right:12px;">
+              <view style="font-weight:600">{{ cam.name }}</view>
+              <view class="muted" v-if="!cam.online">离线，展示快照</view>
+            </view>
+          </view>
+        </view>
+        <view class="section" v-for="cam in list" :key="cam.id + '-player'">
+          <VideoPlayer :hls-url="cam.online ? cam.stream : ''" :snapshot="snapshotUrl(cam)" :autoplay="true" :muted="true" />
+        </view>
       </view>
-
-      <van-empty v-if="!cameras.length && !loading" description="暂无摄像头" />
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
-import { selectedCanteenId } from '../../stores/tenant'
-import { fetchCameras, type Camera } from '../../services/data'
+import { onMounted, ref } from 'vue'
+import { fetchSchoolCameras, type Camera } from '../../api/modules/bright'
+import { selectedSchoolId } from '../../stores/tenant'
+import VideoPlayer from '../../components/VideoPlayer.vue'
 
-const canteenId = selectedCanteenId
-const cameras = ref<Camera[]>([])
-const current = ref<Camera | null>(null)
-const loading = ref(false)
+const schoolId = selectedSchoolId
+const list = ref<Camera[]>([])
 
-async function load() {
-  if (!canteenId.value) return
-  loading.value = true
-  cameras.value = await fetchCameras(canteenId.value)
-  loading.value = false
-  current.value = cameras.value.find(c => c.online) || cameras.value[0] || null
+function snapshotUrl(c: Camera) {
+  // 占位图：若摄像头离线或无 hlsUrl
+  return `https://picsum.photos/seed/${c.schoolId}-${c.id}/480/270`
 }
 
-watch(cameras, () => {
-  if (current.value && !cameras.value.find(c => c.id === current.value!.id)) {
-    current.value = cameras.value[0] || null
-  }
-})
-
-function goBack() { try { (uni as any).navigateBack?.() } catch {}; try { history.back() } catch {} }
+async function load() {
+  const sid = schoolId.value || undefined
+  list.value = await fetchSchoolCameras(sid)
+}
 
 onMounted(load)
 </script>
 
-<style></style>
-
+<style scoped>
+</style>

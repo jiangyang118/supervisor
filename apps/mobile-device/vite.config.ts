@@ -11,8 +11,23 @@ export default defineConfig({
       dts: false,
     }),
   ],
+  css: {
+    preprocessorOptions: {
+      less: {
+        javascriptEnabled: true,
+        additionalData: '@import (reference) "src/styles/variables.less";',
+      },
+    },
+  },
   server: {
     port: 4210,
     host: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3300',
+        changeOrigin: true,
+        rewrite: (p) => p.replace(/^\/api/, ''),
+      },
+    },
   },
 });

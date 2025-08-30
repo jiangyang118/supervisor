@@ -3,7 +3,9 @@
   "private": true,
   "version": "0.1.0",
   "workspaces": [
-    "apps/*"
+    "apps/*",
+    "services/*",
+    "libs/*"
   ],
   "scripts": {
     "build": "echo 'Use per-app build'",

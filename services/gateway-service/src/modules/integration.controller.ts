@@ -1,11 +1,15 @@
-import { Body, Controller, Get, Post, UploadedFiles, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Post, UploadedFiles, UseInterceptors, UseGuards } from '@nestjs/common';
 import { z } from 'zod';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { abnormalTempFlag, computeHealth, discoverCandidates, fetchEmployees, parseRange } from './integration.utils';
 import { getDevices, getEmployees, listChecks, saveMorningCheck, setEmployees, upsertDevice, pushRegulator, listRegulator } from './integration.store';
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import path from 'path';
+import { DeviceSignGuard } from './device-sign.guard';
+import { RateLimitGuard } from './rate-limit.guard';
+import { ApiBody, ApiConsumes, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Integration')
 @Controller()
 export class IntegrationController {
   @Get('api/employees')
@@ -58,11 +62,31 @@ export class IntegrationController {
   }
 
   @Post('api/integrations/morning-checks/mego')
+  @UseGuards(DeviceSignGuard, RateLimitGuard)
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'faceFile', maxCount: 1 },
     { name: 'palmFile', maxCount: 1 },
     { name: 'backOfHandFile', maxCount: 1 },
   ]))
+  @ApiHeader({ name: 'x-sign', required: false, description: 'Signature header (optional if sign is provided in body)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: {
+      equipmentCode: { type: 'string' },
+      uuid: { type: 'string' },
+      userId: { type: 'string' },
+      checkTime: { type: 'string', description: 'YYYY-MM-DD HH:mm:ss' },
+      foreheadTemp: { type: 'number' },
+      normalTemperatureRange: { type: 'string', example: '35.9-37.3' },
+      abnormalTemp: { type: 'integer', enum: [0,1] },
+      handCheckResult: { type: 'string', description: 'CSV list' },
+      healthAskResult: { type: 'string', description: 'CSV list' },
+      health: { type: 'integer', enum: [0,1] },
+      faceFile: { type: 'string', format: 'binary' },
+      palmFile: { type: 'string', format: 'binary' },
+      backOfHandFile: { type: 'string', format: 'binary' },
+      sign: { type: 'string' },
+    }, required: ['equipmentCode','userId','checkTime','foreheadTemp'] } })
+  @ApiOkResponse({ description: 'Accepted' })
   async megoIngest(@Body() body: any, @UploadedFiles() files?: { faceFile?: Express.Multer.File[]; palmFile?: Express.Multer.File[]; backOfHandFile?: Express.Multer.File[] }) {
     try {
       const pick = (name: string) => body?.[name] ?? body?.[name as keyof typeof body];
@@ -122,4 +146,3 @@ export class IntegrationController {
   @Get('api/regulator/morning-checks')
   listReg() { return { data: listRegulator() }; }
 }
-

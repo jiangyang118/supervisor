@@ -1,0 +1,20 @@
+:root {
+  --bg-0:#080F16;
+  --bg-1:#0A1E33;
+  --line-1:#0F2A46;
+  --primary:#11C5FF;
+  --primary-2:#2AA7FF;
+  --accent:#7C5CFF;
+  --success:#19D27C; --warning:#FFB020; --error:#FF4D4F;
+  --text-1:#ffffff; --text-2:#A8C3E6; --text-3:#6C87A6;
+  --glow: 0 0 16px rgba(17,197,255,.35), inset 0 0 12px rgba(17,197,255,.08);
+  --shadow: 0 6px 24px rgba(0,0,0,.25);
+  --r-sm:8px; --r-md:12px; --r-lg:14px;
+  --sp-1:8px; --sp-2:12px; --sp-3:16px; --sp-4:24px;
+  --num-bg:linear-gradient(180deg, rgba(17,197,255,.22), rgba(17,197,255,.05));
+  --num-stroke:rgba(17,197,255,.55);
+}
+
+@media (min-width: 2560px) {
+  :root { font-size: 18px; }
+}

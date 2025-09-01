@@ -1,0 +1,130 @@
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; }
+body { margin: 0; background: var(--bg-0); color: var(--text-1); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "PingFang SC", "Microsoft YaHei", sans-serif; }
+a { color: var(--primary); text-decoration: none; }
+
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.shell {
+  flex: 1;
+  padding: var(--sp-1) 0;
+  display: grid;
+  grid-template-columns: 1fr 2fr 1fr; /* 6 / 12 / 6 */
+  gap: var(--sp-3);
+}
+
+.panel {
+  background: #001B3D;
+  border: 2px solid #004A9E;
+  box-shadow: inset 0px 0px 34px 0px #019CFF;
+  position: relative;
+}
+
+.panel .hd {
+  padding: var(--sp-2) var(--sp-3);
+  border-bottom: 1px solid var(--line-1);
+  color: var(--text-1);
+}
+.panel .bd { padding: var(--sp-3); }
+
+
+
+.header {
+  height: 64px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  column-gap: var(--sp-4);
+  padding: 0 var(--sp-4);
+  border-bottom: 1px solid var(--line-1);
+  background: radial-gradient(1200px 60px at 50% -20px, rgba(17,197,255,.18), transparent), var(--bg-1);
+}
+
+.title {
+  font-size: 22px;
+  letter-spacing: 6px;
+  text-shadow: 0 0 12px rgba(17,197,255,.6);
+}
+
+.title-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.title-badge { padding: 6px 20px; border: 2px solid #004A9E; background: #001B3D; border-radius: 10px; box-shadow: inset 0 0 34px #019CFF; color: var(--text-1); font-size: 20px; letter-spacing: 6px; text-shadow: 0 0 10px rgba(1,156,255,.65); }
+.title-dec { width: 420px; height: 28px; opacity: .9; }
+
+.meta { color: var(--text-3); }
+
+.h-left { display: flex; align-items: center; gap: 12px; color: var(--text-2); overflow: hidden; }
+.h-left .region { font-weight: 600; color: var(--text-1); }
+.weather { display: flex; align-items: center; gap: 8px; font-size: 13px; padding: 4px 10px; border:1px solid var(--line-1); border-radius: 999px; background: rgba(17,197,255,.06); }
+.health { display: flex; align-items: center; gap: 10px; }
+.health .label { color: var(--text-2); }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border:1px solid var(--line-1); border-radius: 999px; background: rgba(17,197,255,.06); color: var(--text-1); font-size: 13px; }
+.pill .val { color: var(--primary); font-weight: 600; }
+.thumbs { display: flex; align-items: center; gap: 6px; max-width: 420px; overflow: hidden; }
+.thumb { width: 28px; height: 28px; border-radius: 4px; border:1px solid var(--line-1); background:#00121f; object-fit: cover; cursor: pointer; }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.lightbox .img { max-width: 80vw; max-height: 80vh; border: 1px solid var(--line-1); box-shadow: var(--shadow); background: #000; }
+
+/* 人员健康安全 专用背景 */
+.mc-card { flex:1;  }
+.mc-title-bg {
+  background:  url('./src/assets/img/morningCheckTitle.png') center/cover no-repeat;
+
+
+  display: flex; align-items: center; justify-content: center;
+  height: 48px;
+}
+.mc-title-text { color: var(--text-1); font-size: 16px; letter-spacing: 3px; text-shadow: 0 0 8px rgba(1,156,255,.6); font-weight: 600; }
+.mc-content-bg {
+  background: #080F16 url('./src/assets/img/morningCheckConent.png') center/cover no-repeat;
+  height:40px;
+
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+
+}
+.mc-total-line { display: flex; align-items: baseline; gap: 8px; }
+.mc-total-num { font-size: 42px; color: var(--primary); text-shadow: 0 0 12px rgba(1,156,255,.7); font-weight: 800; text-align: center; line-height: 1; }
+.mc-total-unit { font-size: 14px; color: var(--text-2); }
+.mc-subtext { margin-top: 6px; color: var(--text-3); font-size: 12px; }
+
+.h-center { text-align: center; }
+.h-right { display: grid; grid-auto-flow: row; justify-items: end; row-gap: 2px; }
+.h-right .time { font-size: 20px; color: var(--primary); text-shadow: 0 0 8px rgba(17,197,255,.55); }
+.h-right .date { color: var(--text-2); font-size: 13px; }
+
+.row { display: grid; grid-template-columns: 1fr; gap: var(--sp-3); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); }
+
+.num {
+  background: var(--num-bg);
+  border: 1px solid var(--num-stroke);
+  border-radius: var(--r-md);
+  padding: var(--sp-3);
+  text-align: center;
+}
+.num .k { color: var(--text-3); }
+.num .v { font-size: 28px; color: var(--primary); text-shadow: 0 0 8px rgba(17,197,255,.55); }
+
+.split-line { height: 1px; background: linear-gradient(90deg, transparent, var(--line-1), transparent); margin: var(--sp-2) 0; }
+
+.divider { height: 3px; width: 100%; background: #004A9E; box-shadow: 0 0 14px #019CFF; }
+
+.tag { font-size: 12px; padding: 2px 8px; border: 1px solid var(--line-1); border-radius: 999px; color: var(--text-2); }
+
+.legend { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.video-cell { background: #000a14; border: 1px solid var(--line-1); border-radius: 8px; position: relative; overflow: hidden; }
+.video-cell .label { position: absolute; left: 0; top: 0; font-size: 12px; background: rgba(0,0,0,.55); padding: 4px 8px; }
+
+.footer-note { color: var(--text-3); font-size: 12px; text-align: right; }
+.dv-card { display: block; border-radius: var(--card-radius, var(--r-md)); overflow: hidden; }
+.dv-card .border-box-content { padding: var(--sp-3); overflow: hidden; }
+/* Limit title area so gradients don't overflow */
+.dv-card .border-box-11-title { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 8px; }
+.dv-card .border-box-11 { overflow: hidden; border-radius: inherit; }
+/* Clip any animated polygons/filters inside SVG to the card bounds */
+.dv-card svg { display:block; overflow:hidden; clip-path: inset(0 round var(--card-radius, var(--r-md))); }
+.dv-card .dv-border-box-11, .dv-card .dv-border-box-11 svg, .dv-card .border-box-11 { overflow:hidden; clip-path: inset(0 round var(--card-radius, var(--r-md))); }

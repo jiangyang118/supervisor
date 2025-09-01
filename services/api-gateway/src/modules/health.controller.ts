@@ -4,6 +4,6 @@ import { Controller, Get } from '@nestjs/common';
 export class HealthController {
   @Get()
   ping() {
-    return { ok: true, service: 'api-gateway', time: new Date().toISOString() };
+    return { ok: true, service: 'gateway-service', time: new Date().toISOString() };
   }
 }

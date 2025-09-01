@@ -5,7 +5,7 @@ info:
 servers:
   - url: http://localhost:3300
     description: API Gateway
-  - url: http://localhost:3101
+  - url: http://localhost:3300
     description: User Service
 paths:
   /health:

@@ -54,41 +54,16 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
     ports: ['8080:8080']
 
-  api-gateway:
+  gateway-service:
     build:
       context: ..
-      dockerfile: services/api-gateway/Dockerfile
+      dockerfile: services/gateway-service/Dockerfile
     environment:
       PORT: 3000
     ports: ['3300:3000']
     depends_on: [postgres, redis, kafka]
 
-  school-integration:
-    build:
-      context: ..
-      dockerfile: services/school-integration-service/Dockerfile
-    environment:
-      PORT: 4001
-      MEGO_BASE_URLS: ${MEGO_BASE_URLS:-http://host.docker.internal:4003}
-      EQUIPMENT_CODE: ${EQUIPMENT_CODE:-DEMO-EC-0001}
-    ports: ['4001:4001']
-
-  regulator-service:
-    build:
-      context: ..
-      dockerfile: services/regulator-service/Dockerfile
-    environment:
-      PORT: 4002
-    ports: ['4002:4002']
-
-  user-service:
-    build:
-      context: ..
-      dockerfile: services/user-service/Dockerfile
-    environment:
-      PORT: 3101
-    ports: ['3101:3101']
-    depends_on: [postgres]
+  # consolidated: school/regulator endpoints are now in gateway-service
 
   nginx:
     image: nginx:1.27-alpine
@@ -96,7 +71,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - '80:80'
-    depends_on: [api-gateway]
+    depends_on: [gateway-service]
 
 volumes:
   pgdata:

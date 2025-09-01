@@ -4,7 +4,7 @@
 
 1.工程结构（Monorepo）
 
-- Nx + pnpm 管理；packages: apps/web-school, apps/web-regulator, apps/mobile-device, apps/web-emergency, apps/mobile-emergency, services/api-gateway, services/user-service, services/food-safety-service, services/inventory-service, services/iot-service, services/ai-vision-service, services/alert-service, libs/shared, infra. 2.技术栈约束
+- Nx + pnpm 管理；packages: apps/web-school, apps/web-regulator, apps/mobile-device, apps/web-emergency, apps/mobile-emergency, services/gateway-service, services/food-safety-service, services/inventory-service, services/iot-service, services/ai-vision-service, services/alert-service, libs/shared, infra. 2.技术栈约束
 - 前端 Web：Vue 3 + Vite + TypeScript + Pinia + Vue Router + Element Plus，SSR 关闭；国际化 i18n 预留。
 - 移动端f：UniApp（HBuilderX 兼容）或 React Native（二选一，优先 UniApp），与后端同一鉴权体系。
 - 后端：Node.js 20 + NestJS（模块化微服务），API Gateway（REST + WebSocket 推送 + OpenAPI 3.1）。

@@ -2,7 +2,7 @@
 set -Eeuo pipefail
 
 # MEGO-only demo launcher with prechecks for beginners
-# Starts school-api(4001), regulator-api(4002), device-mock(4003) outside Docker
+# Starts gateway-service(3300) and device-mock(4003) outside Docker
 
 HOST=${HOST:-localhost}
 EQUIPMENT_CODE=${EQUIPMENT_CODE:-DEMO-EC-0001}
@@ -56,13 +56,12 @@ check_port 4002
 check_port 4003
 
 log "Installing deps if needed..."
-for d in apps/school-api apps/device-mock; do
-  if [ ! -d "$d/node_modules" ]; then (cd "$d" && npm i); fi
+for d in services/gateway-service services/device-mock; do
+  if [ -d "$d" ] && [ ! -d "$d/node_modules" ]; then (cd "$d" && npm i); fi
 done
-if [ $SKIP_REG -eq 0 ] && [ ! -d apps/regulator-api/node_modules ]; then (cd apps/regulator-api && npm i); fi
 
 log "Starting services (Ctrl+C to stop):"
-SCHOOL_API_BASE="http://$HOST:4001" REGULATOR_API_BASE="http://$HOST:4002" DEVICE_MOCK_BASE="http://$HOST:4003" EQUIPMENT_CODE="$EQUIPMENT_CODE" \
+SCHOOL_API_BASE="http://$HOST:3300" REGULATOR_API_BASE="http://$HOST:3300" DEVICE_MOCK_BASE="http://$HOST:4003" EQUIPMENT_CODE="$EQUIPMENT_CODE" \
   node scripts/mego-demo.js &
 PID=$!
 
@@ -70,7 +69,7 @@ sleep 6
 
 log "Hints for Web-School integration:"
 echo "  1) Edit apps/web-school/public/integration.config.json to point to:"
-echo "     \"SCHOOL_INTEGRATION_BASE\": \"http://$HOST:4001\", \"MEGO_CANDIDATES\": \"http://$HOST:4003\""
+echo "     \"SCHOOL_INTEGRATION_BASE\": \"http://$HOST:3300\", \"MEGO_CANDIDATES\": \"http://$HOST:4003\""
 echo "  2) Or in the Web UI banner, click ‘设置’填写上述地址"
 echo "  3) Devices → 新增设备（米果晨检仪）→ equipmentCode=$EQUIPMENT_CODE → 自动搜索"
 
@@ -80,4 +79,3 @@ if [ $DO_EMIT -eq 1 ]; then
 fi
 
 wait $PID
-

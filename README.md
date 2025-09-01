@@ -6,7 +6,7 @@
 - Node.js 20
 - 前端 Web：Vue 3 + Vite + TypeScript + Pinia + Vue Router + Element Plus
 - 移动端：UniApp（HBuilderX 兼容），提供演示壳工程
-- 后端：NestJS（api-gateway、user-service 示例）
+- 后端：NestJS（gateway-service、user-service 示例）
 - 数据/缓存/对象存储/消息队列：PostgreSQL、Redis、MinIO、Kafka
 - 反向代理：Nginx（含 WebSocket 转发）
 
@@ -17,11 +17,16 @@
   - mobile-device 设备管理（UniApp 壳）
   - mobile-emergency 应急管理（UniApp 壳）
 - services/
-  - api-gateway 网关（NestJS + Swagger）
-  - user-service 用户服务（NestJS 示例）
+  - gateway-service 网关（NestJS + Swagger）
+  - device-mock 设备端 Mock（心跳/员工/晨检上报 + CLI）
 - libs/shared/models TypeScript 接口 + Zod 校验
 - infra/ docker-compose 与 nginx 配置
 - scripts/ 一键演示脚本骨架
+
+## 服务命名规范（统一）
+- 规则：`<领域>-service`（kebab-case），示例：`gateway-service`。
+- Mock/工具：带 `-mock` 或放在 scripts 下（如 `device-mock`）。
+- Docker Compose 中服务键：`gateway-service`。
 
 ## 快速开始
 使用 npm（免 Corepack）：确保 Node 20，运行 `npm --version` 验证
@@ -44,8 +49,6 @@
 - Kafka UI：`http://localhost:8080`
 - MinIO 控制台：`http://localhost:9001`（默认账号/密码：`minioadmin/minioadmin`，如 `.env` 未覆盖）
 - 远程访问：将 `localhost` 换为宿主机 IP，例如 `http://192.168.11.133/api/docs`
-- 学校端对接服务健康：`http://localhost:4001/health`
-- 监管端接收服务健康：`http://localhost:4002/health`
 
 前端 Web（容器未包含，需要本地启动）
 - 学校端：`cd apps/web-school && npm i && npm run dev`（默认 `http://localhost:5173`）
@@ -63,11 +66,9 @@
 复制 `.env.example` 为 `.env` 并按需修改。
 
 ## 运行
-- 学校端：`cd apps/web-school && npm run dev` 打开 `http://localhost:4200`（含 HMR）
-- 监管端：`cd apps/web-regulator && npm run dev` 打开 `http://localhost:4300`（含 HMR）
-- 后端服务热更新：`make dev-services`（基于 nodemon + ts-node + swc）
-- 全部一键：`make dev-all` 或 `npm run dev:all`（同时起 Web 与服务，支持热更新/HMR）
-- 后端稳定启动：`make start-services`（编译后运行，避免文件监听限制）
+- 后端（合并后，仅 gateway-service）：`cd services/gateway-service && npm i && npm run dev`（默认 `http://localhost:3300`）
+- 学校端：`cd apps/web-school && npm run dev` 打开 `http://localhost:5173`（含 HMR）
+- 监管端：`cd apps/web-regulator && npm run dev` 打开 `http://localhost:5174`（含 HMR）
 
 ## 学校端快速体验（推荐给一线用户演示）
 - 首页：查看“入/出库、卫生合格率、设备在线率、AI 预警、家长满意度”等 KPI 与图表；支持刷新与导出当日数据。
@@ -102,7 +103,7 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 
 ## 待办（下次 Codex 继续）
 - 鉴权与登录：统一登录、角色与租户隔离（JWT + Pinia 状态）。
-- 后端 API：NestJS 服务（api-gateway、user-service、食品安全相关服务）+ OpenAPI 文档，按 prompt/init.md 模块分组补齐。
+- 后端 API：NestJS 服务（gateway-service）+ OpenAPI 文档，按 prompt/init.md 模块分组补齐。
 - 数据层：Prisma schema、迁移与种子数据（学校/食堂/人员/设备/摄像头/台账/AI 事件样例）。
 - 导出：后端导出 CSV/Excel、PDF 报表模板（每日报表、预警看板）。
 - AI 事件：ai-vision-service（Mock 定时产出）→ Kafka → alert-service 入库与推送，前端 WebSocket 看板联动。
@@ -114,7 +115,7 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 如需我优先接哪一块，请备注（例如先补后端 API 与数据库）。
 
 ## OpenAPI
-- API 文档：启动 api-gateway 后访问 `http://localhost/api/docs`
+- API 文档：启动 gateway-service 后访问 `http://localhost/api/docs`
 
 ## 备注
 - UniApp 项目建议用 HBuilderX 打开进行运行/打包。
@@ -125,20 +126,17 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 
 本仓库基于 `prompt/miguo_dev.md` 落地“米果智能晨检仪”端到端对接（学校端 + 监管端 + 设备端 Mock + Web 界面）。
 
-含以下模块：
-- services/school-integration-service：学校端对接服务（设备自动搜索、员工缓存、晨检数据接收）
-- services/regulator-service：监管端接收服务（数据推送与列表）
-- services/api-gateway：平台网关（可选，OpenAPI 文档/聚合入口）
-- services/user-service：用户服务示例（可选）
-- apps/device-mock：设备端 Mock（心跳/员工/晨检上报 + CLI）
+含以下模块（合并后）：
+- services/gateway-service：平台网关 + 学校侧集成 + 监管侧接口（OpenAPI 文档/聚合入口）
+- services/device-mock：设备端 Mock（心跳/员工/晨检上报 + CLI）
 - apps/web-school：学校端 Web（设备管理增强 + 晨检管理增强 + 集成配置 Banner）
 
 说明：为便于演示，服务端使用内存存储，上传图片保存在 `data/uploads/`；后续可替换 SQLite/Prisma。
 
 ## 一步跑通（推荐）
 
-1) 启动三服务（4001/4002/4003）
-- 本机：`npm run demo:mego`（优先从 services/* 启动 school-integration/regulator）
+1) 启动（3300/4003）
+- 本机：`npm run demo:mego`（启动 gateway-service 与 device-mock）
 - 内网（将 192.168.11.133 替换为你的主机 IP）：
   - `HOST=192.168.11.133 npm run demo:mego`
 
@@ -146,9 +144,8 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 - `cd apps/web-school && npm i && npm run dev`
 - 浏览器打开前端（vite 默认提示的地址，如 http://localhost:5173）。
 
-3) 配置集成地址（无需手动 Console）
 - 编辑 `apps/web-school/public/integration.config.json`（或使用页面 Banner 的“设置”按钮写入 localStorage）：
-  - `"SCHOOL_INTEGRATION_BASE": "http://192.168.11.133:4001"`
+  - `"SCHOOL_INTEGRATION_BASE": "http://192.168.11.133:3300"`
   - `"MEGO_CANDIDATES": "http://192.168.11.133:4003"`
 - 刷新前端页面，顶部出现“设备集成”绿色 Banner，点“测试连接”应为“已连接”。
 
@@ -180,12 +177,12 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 - 打开 `http://192.168.11.133:4002/api/regulator/morning-checks` 查看推送到监管端的数据。
 
 ## 手动启动（可选）
-- 学校端：`cd services/school-integration-service && npm i && npm run dev`
+- 学校侧：`cd services/school-service && npm i && npm run dev`（容器内服务名：school-service）
 - 监管端：`cd services/regulator-service && npm i && npm run dev`
 - 设备端：`cd services/device-mock && npm i && npm run dev`
 
 ## 网关与用户服务的区别
-- `services/api-gateway`（API 网关）
+- `services/gateway-service`（API 网关）
   - 定位：统一入口与路由聚合，统一 OpenAPI 文档；可扩展鉴权、限流、协议适配、BFF 编排等。
   - 面向对象：前端与对外 API 调用者。
   - 何时使用：需要统一网关/文档/代理聚合时；米果最小演示链路可不依赖。
@@ -203,7 +200,7 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 - 集成配置 Banner：
   - 读取 `public/integration.config.json` 或本地存储覆盖；支持“测试连接/设置”。
 
-## 学校端服务（services/school-integration-service）接口
+## 学校侧服务（路径：services/school-service，对外名称：school-service）接口
 - `POST /api/devices/discover`：自动搜索（心跳探测）
 - `POST /api/employees/refresh`、`GET /api/employees`：员工缓存
 - `POST /api/integrations/morning-checks/mego`：接收晨检数据（multipart/form-data 支持 `faceFile/palmFile/backOfHandFile`）

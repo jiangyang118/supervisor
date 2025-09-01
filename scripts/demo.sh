@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 # Demo launcher with beginner-friendly checks and logs
 
-SERVICES=(postgres redis minio zookeeper kafka kafka-ui api-gateway user-service nginx)
+SERVICES=(postgres redis minio zookeeper kafka kafka-ui gateway-service nginx)
 COMPOSE_FILE="infra/docker-compose.yml"
 COMPOSE_CN_FILE="infra/docker-compose.cn.yml"
 USE_CN=0
@@ -118,12 +118,12 @@ wait_http() {
   done
 }
 
-log "Waiting for API Gateway health (http://localhost:3300/health)"
+log "Waiting for Gateway health (http://localhost:3300/health)"
 if wait_http "http://localhost:3300/health" 90; then
   log "API Gateway is healthy."
 else
   err "API Gateway health check failed within timeout. Printing recent logs:"
-  $DC -f "$COMPOSE_FILE" logs --tail=200 api-gateway || true
+  $DC -f "$COMPOSE_FILE" logs --tail=200 gateway-service || true
   warn "Common causes: network/proxy issues during npm install, slow first-time image pull, build errors."
   warn "Tip: run in foreground to see build logs: bash scripts/demo.sh --foreground"
   exit 1

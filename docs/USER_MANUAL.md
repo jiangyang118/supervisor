@@ -14,7 +14,7 @@
   - 全局并行开发：`npm run dev --workspaces --if-present`
   - 仅学校端：`npm --prefix apps/web-school run dev`（默认 http://localhost:4200）
   - 仅监管端：`npm --prefix apps/web-regulator run dev`（默认 http://localhost:4300）
-  - 网关后端：`npm --prefix services/api-gateway run dev`（默认容器外映射 http://localhost:3300，OpenAPI http://localhost:3300/api/docs；本地开发默认 3000）
+  - 网关后端：`npm --prefix services/gateway-service run dev`（默认容器外映射 http://localhost:3300，OpenAPI http://localhost:3300/api/docs；本地开发默认 3000）
 - 环境变量：复制 `.env.example` 为 `.env` 并按需设置（如 `WVP_BASE`）。
 - E2E 测试（可选）：`npx playwright install && npm run test:e2e && npm run e2e:report`
 
@@ -160,7 +160,7 @@
 
 - 目录结构
   - `apps/web-school`、`apps/web-regulator`：Vue3 + Vite + Element Plus
-  - `services/api-gateway`：NestJS 聚合/Mock + Swagger
+  - `services/gateway-service`：NestJS 聚合/Mock + Swagger
   - `libs/shared/models`：共享类型与 Zod 校验（可扩展）
   - `infra`：docker-compose 与 nginx
 - 启动命令
@@ -170,7 +170,7 @@
   - 新增路由：各端 `src/router/index.ts` 中添加；视图放 `src/views`；通用占位组件 `PageStub`；导出工具 `utils/export.ts`（`exportCsv`）。
   - UI 规范：Element Plus；图表用 ECharts；状态管理 Pinia；路由 Vue Router。
 - 加接口（网关）
-  - 新建控制器：`services/api-gateway/src/modules/*.controller.ts`；使用装饰器 `@Controller/@Get/@Post`；在 `app.module.ts` 注册；在 `main.ts` 配置 Swagger。
+  - 新建控制器：`services/gateway-service/src/modules/*.controller.ts`；使用装饰器 `@Controller/@Get/@Post`；在 `app.module.ts` 注册；在 `main.ts` 配置 Swagger。
   - 现有示例：
     - 学校首页：`GET /home/inbound|outbound|hygiene|devices|parent-feedback`
     - 监管总览：`GET /reg/overview|schools|schools/stats|schools/:id/cameras`
@@ -205,7 +205,7 @@
 
 ## 9. 常见问题（FAQ）
 
-- 页面可见但无数据？演示数据由网关 Mock 生成，请确保 `services/api-gateway` 正常启动并与前端同源或允许跨域。
+- 页面可见但无数据？演示数据由网关 Mock 生成，请确保 `services/gateway-service` 正常启动并与前端同源或允许跨域。
 - 导出乱码？CSV 使用 UTF-8 BOM；请用 Excel 或 WPS 打开，或导入前选择 UTF-8。
 - 视频无法播放？检查 `WVP_BASE` 是否可达、跨域响应头、浏览器兼容性（Safari 原生 HLS，其他浏览器 hls.js；flv.js 需 MSE 支持）。
 - 测试失败？先执行 `npx playwright install` 安装浏览器依赖；如端口被占用，先停掉本地已开的 dev 服务器。

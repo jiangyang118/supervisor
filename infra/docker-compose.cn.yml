@@ -22,7 +22,7 @@ services:
   nginx:
     image: docker.m.daocloud.io/library/nginx:1.27-alpine
 
-  api-gateway:
+  gateway-service:
     build:
       args:
         NODE_IMAGE: docker.m.daocloud.io/library/node:20-alpine
@@ -32,7 +32,7 @@ services:
       args:
         NODE_IMAGE: docker.m.daocloud.io/library/node:20-alpine
 
-  school-integration:
+  school-service:
     build:
       args:
         NODE_IMAGE: docker.m.daocloud.io/library/node:20-alpine

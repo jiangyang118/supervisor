@@ -5,8 +5,9 @@ const { existsSync } = require('fs');
 
 const host = process.env.HOST || process.argv[2] || 'localhost';
 const ECODE = process.env.EQUIPMENT_CODE || 'DEMO-EC-0001';
-const SCHOOL = process.env.SCHOOL_API_BASE || `http://${host}:4001`;
-const REG = process.env.REGULATOR_API_BASE || `http://${host}:4002`;
+// consolidated backend: both school+regulator endpoints are served by gateway-service
+const SCHOOL = process.env.SCHOOL_API_BASE || `http://${host}:3300`;
+const REG = process.env.REGULATOR_API_BASE || `http://${host}:3300`;
 const MOCK = process.env.DEVICE_MOCK_BASE || `http://${host}:4003`;
 
 const servicesMock = path.join(__dirname, '..', 'services', 'device-mock');

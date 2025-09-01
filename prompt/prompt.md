@@ -8,7 +8,7 @@
 - 成果：
   - apps/web-school：学校端（Vue 3 + Vite + Element Plus + Pinia + Vue Router）
   - apps/web-regulator：监管端（同栈）
-  - services/api-gateway：NestJS 网关（OpenAPI 与 Mock/聚合）
+  - services/gateway-service：NestJS 网关（OpenAPI 与 Mock/聚合）
   - libs/shared：共享模型（TypeScript + Zod）
   - infra：docker-compose、nginx
   - scripts/demo.sh：一键演示脚本骨架
@@ -28,8 +28,7 @@
   - web-school
   - web-regulator
 - services/
-  - api-gateway
-  - user-service（样例）
+  - gateway-service
 - libs/shared
 - infra/
 - prompt/
@@ -84,7 +83,7 @@
 ## 运行与调试
 
 - 安装依赖：npm i
-- 启动网关：npm --prefix services/api-gateway run dev （容器外映射默认 3300，本地默认 3000）
+- 启动网关：npm --prefix services/gateway-service run dev （容器外映射默认 3300，本地默认 3000）
 - 学校端：npm --prefix apps/web-school run dev （默认 4200）
 - 监管端：npm --prefix apps/web-regulator run dev （默认 4300）
 - 内网访问：Vite server.host = true，用 http://<内网IP>:4200/4300；如需固定端口，传 --port
@@ -133,7 +132,7 @@
 - 类型：npm run typecheck
 - 学校端：npm --prefix apps/web-school run dev
 - 监管端：npm --prefix apps/web-regulator run dev
-- 网关：npm --prefix services/api-gateway run dev
+- 网关：npm --prefix services/gateway-service run dev
 - E2E：npm run test:e2e；报告：npm run e2e:report
 
 ---
@@ -161,7 +160,7 @@
 
 如何对接 wvp-GB28181-pro
 
-- 后端（api-gateway）- services/api-gateway/src/modules/reg-overview.controller.ts - /reg/schools（学校列表）- /reg/schools/stats（附带在线/离线统计）- /reg/schools/:id/cameras（返回摄像头列表，含 flvUrl/hlsUrl 在线/离线标记）- flvUrl/hlsUrl 使用环境变量 WVP_BASE（默认 http://localhost:18080）生成：- flv: ${WVP_BASE}/live/<school>-<channel>.flv - hls: ${WVP_BASE}/live/<school>-<channel>.m3u8 - 你只需将 WVP_BASE 指向 wvp 的播放服务地址，或替换生成逻辑为你们的 wvp API 格式（如 /api/play/
+- 后端（gateway-service）- services/gateway-service/src/modules/reg-overview.controller.ts - /reg/schools（学校列表）- /reg/schools/stats（附带在线/离线统计）- /reg/schools/:id/cameras（返回摄像头列表，含 flvUrl/hlsUrl 在线/离线标记）- flvUrl/hlsUrl 使用环境变量 WVP_BASE（默认 http://localhost:18080）生成：- flv: ${WVP_BASE}/live/<school>-<channel>.flv - hls: ${WVP_BASE}/live/<school>-<channel>.m3u8 - 你只需将 WVP_BASE 指向 wvp 的播放服务地址，或替换生成逻辑为你们的 wvp API 格式（如 /api/play/
   start 等），前端无需改动。
 - 前端（监管端）
   - 播放组件：apps/web-regulator/src/components/VideoPlayer.vue（新）

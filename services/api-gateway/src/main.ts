@@ -6,6 +6,16 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
 
+  // Normalize legacy frontend prefixes: /api/school/* and /api/regulator/* → strip leading /api
+  const http = app.getHttpAdapter().getInstance();
+  http.use((req: any, _res: any, next: any) => {
+    const url: string = req.url || '';
+    if (url.startsWith('/api/school/') || url.startsWith('/api/regulator/')) {
+      req.url = url.replace(/^\/api\//, '/');
+    }
+    next();
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Food Safety API Gateway')
     .setDescription('OpenAPI for gateway routes')

@@ -7,19 +7,8 @@ const host = process.env.HOST || process.argv[2] || 'localhost';
 const ECODE = process.env.EQUIPMENT_CODE || 'DEMO-EC-0001';
 
 const roots = {
-  // prefer services/*; fallback to apps/* if present
-  school: [
-    path.join(__dirname, '..', 'services', 'school-integration-service'),
-    path.join(__dirname, '..', 'apps', 'school-api'),
-  ].find((p) => existsSync(p)) || path.join(__dirname, '..', 'services', 'school-integration-service'),
-  regulator: [
-    path.join(__dirname, '..', 'services', 'regulator-service'),
-    path.join(__dirname, '..', 'apps', 'regulator-api'),
-  ].find((p) => existsSync(p)) || path.join(__dirname, '..', 'services', 'regulator-service'),
-  mock: [
-    path.join(__dirname, '..', 'services', 'device-mock'),
-    path.join(__dirname, '..', 'apps', 'device-mock'),
-  ].find((p) => existsSync(p)) || path.join(__dirname, '..', 'services', 'device-mock'),
+  gateway: path.join(__dirname, '..', 'services', 'gateway-service'),
+  mock: path.join(__dirname, '..', 'services', 'device-mock'),
 };
 
 function installIfNeeded(dir) {
@@ -47,28 +36,20 @@ function start(name, dir, script, extraEnv = {}) {
 }
 
 async function main() {
-  const SCHOOL = `http://${host}:4001`;
-  const REG = `http://${host}:4002`;
+  const GATEWAY = `http://${host}:3300`;
   const MOCK = `http://${host}:4003`;
 
-  installIfNeeded(roots.school);
-  installIfNeeded(roots.regulator);
+  installIfNeeded(roots.gateway);
   installIfNeeded(roots.mock);
 
   const p1 = start('device-mock', roots.mock, 'dev', { PORT_DEVICE_MOCK: '4003' });
-  const p2 = start('regulator-service', roots.regulator, 'dev', { PORT_REGULATOR: '4002' });
-  const p3 = start('school-integration-service', roots.school, 'dev', {
-    PORT_SCHOOL: '4001',
-    MEGO_BASE_URLS: MOCK,
-    EQUIPMENT_CODE: ECODE,
-  });
+  const p2 = start('gateway-service', roots.gateway, 'dev', { PORT: '3300', MEGO_BASE_URLS: MOCK, EQUIPMENT_CODE: ECODE });
 
   console.log('\n=== MEGO Demo Started ===');
-  console.log(`school-api:    ${SCHOOL}`);
-  console.log(`regulator-api: ${REG}`);
-  console.log(`device-mock:   ${MOCK}`);
+  console.log(`gateway-service:   ${GATEWAY}`);
+  console.log(`device-mock:       ${MOCK}`);
   console.log('\nNext steps:');
-  console.log(`1) In browser console set: window.SCHOOL_INTEGRATION_BASE='${SCHOOL}'; window.MEGO_CANDIDATES='${MOCK}'`);
+  console.log(`1) In browser console set: window.SCHOOL_INTEGRATION_BASE='${GATEWAY}'; window.MEGO_CANDIDATES='${MOCK}'`);
   console.log("2) In web-school → 设备 → 新增设备（米果晨检仪）：填 equipmentCode=", ECODE, '，候选域名填上述 device-mock URL，点“自动搜索”');
   console.log('3) 点击“刷新员工缓存”，查看员工列表');
   console.log('4) 运行: npm run demo:mego:emit', '(or trigger manual curl) to emit 10 checks');
@@ -77,7 +58,6 @@ async function main() {
   const killAll = () => {
     p1 && p1.kill('SIGINT');
     p2 && p2.kill('SIGINT');
-    p3 && p3.kill('SIGINT');
   };
   process.on('SIGINT', () => {
     killAll();

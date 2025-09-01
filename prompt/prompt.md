@@ -54,8 +54,8 @@
 
 4. 首页数据与真实 API 对接（示例）
 
-- 学校端首页 Home.vue：入库/出库/卫生上报/设备/家长分析 → 调用 api-gateway 的 /home/\* 接口
-- 监管端首页 Dashboard.vue：KPI + 图表 + 排行 + 证件到期 → 调用 api-gateway 的 /reg/overview
+- 学校端首页 Home.vue：入库/出库/卫生上报/设备/家长分析 → 调用 gateway-service 的 /home/* 接口
+- 监管端首页 Dashboard.vue：KPI + 图表 + 排行 + 证件到期 → 调用 gateway-service 的 /reg/overview
 
 5. 网关后端（NestJS）聚合/Mock
 

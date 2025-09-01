@@ -47,7 +47,7 @@ module.exports = {
     },
     // 4) API Gateway服务：临时关闭多项检查以便通过CI
     {
-      files: ['**/services/api-gateway/src/**/*.ts'],
+      files: ['**/services/gateway-service/src/**/*.ts'],
       rules: {
         '@typescript-eslint/no-explicit-any': 'off',
         '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],

@@ -52,6 +52,10 @@ import { RegSystemController } from './reg-system.controller';
 import { IntegrationController } from './integration.controller';
 import { MorningCheckApiAdapterController } from './school-mc.adapter.controller';
 import { DineApiAdapterController } from './school-dine.adapter.controller';
+import { RegulatorMorningChecksController } from './regulator-morning-checks.controller';
+import { RegulatorMorningChecksService } from './regulator-morning-checks.service';
+import { RateLimitGuard } from './rate-limit.guard';
+import { DeviceMockController } from './device-mock.controller';
 import { Module as NestModule } from '@nestjs/common';
 import { SchoolMorningCheckModule } from '../areas/school/morning-check.module';
 import { SchoolDineModule } from '../areas/school/dine.module';
@@ -103,6 +107,8 @@ import { RegulatorLedgersModule } from '../areas/regulator/ledgers.module';
     IntegrationController,
     MorningCheckApiAdapterController,
     DineApiAdapterController,
+    RegulatorMorningChecksController,
+    DeviceMockController,
   ],
   providers: [
     CredentialsService,
@@ -123,6 +129,8 @@ import { RegulatorLedgersModule } from '../areas/regulator/ledgers.module';
     AnalyticsService,
     DevicesService,
     InspectionsService,
+    RegulatorMorningChecksService,
+    RateLimitGuard,
   ],
 })
 export class AppModule {}

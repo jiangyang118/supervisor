@@ -5,3 +5,4 @@
   "env": { "CHOKIDAR_USEPOLLING": "1" },
   "exec": "ts-node --transpile-only --swc -r ../../scripts/register-paths.js src/main.ts"
 }
+

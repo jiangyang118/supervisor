@@ -5,6 +5,6 @@ import { MorningCheckService } from '../../modules/morning-check.service';
 @Module({
   controllers: [MorningCheckController],
   providers: [MorningCheckService],
+  exports: [MorningCheckService],
 })
 export class SchoolMorningCheckModule {}
-

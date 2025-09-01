@@ -19,6 +19,7 @@
 - services/
   - gateway-service 网关（NestJS + Swagger）
   - device-mock 设备端 Mock（心跳/员工/晨检上报 + CLI）
+  - regulator-service 已合并至 gateway-service（原独立服务已移除）
 - libs/shared/models TypeScript 接口 + Zod 校验
 - infra/ docker-compose 与 nginx 配置
 - scripts/ 一键演示脚本骨架
@@ -67,6 +68,8 @@
 
 ## 运行
 - 后端（合并后，仅 gateway-service）：`cd services/gateway-service && npm i && npm run dev`（默认 `http://localhost:3300`）
+  - Regulator 接口：`POST /api/regulator/morning-checks/push`、`GET /api/regulator/morning-checks`
+  - 可选鉴权：设置 `INGEST_API_KEY` 后，调用需带 `x-api-key: <同值>` 头
 - 学校端：`cd apps/web-school && npm run dev` 打开 `http://localhost:5173`（含 HMR）
 - 监管端：`cd apps/web-regulator && npm run dev` 打开 `http://localhost:5174`（含 HMR）
 

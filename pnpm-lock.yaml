@@ -184,7 +184,7 @@ importers:
         specifier: ^3.23.8
         version: 3.25.76
 
-  services/gateway-service:
+  services/api-gateway:
     dependencies:
       '@nestjs/common':
         specifier: ^10.4.4
@@ -198,6 +198,9 @@ importers:
       '@nestjs/swagger':
         specifier: ^7.4.2
         version: 7.4.2(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.20(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@10.4.20)(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)
+      node-fetch:
+        specifier: ^2.7.0
+        version: 2.7.0
       reflect-metadata:
         specifier: ^0.2.2
         version: 0.2.2
@@ -211,6 +214,15 @@ importers:
       '@swc/core':
         specifier: ^1.7.18
         version: 1.13.5
+      '@types/express':
+        specifier: ^4.17.21
+        version: 4.17.23
+      '@types/multer':
+        specifier: ^1.4.11
+        version: 1.4.13
+      '@types/node-fetch':
+        specifier: ^2.6.4
+        version: 2.6.13
       nodemon:
         specifier: ^3.1.4
         version: 3.1.10
@@ -258,27 +270,51 @@ importers:
         specifier: ^5.5.4
         version: 5.9.2
 
-  services/regulator-service:
+  services/gateway-service:
     dependencies:
-      cors:
-        specifier: ^2.8.5
-        version: 2.8.5
-      dotenv:
-        specifier: ^16.4.5
-        version: 16.6.1
-      express:
-        specifier: ^4.19.2
-        version: 4.21.2
+      '@nestjs/common':
+        specifier: ^10.4.4
+        version: 10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^10.4.4
+        version: 10.4.20(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@10.4.20)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/platform-express':
+        specifier: ^10.4.4
+        version: 10.4.20(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.20)
+      '@nestjs/swagger':
+        specifier: ^7.4.2
+        version: 7.4.2(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@10.4.20(@nestjs/common@10.4.20(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@10.4.20)(reflect-metadata@0.2.2)(rxjs@7.8.2))(reflect-metadata@0.2.2)
+      node-fetch:
+        specifier: ^2.7.0
+        version: 2.7.0
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.1
+        version: 7.8.2
+      zod:
+        specifier: ^3.23.8
+        version: 3.25.76
     devDependencies:
+      '@swc/core':
+        specifier: ^1.7.18
+        version: 1.13.5
       '@types/express':
         specifier: ^4.17.21
         version: 4.17.23
-      '@types/node':
-        specifier: ^20.11.30
-        version: 20.19.11
-      ts-node-dev:
-        specifier: ^2.0.0
-        version: 2.0.0(@swc/core@1.13.5)(@types/node@20.19.11)(typescript@5.9.2)
+      '@types/multer':
+        specifier: ^1.4.11
+        version: 1.4.13
+      '@types/node-fetch':
+        specifier: ^2.6.4
+        version: 2.6.13
+      nodemon:
+        specifier: ^3.1.4
+        version: 3.1.10
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@swc/core@1.13.5)(@types/node@20.19.11)(typescript@5.9.2)
       typescript:
         specifier: ^5.5.4
         version: 5.9.2

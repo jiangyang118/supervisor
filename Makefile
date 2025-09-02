@@ -30,3 +30,7 @@ build:
 
 demo:
 	bash scripts/demo.sh
+
+migrate:
+	@echo "Running DB migrations (default: mysql://foodsafe:secret@127.0.0.1:3306/foodsafe_dev)"
+	@DATABASE_URL="$${DATABASE_URL:-mysql://foodsafe:secret@127.0.0.1:3306/foodsafe_dev}" pnpm -C services/gateway-service db:migrate

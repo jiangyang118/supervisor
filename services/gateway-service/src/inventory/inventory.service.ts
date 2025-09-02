@@ -1,4 +1,5 @@
 import { Injectable, MessageEvent, BadRequestException } from '@nestjs/common';
+import { InventoryRepository } from './inventory.repository';
 import { Observable, Subject } from 'rxjs';
 
 export type Category = { id: string; name: string };
@@ -70,7 +71,7 @@ export class InventoryService {
   tickets: Ticket[] = [];
   additives: Additive[] = [];
 
-  constructor() {
+  constructor(private readonly repo?: InventoryRepository) {
     this.seed();
   }
 
@@ -92,6 +93,7 @@ export class InventoryService {
     if (!body?.name) throw new BadRequestException('name required');
     const c = { id: this.id('CAT'), name: body.name };
     this.categories.push(c);
+    this.repo?.insertCategory(c.id, c.name).catch(() => void 0);
     return c;
   }
 
@@ -109,6 +111,7 @@ export class InventoryService {
       categoryId: body.categoryId,
     };
     this.products.unshift(p);
+    this.repo?.insertProduct(p.id, p.name, p.unit, p.categoryId).catch(() => void 0);
     return p;
   }
   importFromCloud() {
@@ -209,6 +212,7 @@ export class InventoryService {
     const s: Supplier = { id: this.id('SUP'), enabled: true, ...b };
     if (s.rating && (s.rating < 1 || s.rating > 5)) s.rating = Math.min(5, Math.max(1, s.rating));
     this.suppliers.unshift(s);
+    this.repo?.insertSupplier(s).catch(() => void 0);
     return s;
   }
   getSupplier(id: string) {
@@ -225,12 +229,14 @@ export class InventoryService {
     if (next.rating && (next.rating < 1 || next.rating > 5))
       next.rating = Math.min(5, Math.max(1, next.rating));
     this.suppliers[idx] = next;
+    this.repo?.updateSupplier(id, next).catch(() => void 0);
     return this.suppliers[idx];
   }
   deleteSupplier(id: string) {
     const idx = this.suppliers.findIndex((s) => s.id === id);
     if (idx === -1) return { ok: false };
     this.suppliers[idx].deleted = true;
+    this.repo?.updateSupplier(id, { deleted: true }).catch(() => void 0);
     return { ok: true };
   }
 
@@ -253,6 +259,7 @@ export class InventoryService {
     if (!b?.name) throw new BadRequestException('name required');
     const w = { id: this.id('WH'), ...b };
     this.warehouses.unshift(w);
+    this.repo?.insertWarehouse(w).catch(() => void 0);
     return w;
   }
   updateWarehouse(id: string, b: Partial<Omit<Warehouse, 'id'>>) {
@@ -260,12 +267,14 @@ export class InventoryService {
     if (idx === -1) throw new BadRequestException('not found');
     const next = { ...this.warehouses[idx], ...b } as Warehouse;
     this.warehouses[idx] = next;
+    this.repo?.updateWarehouse(id, next).catch(() => void 0);
     return next;
   }
   deleteWarehouse(id: string) {
     const idx = this.warehouses.findIndex((w) => w.id === id && !w.deleted);
     if (idx === -1) return { ok: false };
     this.warehouses[idx].deleted = true;
+    this.repo?.updateWarehouse(id, { deleted: true }).catch(() => void 0);
     return { ok: true };
   }
 
@@ -296,6 +305,7 @@ export class InventoryService {
       source: 'manual',
     };
     this.inbound.unshift(r);
+    this.repo?.insertInbound(r).catch(() => void 0);
     this.emit('in-created', r);
     return r;
   }
@@ -334,6 +344,7 @@ export class InventoryService {
       source: 'manual',
     };
     this.outbound.unshift(r);
+    this.repo?.insertOutbound(r).catch(() => void 0);
     this.emit('out-created', r);
     return r;
   }
@@ -379,6 +390,7 @@ export class InventoryService {
     if (!b?.productId || !b?.type) throw new BadRequestException('productId/type required');
     const t = { id: this.id('TK'), ...b, at: this.now() };
     this.tickets.unshift(t as any);
+    this.repo?.insertTicket(t as any).catch(() => void 0);
     return t;
   }
 
@@ -391,6 +403,7 @@ export class InventoryService {
     if (!b?.amount || Number(b.amount) <= 0) throw new BadRequestException('amount>0');
     const a = { id: this.id('AD'), ...b, at: this.now() };
     this.additives.unshift(a as any);
+    this.repo?.insertAdditive(a as any).catch(() => void 0);
     return a;
   }
 

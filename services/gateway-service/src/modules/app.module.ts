@@ -17,8 +17,6 @@ import { CredentialsController } from './credentials.controller';
 import { CredentialsService } from './credentials.service';
 import { TrainingController } from './training.controller';
 import { TrainingService } from './training.service';
-import { InventoryController } from './inventory.controller';
-import { InventoryService } from './inventory.service';
 import { WasteController } from './waste.controller';
 import { WasteService } from './waste.service';
 import { CertificatesController } from './certificates.controller';
@@ -56,20 +54,27 @@ import { RegulatorMorningChecksController } from './regulator-morning-checks.con
 import { RegulatorMorningChecksService } from './regulator-morning-checks.service';
 import { RateLimitGuard } from './rate-limit.guard';
 import { DeviceMockController } from './device-mock.controller';
+import { DbService } from './db.service';
+import { PersistenceModule } from './persistence.module';
+import { DbHealthController } from './db.controller';
 import { Module as NestModule } from '@nestjs/common';
 import { SchoolMorningCheckModule } from '../areas/school/morning-check.module';
 import { SchoolDineModule } from '../areas/school/dine.module';
 import { RegulatorOverviewModule } from '../areas/regulator/overview.module';
 import { RegulatorLedgersModule } from '../areas/regulator/ledgers.module';
+import { InventoryModule } from '../inventory/inventory.module';
 
 @Module({
   imports: [
+    PersistenceModule,
     // School-side feature modules
     SchoolMorningCheckModule,
     SchoolDineModule,
     // Regulator-side feature modules
     RegulatorOverviewModule,
     RegulatorLedgersModule,
+    // Domain modules
+    InventoryModule,
   ],
   controllers: [
     HealthController,
@@ -83,7 +88,6 @@ import { RegulatorLedgersModule } from '../areas/regulator/ledgers.module';
     PesticideController,
     DisinfectionController,
     HygieneController,
-    InventoryController,
     WasteController,
     CertificatesController,
     TrainingController,
@@ -109,6 +113,7 @@ import { RegulatorLedgersModule } from '../areas/regulator/ledgers.module';
     DineApiAdapterController,
     RegulatorMorningChecksController,
     DeviceMockController,
+    DbHealthController,
   ],
   providers: [
     CredentialsService,
@@ -116,7 +121,7 @@ import { RegulatorLedgersModule } from '../areas/regulator/ledgers.module';
     PesticideService,
     DisinfectionService,
     HygieneService,
-    InventoryService,
+    
     WasteService,
     CertificatesService,
     TrainingService,

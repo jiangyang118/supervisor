@@ -18,14 +18,14 @@ export class RegulatorMorningChecksController {
 
   @Get()
   @ApiOkResponse({ description: 'List received morning checks' })
-  list() {
-    return { data: this.svc.list() };
+  async list() {
+    return { data: await this.svc.list() };
   }
 
   @Post('push')
   @ApiBody({ description: 'Push a morning-check payload from school/ingestion', schema: { type: 'object' } })
   @ApiOkResponse({ description: 'Accepted with generated id' })
-  push(@Body(new ZodValidationPipe(z.object({ schoolId: z.string().optional(), schoolName: z.string().optional() }).passthrough())) body: any) {
-    return this.svc.push(body);
+  async push(@Body(new ZodValidationPipe(z.object({ schoolId: z.string().optional(), schoolName: z.string().optional() }).passthrough())) body: any) {
+    return await this.svc.push(body);
   }
 }

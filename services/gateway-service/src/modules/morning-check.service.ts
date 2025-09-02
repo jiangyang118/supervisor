@@ -1,4 +1,5 @@
 import { Injectable, MessageEvent, BadRequestException } from '@nestjs/common';
+import { SchoolMorningChecksRepository } from './repositories/school-morning-checks.repository';
 import { Observable, Subject } from 'rxjs';
 
 export type MCResult = '正常' | '异常';
@@ -20,7 +21,7 @@ export class MorningCheckService {
   private entries: MCEntry[] = [];
   private events$ = new Subject<MessageEvent>();
 
-  constructor() {
+  constructor(private readonly repo?: SchoolMorningChecksRepository) {
     this.seed();
   }
 
@@ -37,7 +38,7 @@ export class MorningCheckService {
     this.events$.next({ type: event, data });
   }
 
-  list(params: {
+  async list(params: {
     schoolId?: string;
     staff?: string;
     result?: MCResult;
@@ -47,19 +48,45 @@ export class MorningCheckService {
     pageSize?: number | string;
   }) {
     const sid = params.schoolId || 'sch-001';
+    const p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
+    const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
+    if (this.repo) {
+      try {
+        const { items, total } = await this.repo.list({
+          schoolId: sid,
+          staff: params.staff,
+          result: params.result,
+          start: params.start,
+          end: params.end,
+          page: p,
+          pageSize: ps,
+        });
+        const mapped = items.map((r) => ({
+          id: r.id,
+          schoolId: r.school_id,
+          staff: r.staff,
+          temp: Number(r.temp),
+          result: r.result as MCResult,
+          at: new Date(r.at).toISOString(),
+          source: r.source,
+          reported: !!r.reported,
+          measure: r.measure || undefined,
+        }));
+        return { items: mapped, total, page: p, pageSize: ps };
+      } catch {}
+    }
+    // fallback to in-memory
     let arr = this.entries.filter((e) => e.schoolId === sid);
     if (params.staff) arr = arr.filter((e) => e.staff.includes(params.staff!));
     if (params.result) arr = arr.filter((e) => e.result === params.result);
     if (params.start) arr = arr.filter((e) => e.at >= params.start!);
     if (params.end) arr = arr.filter((e) => e.at <= params.end!);
     arr = arr.sort((a, b) => (a.at < b.at ? 1 : -1));
-    let p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
-    const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
     const total = arr.length;
     const maxPage = Math.max(1, Math.ceil(total / ps) || 1);
-    if (p > maxPage) p = maxPage;
-    const items = arr.slice((p - 1) * ps, p * ps);
-    return { items, total, page: p, pageSize: ps };
+    const page = Math.min(p, maxPage);
+    const items = arr.slice((page - 1) * ps, page * ps);
+    return { items, total, page, pageSize: ps };
   }
 
   create(body: {
@@ -86,6 +113,7 @@ export class MorningCheckService {
       reported: true,
     };
     this.entries.unshift(entry);
+    this.repo?.insert(entry).catch(() => void 0);
     this.emit('created', entry);
     return entry;
   }
@@ -98,6 +126,7 @@ export class MorningCheckService {
     const idx = this.entries.findIndex((e) => e.id === id);
     if (idx === -1) return { ok: false };
     this.entries[idx].measure = measure;
+    this.repo?.setMeasure(id, measure).catch(() => void 0);
     this.emit('updated', this.entries[idx]);
     return { ok: true, entry: this.entries[idx] };
   }
@@ -106,6 +135,7 @@ export class MorningCheckService {
     const idx = this.entries.findIndex((e) => e.id === id);
     if (idx === -1) return { ok: false };
     const [removed] = this.entries.splice(idx, 1);
+    this.repo?.remove(id).catch(() => void 0);
     this.emit('deleted', removed);
     return { ok: true };
   }

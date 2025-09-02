@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { FoodWasteRepository } from './repositories/food-waste.repository';
 
 export type WasteSource = '库存损耗' | '加工制作损耗' | '剩菜剩饭损耗';
 export type ItemType = '食材' | '菜品';
@@ -46,17 +47,20 @@ export class FoodWasteService {
     const id = `fr-${String(this.reasons.length + 1).padStart(3, '0')}`;
     const item = { id, name: n, enabled: true };
     this.reasons.push(item);
+    this.repo?.insertReason(item.id, item.name, item.enabled).catch(() => void 0);
     return item;
   }
   setReasonEnabled(id: string, enabled: boolean) {
     const it = this.reasons.find((r) => r.id === id);
     if (!it) throw new BadRequestException('not found');
     it.enabled = !!enabled;
+    this.repo?.setReasonEnabled(id, it.enabled).catch(() => void 0);
     return it;
   }
   deleteReason(id: string) {
     const before = this.reasons.length;
     this.reasons = this.reasons.filter((r) => r.id !== id);
+    this.repo?.deleteReason(id).catch(() => void 0);
     return { ok: this.reasons.length < before };
   }
 
@@ -108,6 +112,7 @@ export class FoodWasteService {
       meal: b.meal,
     };
     this.records.unshift(rec);
+    this.repo?.insertRecord(rec).catch(() => void 0);
     return rec;
   }
 
@@ -211,7 +216,7 @@ export class FoodWasteService {
     for (const s of samples) this.records.unshift({ id: this.id('FW'), ...s });
   }
 
-  constructor() {
+  constructor(private readonly repo?: FoodWasteRepository) {
     this.seed();
   }
 }

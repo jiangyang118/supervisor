@@ -1,8 +1,7 @@
-version: '3.9'
 services:
   # Use domestic mirrors for faster pulls in mainland China
-  postgres:
-    image: docker.m.daocloud.io/library/postgres:16
+  mysql:
+    image: docker.m.daocloud.io/library/mysql:8.0
 
   redis:
     image: docker.m.daocloud.io/library/redis:7-alpine

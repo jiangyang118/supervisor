@@ -12,6 +12,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
+      // Fallback: if VITE_API_BASE is empty and code calls '/reg/*' directly
+      '/reg': {
+        target: 'http://localhost:3300',
+        changeOrigin: true,
+      },
     },
   },
 });

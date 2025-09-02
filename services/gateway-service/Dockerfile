@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 ARG NODE_IMAGE=node:20-alpine
 FROM ${NODE_IMAGE} AS builder
 WORKDIR /app
@@ -23,4 +22,9 @@ RUN npm config set registry https://registry.npmmirror.com \
 COPY libs/shared /libs/shared
 RUN ln -sf /app/node_modules /node_modules
 COPY --from=builder /app/dist ./dist
-CMD ["node", "dist/main.js"]
+# copy migration scripts and sql
+COPY services/gateway-service/scripts ./scripts
+COPY services/gateway-service/migrations ./migrations
+
+# run migrations before starting the app
+CMD ["sh", "-c", "node scripts/run-migrations.js && node dist/main.js"]

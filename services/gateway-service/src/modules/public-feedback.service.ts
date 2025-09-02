@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { PublicFeedbackRepository } from './repositories/public-feedback.repository';
 
 export type FeedbackType = '投诉' | '建议' | '表扬' | '评论';
 export type FeedbackStatus = '待处理' | '已回复';
@@ -74,6 +75,7 @@ export class PublicFeedbackService {
       read: false,
     };
     this.items.unshift(it);
+    this.repo?.insertFeedback(it).catch(() => void 0);
     return it;
   }
 
@@ -91,13 +93,16 @@ export class PublicFeedbackService {
       read: true,
       processingMs: Number.isFinite(started) ? Date.parse(now) - started : undefined,
     };
-    return this.items[idx];
+    const rec = this.items[idx];
+    this.repo?.reply(id, replyContent, rec.replyBy!, rec.replyAt!, rec.processingMs).catch(() => void 0);
+    return rec;
   }
 
   markRead(id: string, read: boolean) {
     const idx = this.items.findIndex((x) => x.id === id);
     if (idx === -1) throw new BadRequestException('not found');
     this.items[idx].read = !!read;
+    this.repo?.markRead(id, !!read).catch(() => void 0);
     return this.items[idx];
   }
 
@@ -136,7 +141,7 @@ export class PublicFeedbackService {
     };
   }
 
-  constructor() {
+  constructor(private readonly repo?: PublicFeedbackRepository) {
     // seed
     this.create({
       type: '建议',

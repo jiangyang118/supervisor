@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
+import { CertificatesRepository } from './repositories/certificates.repository';
 
 export type Certificate = {
   id: string;
@@ -11,6 +12,7 @@ export type Certificate = {
 
 @Injectable()
 export class CertificatesService {
+  constructor(private readonly repo: CertificatesRepository) {}
   private seq = 1;
   private id(prefix: string) {
     return `${prefix}-${String(this.seq++).padStart(4, '0')}`;
@@ -37,6 +39,7 @@ export class CertificatesService {
     const id = this.id('CF');
     const rec: Certificate = { id, ...b };
     this.items.unshift(rec);
+    this.repo?.insert(rec).catch(() => void 0);
     return { ...rec, status: this.isExpired(rec.expireAt) ? '过期' : '有效' };
   }
 
@@ -45,6 +48,7 @@ export class CertificatesService {
     if (idx === -1) throw new BadRequestException('not found');
     const next = { ...this.items[idx], ...b } as Certificate;
     this.items[idx] = next;
+    this.repo?.update(id, next).catch(() => void 0);
     return { ...next, status: this.isExpired(next.expireAt) ? '过期' : '有效' };
   }
 
@@ -52,6 +56,7 @@ export class CertificatesService {
     const idx = this.items.findIndex((x) => x.id === id && !x.deleted);
     if (idx === -1) return { ok: false };
     this.items[idx].deleted = true;
+    this.repo?.update(id, { deleted: true }).catch(() => void 0);
     return { ok: true };
   }
 }

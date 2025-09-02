@@ -8,10 +8,12 @@ import path from 'path';
 import { DeviceSignGuard } from './device-sign.guard';
 import { RateLimitGuard } from './rate-limit.guard';
 import { ApiBody, ApiConsumes, ApiHeader, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { MorningChecksRepository } from './repositories/morning-checks.repository';
 
 @ApiTags('Integration')
 @Controller()
 export class IntegrationController {
+  constructor(private readonly morningChecksRepo: MorningChecksRepository) {}
   @Get('api/employees')
   listEmployees() { return { data: getEmployees() }; }
 
@@ -127,6 +129,24 @@ export class IntegrationController {
       }
 
       const { id: recordId } = saveMorningCheck(mc, uuid);
+      // optional DB persist via repository (ignore on errors)
+      try {
+        await this.morningChecksRepo.insert({
+          id: recordId,
+          equipmentCode: mc.equipmentCode,
+          userId: mc.userId,
+          checkTime: new Date(mc.checkTime),
+          foreheadTemp: mc.foreheadTemp,
+          normalTemperatureMin: mc.normalTemperatureMin,
+          normalTemperatureMax: mc.normalTemperatureMax,
+          abnormalTemp: mc.abnormalTemp,
+          handCheckResult: mc.handCheckResult || [],
+          healthAskResult: mc.healthAskResult || [],
+          health: mc.health,
+          images: mc.images || {},
+          raw: mc.raw || {},
+        });
+      } catch {}
       return { success: true, id: recordId };
     } catch (e: any) {
       return { success: false, message: e?.message || 'Invalid payload' };
@@ -134,7 +154,14 @@ export class IntegrationController {
   }
 
   @Get('api/morning-checks')
-  listMorningChecks() { return { data: listChecks() }; }
+  async listMorningChecks() {
+    try {
+      const rows = await this.morningChecksRepo.list(1000);
+      return { data: rows };
+    } catch {
+      return { data: listChecks() };
+    }
+  }
 
   @Post('api/regulator/morning-checks/push')
   pushReg(@Body() body: any) {

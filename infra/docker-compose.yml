@@ -1,15 +1,21 @@
-version: '3.9'
 services:
-  postgres:
-    image: postgres:16
+  mysql:
+    image: mysql:8.0
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-foodsafe}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-foodsafe_dev}
+      MYSQL_USER: ${MYSQL_USER:-foodsafe}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-secret}
+    command: ["mysqld", "--default-authentication-plugin=mysql_native_password", "--sql-mode=", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
     ports:
-      - '5432:5432'
+      - '3306:3306'
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   redis:
     image: redis:7-alpine
@@ -58,10 +64,21 @@ services:
     build:
       context: ..
       dockerfile: services/gateway-service/Dockerfile
+      # args:
+      #   # Use a China mirror for the base Node image to speed up/passthrough Docker Hub
+      #   NODE_IMAGE: ${NODE_IMAGE:-registry.cn-hangzhou.aliyuncs.com/dockerhub-mirror/node:20-alpine}
     environment:
       PORT: 3000
+      # Either provide DATABASE_URL or MYSQL_* to the app
+      DATABASE_URL: ${DATABASE_URL:-mysql://foodsafe:secret@mysql:3306/foodsafe_dev}
     ports: ['3300:3000']
-    depends_on: [postgres, redis, kafka]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
 
   # consolidated: school/regulator endpoints are now in gateway-service
 
@@ -74,5 +91,5 @@ services:
     depends_on: [gateway-service]
 
 volumes:
-  pgdata:
+  mysqldata:
   minio:

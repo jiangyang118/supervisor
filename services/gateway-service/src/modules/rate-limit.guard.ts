@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Injectable, TooManyRequestsException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, HttpException, HttpStatus } from '@nestjs/common';
 
 // Very small in-memory, per-IP, per-minute rate limiter for ingestion endpoints.
 // Configure max per minute via env INGEST_RPM (default 120).
@@ -23,7 +23,7 @@ export class RateLimitGuard implements CanActivate {
     }
     entry.count += 1;
     if (entry.count > this.limit) {
-      throw new TooManyRequestsException('Rate limit exceeded');
+      throw new HttpException('Rate limit exceeded', HttpStatus.TOO_MANY_REQUESTS);
     }
     return true;
   }
@@ -34,4 +34,3 @@ export class RateLimitGuard implements CanActivate {
     return ip;
   }
 }
-

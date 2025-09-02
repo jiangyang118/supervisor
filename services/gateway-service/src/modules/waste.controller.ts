@@ -52,4 +52,9 @@ export class WasteController {
   ) {
     return this.svc.create(body);
   }
+
+  @Get('records/:id')
+  getOne(@Param('id') id: string) {
+    return this.svc.getById(id);
+  }
 }

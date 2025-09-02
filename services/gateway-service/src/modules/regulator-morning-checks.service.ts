@@ -6,14 +6,21 @@ export type RegulatedCheck = {
   receivedAt: string;
 };
 
+import { RegulatorMorningChecksRepository } from './repositories/regulator-morning-checks.repository';
+
 export class RegulatorMorningChecksService {
   private store: { list: RegulatedCheck[] } = { list: [] };
 
-  list(): RegulatedCheck[] {
+  constructor(private readonly repo?: RegulatorMorningChecksRepository) {}
+
+  async list(): Promise<RegulatedCheck[]> {
+    if (this.repo) {
+      try { return await this.repo.list(1000); } catch {}
+    }
     return this.store.list;
   }
 
-  push(body: any): { success: true; id: string } {
+  async push(body: any): Promise<{ success: true; id: string }> {
     const id = `rg_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     const rec: RegulatedCheck = {
       id,
@@ -22,8 +29,9 @@ export class RegulatorMorningChecksService {
       payload: body,
       receivedAt: new Date().toISOString(),
     };
-    this.store.list.push(rec);
+    if (this.repo) {
+      try { await this.repo.insert(rec); } catch { this.store.list.push(rec); }
+    } else { this.store.list.push(rec); }
     return { success: true, id };
   }
 }
-

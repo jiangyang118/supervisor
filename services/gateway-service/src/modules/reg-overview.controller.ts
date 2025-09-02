@@ -67,9 +67,10 @@ export class RegOverviewController {
     pending.forEach((r) =>
       bySchool.set(r.schoolId || '-', (bySchool.get(r.schoolId || '-') || 0) + 1),
     );
+    const schoolsArr = await this.schools();
     const topWarnings = Array.from(bySchool.entries())
       .map(([id, warnings]) => ({
-        school: this.schools().find((s) => s.id === id)?.name || id,
+        school: schoolsArr.find((s: any) => s.id === id)?.name || id,
         warnings,
       }))
       .sort((a, b) => b.warnings - a.warnings)

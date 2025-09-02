@@ -1,5 +1,5 @@
 import { Injectable, MessageEvent, BadRequestException } from '@nestjs/common';
-import { SchoolMorningChecksRepository } from './repositories/school-morning-checks.repository';
+import { MorningChecksRepository } from './repositories/morning-checks.repository';
 import { Observable, Subject } from 'rxjs';
 
 export type MCResult = '正常' | '异常';
@@ -18,12 +18,9 @@ export type MCEntry = {
 @Injectable()
 export class MorningCheckService {
   private seq = 1;
-  private entries: MCEntry[] = [];
   private events$ = new Subject<MessageEvent>();
 
-  constructor(private readonly repo?: SchoolMorningChecksRepository) {
-    this.seed();
-  }
+  constructor(private readonly repo?: MorningChecksRepository) {}
 
   private makeId() {
     return `MC-${String(this.seq++).padStart(4, '0')}`;
@@ -52,10 +49,11 @@ export class MorningCheckService {
     const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
     if (this.repo) {
       try {
-        const { items, total } = await this.repo.list({
+        const { items, total } = await this.repo.search({
           schoolId: sid,
-          staff: params.staff,
-          result: params.result,
+          userId: params.staff,
+          equipmentCode: undefined,
+          abnormal: params.result ? params.result === '异常' : undefined,
           start: params.start,
           end: params.end,
           page: p,
@@ -63,38 +61,28 @@ export class MorningCheckService {
         });
         const mapped = items.map((r) => ({
           id: r.id,
-          schoolId: r.school_id,
-          staff: r.staff,
-          temp: Number(r.temp),
-          result: r.result as MCResult,
-          at: new Date(r.at).toISOString(),
-          source: r.source,
-          reported: !!r.reported,
-          measure: r.measure || undefined,
+          schoolId: r.schoolId || sid,
+          staff: r.userId,
+          temp: Number(r.foreheadTemp),
+          result: r.abnormalTemp ? ('异常' as MCResult) : ('正常' as MCResult),
+          at: new Date(r.checkTime).toISOString(),
+          source: 'manual' as const,
+          reported: true,
+          measure: (r.raw && (r.raw as any).measure) || undefined,
         }));
-        return { items: mapped, total, page: p, pageSize: ps };
+        return { items: mapped as MCEntry[], total, page: p, pageSize: ps };
       } catch {}
     }
-    // fallback to in-memory
-    let arr = this.entries.filter((e) => e.schoolId === sid);
-    if (params.staff) arr = arr.filter((e) => e.staff.includes(params.staff!));
-    if (params.result) arr = arr.filter((e) => e.result === params.result);
-    if (params.start) arr = arr.filter((e) => e.at >= params.start!);
-    if (params.end) arr = arr.filter((e) => e.at <= params.end!);
-    arr = arr.sort((a, b) => (a.at < b.at ? 1 : -1));
-    const total = arr.length;
-    const maxPage = Math.max(1, Math.ceil(total / ps) || 1);
-    const page = Math.min(p, maxPage);
-    const items = arr.slice((page - 1) * ps, page * ps);
-    return { items, total, page, pageSize: ps };
+    // fallback：DB 不可用时返回空集
+    return { items: [], total: 0, page: p, pageSize: ps };
   }
 
-  create(body: {
+  async create(body: {
     schoolId?: string;
     staff: string;
     temp: number;
     source?: 'manual' | 'device';
-  }): MCEntry {
+  }): Promise<MCEntry> {
     if (!body?.staff || String(body.staff).trim() === '')
       throw new BadRequestException('staff is required');
     if (body.temp === undefined || body.temp === null || Number.isNaN(Number(body.temp)))
@@ -112,32 +100,41 @@ export class MorningCheckService {
       source: body.source || 'manual',
       reported: true,
     };
-    this.entries.unshift(entry);
-    this.repo?.insert(entry).catch(() => void 0);
+    // 落库至 morning_checks（002 表结构）
+    await this.repo!.insert({
+      id: entry.id,
+      schoolId: sid,
+      equipmentCode: body.source === 'device' ? 'DEVICE' : 'MANUAL',
+      userId: body.staff,
+      checkTime: new Date(entry.at),
+      foreheadTemp: entry.temp,
+      normalTemperatureMin: 35.5,
+      normalTemperatureMax: 37.2,
+      abnormalTemp: entry.result === '异常' ? 1 : 0,
+      handCheckResult: [],
+      healthAskResult: [],
+      health: entry.result === '异常' ? 0 : 1,
+      images: {},
+      raw: { measure: undefined, schoolId: sid },
+    } as any);
     this.emit('created', entry);
     return entry;
   }
 
-  deviceCallback(body: { schoolId?: string; staff: string; temp: number }) {
+  async deviceCallback(body: { schoolId?: string; staff: string; temp: number }) {
     return this.create({ ...body, source: 'device' });
   }
 
-  setMeasure(id: string, measure: string) {
-    const idx = this.entries.findIndex((e) => e.id === id);
-    if (idx === -1) return { ok: false };
-    this.entries[idx].measure = measure;
-    this.repo?.setMeasure(id, measure).catch(() => void 0);
-    this.emit('updated', this.entries[idx]);
-    return { ok: true, entry: this.entries[idx] };
+  async setMeasure(id: string, measure: string) {
+    await this.repo!.setMeasure(id, measure);
+    this.emit('updated', { id, measure });
+    return { ok: true } as any;
   }
 
-  remove(id: string) {
-    const idx = this.entries.findIndex((e) => e.id === id);
-    if (idx === -1) return { ok: false };
-    const [removed] = this.entries.splice(idx, 1);
-    this.repo?.remove(id).catch(() => void 0);
-    this.emit('deleted', removed);
-    return { ok: true };
+  async remove(id: string) {
+    await this.repo!.remove(id);
+    this.emit('deleted', { id });
+    return { ok: true } as any;
   }
 
   stream(): Observable<MessageEvent> {
@@ -146,33 +143,5 @@ export class MorningCheckService {
     return this.events$.asObservable();
   }
 
-  // Seed a few demo entries so UI has data; leave other schools empty to cover "no data" scenarios
-  private seed() {
-    const add = (
-      schoolId: string,
-      staff: string,
-      temp: number,
-      source: 'manual' | 'device',
-      measure?: string,
-    ) => {
-      const entry: MCEntry = {
-        id: this.makeId(),
-        schoolId,
-        staff,
-        temp,
-        result: this.judge(temp),
-        at: this.nowIso(),
-        source,
-        reported: true,
-        measure,
-      };
-      this.entries.unshift(entry);
-    };
-    // sch-001: include normal and abnormal
-    add('sch-001', '张三', 36.6, 'manual');
-    add('sch-001', '李四', 37.8, 'device', '已通知就医并居家观察');
-    add('sch-001', '王五', 36.9, 'manual');
-    // sch-002: small set
-    add('sch-002', '赵六', 36.5, 'device');
-  }
+  // no in-memory seed; data is persisted in DB
 }

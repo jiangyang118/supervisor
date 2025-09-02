@@ -65,8 +65,9 @@ export class InventoryController {
   @Post('suppliers/enable/batch') batchEnable(@Body() b: { ids: string[]; enabled: boolean }) {
     return this.svc.batchEnable(b.ids, b.enabled);
   }
-  @Get('suppliers/export.csv') exportCsv() {
-    const { items } = this.svc.listSuppliers({ page: 1, pageSize: 100000 });
+  @Get('suppliers/export.csv')
+  async exportCsv() {
+    const { items } = await this.svc.listSuppliers({ page: 1, pageSize: 100000 });
     const headers = [
       'id',
       'name',
@@ -80,7 +81,7 @@ export class InventoryController {
       'categories',
       'licenseExpireAt',
     ];
-    const rows = items.map((s: any) => [
+    const rows = (items as any[]).map((s: any) => [
       s.id,
       s.name,
       s.phone || '',

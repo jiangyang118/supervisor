@@ -30,9 +30,7 @@ export class PublicFeedbackService {
     return new Date().toISOString();
   }
 
-  private items: Feedback[] = [];
-
-  list(params?: {
+  async list(params?: {
     schoolId?: string;
     type?: FeedbackType;
     status?: FeedbackStatus;
@@ -41,21 +39,20 @@ export class PublicFeedbackService {
     page?: number | string;
     pageSize?: number | string;
   }) {
-    let arr = this.items.slice();
-    if (params?.schoolId) arr = arr.filter((x) => x.schoolId === params.schoolId);
-    if (params?.type) arr = arr.filter((x) => x.type === params.type);
-    if (params?.status) arr = arr.filter((x) => x.status === params.status);
-    if (params?.start) arr = arr.filter((x) => Date.parse(x.at) >= Date.parse(params.start!));
-    if (params?.end) arr = arr.filter((x) => Date.parse(x.at) <= Date.parse(params.end!));
-    arr.sort((a, b) => (a.at < b.at ? 1 : -1));
     const page = Math.max(1, parseInt(String(params?.page ?? 1), 10) || 1);
     const pageSize = Math.max(1, parseInt(String(params?.pageSize ?? 20), 10) || 20);
-    const total = arr.length;
-    const items = arr.slice((page - 1) * pageSize, page * pageSize);
-    return { items, total, page, pageSize };
+    return this.repo!.list({
+      schoolId: params?.schoolId,
+      type: params?.type,
+      status: params?.status,
+      start: params?.start,
+      end: params?.end,
+      page,
+      pageSize,
+    });
   }
 
-  create(b: {
+  async create(b: {
     schoolId?: string;
     type: FeedbackType;
     content: string;
@@ -74,43 +71,27 @@ export class PublicFeedbackService {
       at: this.now(),
       read: false,
     };
-    this.items.unshift(it);
-    this.repo?.insertFeedback(it).catch(() => void 0);
+    await this.repo!.insertFeedback(it);
     return it;
   }
 
-  reply(id: string, replyContent: string, replyBy?: string) {
-    const idx = this.items.findIndex((x) => x.id === id);
-    if (idx === -1) throw new BadRequestException('not found');
+  async reply(id: string, replyContent: string, replyBy?: string) {
     const now = this.now();
-    const started = Date.parse(this.items[idx].at);
-    this.items[idx] = {
-      ...this.items[idx],
-      status: '已回复',
-      replyBy: replyBy || '系统',
-      replyAt: now,
-      replyContent,
-      read: true,
-      processingMs: Number.isFinite(started) ? Date.parse(now) - started : undefined,
-    };
-    const rec = this.items[idx];
-    this.repo?.reply(id, replyContent, rec.replyBy!, rec.replyAt!, rec.processingMs).catch(() => void 0);
-    return rec;
+    const replyByName = replyBy || '系统';
+    await this.repo!.reply(id, replyContent, replyByName, now);
+    return { ok: true } as any;
   }
 
-  markRead(id: string, read: boolean) {
-    const idx = this.items.findIndex((x) => x.id === id);
-    if (idx === -1) throw new BadRequestException('not found');
-    this.items[idx].read = !!read;
-    this.repo?.markRead(id, !!read).catch(() => void 0);
-    return this.items[idx];
+  async markRead(id: string, read: boolean) {
+    await this.repo!.markRead(id, !!read);
+    return { ok: true } as any;
   }
 
-  batchReply(ids: string[], replyContent: string, replyBy?: string) {
+  async batchReply(ids: string[], replyContent: string, replyBy?: string) {
     let count = 0;
     for (const id of ids || []) {
       try {
-        this.reply(id, replyContent, replyBy);
+        await this.reply(id, replyContent, replyBy);
         count++;
       } catch {
         // ignore not found
@@ -119,8 +100,8 @@ export class PublicFeedbackService {
     return { count };
   }
 
-  stats(params?: { schoolId?: string; start?: string; end?: string }) {
-    const { items } = this.list({ ...params, page: 1, pageSize: 100000 });
+  async stats(params?: { schoolId?: string; start?: string; end?: string }) {
+    const { items } = await this.list({ ...params, page: 1, pageSize: 100000 });
     const byType = new Map<FeedbackType, number>();
     const byStatus = new Map<FeedbackStatus, number>();
     let totalTime = 0;
@@ -141,16 +122,5 @@ export class PublicFeedbackService {
     };
   }
 
-  constructor(private readonly repo?: PublicFeedbackRepository) {
-    // seed
-    this.create({
-      type: '建议',
-      content: '建议增加营养菜谱公示',
-      user: '家长A',
-      contact: '13800000000',
-    });
-    this.create({ type: '投诉', content: '窗口排队时间过长', user: '家长B' });
-    const fb = this.create({ type: '表扬', content: '今日菜品很新鲜', user: '学生C' });
-    this.reply(fb.id, '感谢您的反馈！我们会继续保持。', '食堂管理员');
-  }
+  constructor(private readonly repo?: PublicFeedbackRepository) {}
 }

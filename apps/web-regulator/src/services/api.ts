@@ -9,6 +9,29 @@ async function get<T>(path: string): Promise<T> {
 export const api = {
   overview: () => get<any>('/reg/overview'),
   schools: () => get<any[]>('/reg/schools/stats'),
+  // System schools config
+  sysSchools: () => get<Array<{ id: string; name: string; enabled: boolean }>>('/reg/schools/config'),
+  sysSchoolCreate: async (body: { id?: string; name: string; enabled?: boolean }) => {
+    const r = await fetch(`${BASE}/reg/schools/config`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
+  sysSchoolUpdate: async (id: string, body: { name?: string; enabled?: boolean }) => {
+    const r = await fetch(`${BASE}/reg/schools/config?id=${encodeURIComponent(id)}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
+  sysSchoolDelete: async (id: string) => {
+    const r = await fetch(`${BASE}/reg/schools/config/delete`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
   cameras: (schoolId: string) => get<any[]>(`/reg/schools/${schoolId}/cameras`),
   // AI events (regulator)
   aiEvents: (

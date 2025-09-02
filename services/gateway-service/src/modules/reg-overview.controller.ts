@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Query } from '@nestjs/common';
 import { MorningCheckService } from './morning-check.service';
 import { SamplingService } from './sampling.service';
 import { DisinfectionService } from './disinfection.service';
@@ -7,6 +7,7 @@ import { WasteService } from './waste.service';
 import { DevicesService } from './devices.service';
 import { PublicFeedbackService } from './public-feedback.service';
 import { DataStore } from './data.store';
+import { SchoolsRepository } from './repositories/schools.repository';
 
 @Controller('reg')
 export class RegOverviewController {
@@ -18,21 +19,22 @@ export class RegOverviewController {
     private readonly waste: WasteService,
     private readonly devices: DevicesService,
     private readonly feedback: PublicFeedbackService,
+    private readonly schoolsRepo: SchoolsRepository,
   ) {}
   @Get('overview')
-  overview() {
-    const schoolsList = this.schools();
+  async overview() {
+    const schoolsList = await this.localSchools();
     const schools = schoolsList.length;
     const canteens = schools; // 可替换为真实食堂数
     // 今日 00:00 开始
     const now = new Date();
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const sliceAll = <T>(x: { items: T[] }) => (x?.items || []) as T[];
-    const mc = sliceAll(this.morning.list({ start: dayStart, page: 1, pageSize: 100000 }));
-    const sp = sliceAll(this.sampling.listSamples({ start: dayStart, page: 1, pageSize: 100000 }));
-    const df = sliceAll(this.disinfection.list({ start: dayStart, page: 1, pageSize: 100000 }));
-    const dn = sliceAll(this.dine.list({ start: dayStart, page: 1, pageSize: 100000 }));
-    const ws = sliceAll(this.waste.list({ start: dayStart, page: '1', pageSize: '100000' }));
+    const mc = sliceAll(await this.morning.list({ start: dayStart, page: 1, pageSize: 100000 }));
+    const sp = sliceAll(await this.sampling.listSamples({ start: dayStart, page: 1, pageSize: 100000 }));
+    const df = sliceAll(await this.disinfection.list({ start: dayStart, page: 1, pageSize: 100000 }));
+    const dn = sliceAll(await this.dine.list({ start: dayStart, page: 1, pageSize: 100000 }));
+    const ws = sliceAll(await this.waste.list({ start: dayStart, page: '1', pageSize: '100000' }));
     const todayReports = mc.length + sp.length + df.length + dn.length + ws.length;
     // AI 预警（OPEN）
     const aiOpen = (DataStore.aiEvents || []).filter((e) => e.status === 'OPEN').length;
@@ -51,15 +53,15 @@ export class RegOverviewController {
     });
     const aiByType = Array.from(aiByTypeMap.entries()).map(([type, count]) => ({ type, count }));
     // 近 7 天上报数量（按晨检）
-    const dailyReports = Array.from({ length: 7 }).map((_, i) => {
+    const dailyReports = await Promise.all(Array.from({ length: 7 }).map(async (_, i) => {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - i));
       const s = new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString();
       const sNext = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1).toISOString();
-      const cnt = this.morning.list({ start: s, end: sNext, page: 1, pageSize: 100000 }).total;
-      return { day: s.slice(5, 10), count: cnt };
-    });
+      const cntRes = await this.morning.list({ start: s, end: sNext, page: 1, pageSize: 100000 });
+      return { day: s.slice(5, 10), count: cntRes.total };
+    }));
     // 投诉待处理 Top（学校）
-    const pending = this.feedback.list({ status: '待处理', page: 1, pageSize: 100000 })
+    const pending = (await this.feedback.list({ status: '待处理', page: 1, pageSize: 100000 }))
       .items as any[];
     const bySchool = new Map<string, number>();
     pending.forEach((r) =>
@@ -92,19 +94,53 @@ export class RegOverviewController {
   }
 
   @Get('schools')
-  schools() {
-    return [
-      { id: 'sch-001', name: '示例一中' },
-      { id: 'sch-002', name: '示例二小' },
-      { id: 'sch-003', name: '示例三幼' },
-      { id: 'sch-004', name: '示例四小' },
-      { id: 'sch-005', name: '示例五中' },
-    ];
+  async schools() {
+    try {
+      const rows = await this.schoolsRepo.listAll();
+      return rows.map((r) => ({ id: r.id, name: r.name }));
+    } catch {
+      // Fallback to local list if DB not ready
+      return [
+        { id: 'sch-001', name: '示例一中' },
+        { id: 'sch-002', name: '示例二小' },
+        { id: 'sch-003', name: '示例三幼' },
+        { id: 'sch-004', name: '示例四小' },
+        { id: 'sch-005', name: '示例五中' },
+      ];
+    }
+  }
+
+  // System management: schools config
+  @Get('schools/config')
+  async schoolsConfig() {
+    const rows = await this.schoolsRepo.listAll(true);
+    return rows.map((r) => ({ id: r.id, name: r.name, enabled: !!r.enabled }));
+  }
+  @Post('schools/config')
+  async createSchool(@Body() b: { id?: string; name: string; enabled?: boolean }) {
+    if (!b?.name || String(b.name).trim() === '') {
+      return { ok: false, message: 'name required' };
+    }
+    const id = b.id && String(b.id).trim() !== '' ? b.id : this.genId('sch');
+    await this.schoolsRepo.insert(id, b.name.trim(), b.enabled ?? true);
+    return { ok: true, id };
+  }
+  @Patch('schools/config')
+  async updateSchool(@Query('id') id: string, @Body() b: { name?: string; enabled?: boolean }) {
+    if (!id) return { ok: false, message: 'id required' } as any;
+    await this.schoolsRepo.update(id, b);
+    return { ok: true };
+  }
+  @Post('schools/config/delete')
+  async deleteSchool(@Body() body: { id: string }) {
+    if (!body?.id) return { ok: false, message: 'id required' } as any;
+    await this.schoolsRepo.update(body.id, { enabled: false });
+    return { ok: true };
   }
 
   @Get('schools/stats')
-  schoolStats() {
-    const base = this.schools();
+  async schoolStats() {
+    const base = await this.localSchools();
     return base.map((s) => {
       const online = Math.floor(Math.random() * 4) + 2;
       const offline = Math.floor(Math.random() * 2);
@@ -113,25 +149,15 @@ export class RegOverviewController {
   }
 
   @Get('schools/sch-001/cameras')
-  cams1() {
-    return this._cameras('示例一中');
-  }
+  cams1() { return this._cameras('示例一中'); }
   @Get('schools/sch-002/cameras')
-  cams2() {
-    return this._cameras('示例二小');
-  }
+  cams2() { return this._cameras('示例二小'); }
   @Get('schools/sch-003/cameras')
-  cams3() {
-    return this._cameras('示例三幼');
-  }
+  cams3() { return this._cameras('示例三幼'); }
   @Get('schools/sch-004/cameras')
-  cams4() {
-    return this._cameras('示例四小');
-  }
+  cams4() { return this._cameras('示例四小'); }
   @Get('schools/sch-005/cameras')
-  cams5() {
-    return this._cameras('示例五中');
-  }
+  cams5() { return this._cameras('示例五中'); }
 
   private _cameras(school: string) {
     const base = process.env.WVP_BASE || 'http://localhost:18080';
@@ -155,5 +181,25 @@ export class RegOverviewController {
       make('ch-07', '洗消间'),
       make('ch-08', '粗加工间'),
     ];
+  }
+
+  private async localSchools() {
+    // Prefer DB, fallback to defaults
+    try {
+      const rows = await this.schoolsRepo.listAll();
+      if (rows && rows.length) return rows.map((r) => ({ id: r.id, name: r.name }));
+    } catch {}
+    return [
+      { id: 'sch-001', name: '示例一中' },
+      { id: 'sch-002', name: '示例二小' },
+      { id: 'sch-003', name: '示例三幼' },
+      { id: 'sch-004', name: '示例四小' },
+      { id: 'sch-005', name: '示例五中' },
+    ];
+  }
+
+  private genId(prefix: string) {
+    const rand = Math.random().toString(36).slice(2, 8);
+    return `${prefix}-${rand}`;
   }
 }

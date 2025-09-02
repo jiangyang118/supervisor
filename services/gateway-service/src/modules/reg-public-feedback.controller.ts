@@ -23,7 +23,7 @@ export class RegPublicFeedbackController {
   }
 
   @Get('list')
-  list(
+  async list(
     @Query('schoolId') schoolId?: string,
     @Query('type') type?: FeedbackType | '评价',
     @Query('status') status?: FeedbackStatus,
@@ -32,7 +32,7 @@ export class RegPublicFeedbackController {
     @Query('page') page: string = '1',
     @Query('pageSize') pageSize: string = '50',
   ) {
-    const res = this.svc.list({
+    const res = await this.svc.list({
       schoolId,
       type: this.normalizeType(type),
       status,
@@ -41,7 +41,7 @@ export class RegPublicFeedbackController {
       page,
       pageSize,
     });
-    const items = res.items.map((r) => ({
+    const items = (res.items as any[]).map((r: any) => ({
       ...r,
       school: this.schools().find((s) => s.id === r.schoolId)?.name || r.schoolId,
       type: r.type === '评论' ? '评价' : r.type,
@@ -50,14 +50,14 @@ export class RegPublicFeedbackController {
   }
 
   @Get('export.csv')
-  exportCsv(
+  async exportCsv(
     @Query('schoolId') schoolId?: string,
     @Query('type') type?: FeedbackType | '评价',
     @Query('status') status?: FeedbackStatus,
     @Query('start') start?: string,
     @Query('end') end?: string,
   ) {
-    const { items } = this.list(schoolId, type, status, start, end, '1', '100000');
+    const { items } = await this.list(schoolId, type, status, start, end, '1', '100000');
     const headers = [
       'id',
       'schoolId',
@@ -96,12 +96,12 @@ export class RegPublicFeedbackController {
   }
 
   @Get('stats')
-  stats(
+  async stats(
     @Query('schoolId') schoolId?: string,
     @Query('start') start?: string,
     @Query('end') end?: string,
   ) {
-    const s = this.svc.stats({ schoolId, start, end });
+    const s = await this.svc.stats({ schoolId, start, end });
     // 将“评论”映射为“评价”
     return {
       ...s,

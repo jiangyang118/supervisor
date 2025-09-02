@@ -57,14 +57,14 @@ export class PublicFeedbackController {
   }
 
   @Get('export.csv')
-  exportCsv(
+  async exportCsv(
     @Query('type') type?: any,
     @Query('status') status?: any,
     @Query('start') start?: string,
     @Query('end') end?: string,
     @Query('schoolId') schoolId?: string,
   ) {
-    const { items } = this.svc.list({
+    const { items } = await this.svc.list({
       type,
       status,
       start,
@@ -86,7 +86,7 @@ export class PublicFeedbackController {
       'read',
       'processingMs',
     ];
-    const rows = items.map((r: any) => [
+    const rows = (items as any[]).map((r: any) => [
       r.id,
       r.type,
       r.content,

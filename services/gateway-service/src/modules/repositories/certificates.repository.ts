@@ -27,5 +27,15 @@ export class CertificatesRepository {
     values.push(id);
     await this.db.query(`update certificates set ${fields.join(', ')} where id = ?`, values);
   }
-}
 
+  async list(params?: { owner?: string; type?: string; includeDeleted?: boolean }) {
+    const where: string[] = [];
+    const values: any[] = [];
+    if (params?.owner) { where.push('owner like ?'); values.push(`%${params.owner}%`); }
+    if (params?.type) { where.push('type = ?'); values.push(params.type); }
+    if (!params?.includeDeleted) { where.push('deleted = 0'); }
+    const sql = `select id, owner, type, number, expire_at as expireAt, deleted from certificates ${where.length ? 'where ' + where.join(' and ') : ''} order by expire_at asc`;
+    const { rows } = await this.db.query<any>(sql, values);
+    return rows as Array<{ id: string; owner: string; type: string; number: string; expireAt: string; deleted: number }>;
+  }
+}

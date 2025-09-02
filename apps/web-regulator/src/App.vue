@@ -50,10 +50,11 @@
             <template #title>系统配置</template>
             <el-menu-item index="/system/info">监管单位信息</el-menu-item>
             <el-menu-item index="/system/users">用户与角色</el-menu-item>
-            <el-menu-item index="/system/app">APP 下载</el-menu-item>
-            <el-menu-item index="/system/news">食安资讯</el-menu-item>
-            <el-menu-item index="/system/linkage">平台关联</el-menu-item>
-            <el-menu-item index="/system/roles">角色权限</el-menu-item>
+          <el-menu-item index="/system/app">APP 下载</el-menu-item>
+          <el-menu-item index="/system/news">食安资讯</el-menu-item>
+          <el-menu-item index="/system/linkage">平台关联</el-menu-item>
+          <el-menu-item index="/system/roles">角色权限</el-menu-item>
+          <el-menu-item index="/system/schools">学校配置</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>

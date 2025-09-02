@@ -187,7 +187,7 @@ export class RegLedgersController {
   }
 
   @Get('sampling')
-  samplingList(
+  async samplingList(
     @Query('schoolId') schoolId?: string,
     @Query('start') start?: string,
     @Query('end') end?: string,
@@ -195,19 +195,22 @@ export class RegLedgersController {
     @Query('pageSize') pageSize = '50',
   ) {
     const schools = schoolId ? [{ id: schoolId }] : this.schools();
-    const items = schools.flatMap((s) =>
-      this.sampling
-        .listSamples({ schoolId: s.id, start, end, page: 1, pageSize: 100000 })
-        .items.map((r) => ({
-          id: r.id,
-          schoolId: r.schoolId,
-          school: this.schools().find((x) => x.id === r.schoolId)?.name || r.schoolId,
-          sample: r.sample,
-          weight: r.weight,
-          duration: r.duration,
-          at: r.at,
-        })),
-    );
+    const items = (
+      await Promise.all(
+        schools.map(async (s) => {
+          const res = await this.sampling.listSamples({ schoolId: s.id, start, end, page: 1, pageSize: 100000 });
+          return res.items.map((r: any) => ({
+            id: r.id,
+            schoolId: r.schoolId,
+            school: this.schools().find((x) => x.id === r.schoolId)?.name || r.schoolId,
+            sample: r.sample,
+            weight: r.weight,
+            duration: r.duration,
+            at: r.at,
+          }));
+        })
+      )
+    ).flat();
     const p = Math.max(parseInt(page, 10) || 1, 1);
     const ps = Math.max(parseInt(pageSize, 10) || 50, 1);
     const total = items.length;
@@ -216,7 +219,7 @@ export class RegLedgersController {
   }
 
   @Get('disinfection')
-  disinfectionList(
+  async disinfectionList(
     @Query('schoolId') schoolId?: string,
     @Query('method') method?: string,
     @Query('start') start?: string,
@@ -225,20 +228,23 @@ export class RegLedgersController {
     @Query('pageSize') pageSize = '50',
   ) {
     const schools = schoolId ? [{ id: schoolId }] : this.schools();
-    const items = schools.flatMap((s) =>
-      this.disinfection
-        .list({ schoolId: s.id, method: method as any, start, end, page: 1, pageSize: 100000 })
-        .items.map((r) => ({
-          id: r.id,
-          schoolId: r.schoolId,
-          school: this.schools().find((x) => x.id === r.schoolId)?.name || r.schoolId,
-          method: r.method,
-          duration: r.duration,
-          items: r.items,
-          status: r.exception ? '异常' : '正常',
-          at: r.at,
-        })),
-    );
+    const items = (
+      await Promise.all(
+        schools.map(async (s) => {
+          const res = await this.disinfection.list({ schoolId: s.id, method: method as any, start, end, page: 1, pageSize: 100000 });
+          return res.items.map((r: any) => ({
+            id: r.id,
+            schoolId: r.schoolId,
+            school: this.schools().find((x) => x.id === r.schoolId)?.name || r.schoolId,
+            method: r.method,
+            duration: r.duration,
+            items: r.items,
+            status: r.exception ? '异常' : '正常',
+            at: r.at,
+          }));
+        })
+      )
+    ).flat();
     const p = Math.max(parseInt(page, 10) || 1, 1);
     const ps = Math.max(parseInt(pageSize, 10) || 50, 1);
     const total = items.length;
@@ -247,7 +253,7 @@ export class RegLedgersController {
   }
 
   @Get('dine')
-  dineList(
+  async dineList(
     @Query('schoolId') schoolId?: string,
     @Query('meal') meal?: string,
     @Query('start') start?: string,
@@ -256,19 +262,22 @@ export class RegLedgersController {
     @Query('pageSize') pageSize = '50',
   ) {
     const schools = schoolId ? [{ id: schoolId }] : this.schools();
-    const items = schools.flatMap((s) =>
-      this.dine
-        .list({ schoolId: s.id, meal: meal as any, start, end, page: 1, pageSize: 100000 })
-        .items.map((r) => ({
-          id: r.id,
-          schoolId: r.schoolId,
-          school: this.schools().find((x) => x.id === r.schoolId)?.name || r.schoolId,
-          meal: r.meal,
-          people: (r.people || []).join(','),
-          comment: r.comment || '',
-          at: r.at,
-        })),
-    );
+    const items = (
+      await Promise.all(
+        schools.map(async (s) => {
+          const res = await this.dine.list({ schoolId: s.id, meal: meal as any, start, end, page: 1, pageSize: 100000 });
+          return res.items.map((r: any) => ({
+            id: r.id,
+            schoolId: r.schoolId,
+            school: this.schools().find((x) => x.id === r.schoolId)?.name || r.schoolId,
+            meal: r.meal,
+            people: (r.people || []).join(','),
+            comment: r.comment || '',
+            at: r.at,
+          }));
+        })
+      )
+    ).flat();
     const p = Math.max(parseInt(page, 10) || 1, 1);
     const ps = Math.max(parseInt(pageSize, 10) || 50, 1);
     const total = items.length;
@@ -277,7 +286,7 @@ export class RegLedgersController {
   }
 
   @Get('waste')
-  wasteList(
+  async wasteList(
     @Query('schoolId') schoolId?: string,
     @Query('category') category?: string,
     @Query('start') start?: string,
@@ -286,20 +295,23 @@ export class RegLedgersController {
     @Query('pageSize') pageSize = '50',
   ) {
     const schools = schoolId ? [{ id: schoolId }] : this.schools();
-    const items = schools.flatMap((s) =>
-      this.waste
-        .list({ schoolId: s.id, category, start, end, page: '1', pageSize: '100000' })
-        .items.map((r) => ({
-          id: r.id,
-          schoolId: r.schoolId,
-          school: this.schools().find((x) => x.id === r.schoolId)?.name || r.schoolId,
-          date: r.date,
-          category: r.category,
-          amount: r.amount,
-          buyer: r.buyer,
-          person: r.person,
-        })),
-    );
+    const items = (
+      await Promise.all(
+        schools.map(async (s) => {
+          const res = await this.waste.list({ schoolId: s.id, category, start, end, page: '1', pageSize: '100000' });
+          return res.items.map((r: any) => ({
+            id: r.id,
+            schoolId: r.schoolId,
+            school: this.schools().find((x) => x.id === r.schoolId)?.name || r.schoolId,
+            date: r.date,
+            category: r.category,
+            amount: r.amount,
+            buyer: r.buyer,
+            person: r.person,
+          }));
+        })
+      )
+    ).flat();
     const p = Math.max(parseInt(page, 10) || 1, 1);
     const ps = Math.max(parseInt(pageSize, 10) || 50, 1);
     const total = items.length;

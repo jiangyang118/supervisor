@@ -27,7 +27,7 @@ export class ReportsController {
   }
 
   @Get('daily')
-  daily(
+  async daily(
     @Query('start') start?: string,
     @Query('end') end?: string,
     @Query('schoolId') schoolId?: string,
@@ -37,44 +37,49 @@ export class ReportsController {
       : this.schoolList();
     const s = start;
     const e = end;
-    const rows = schools.map((sc) => {
-      const morning = this.morning.list({
+    const rows = await Promise.all(schools.map(async (sc) => {
+      const morningRes = await this.morning.list({
         schoolId: sc.id,
         start: s,
         end: e,
         page: 1,
         pageSize: 100000,
-      }).total;
-      const sampling = this.sampling.listSamples({
+      });
+      const morning = morningRes.total;
+      const samplingRes = await this.sampling.listSamples({
         schoolId: sc.id,
         start: s,
         end: e,
         page: 1,
         pageSize: 100000,
-      }).total;
-      const disinfection = this.disinfection.list({
+      });
+      const sampling = samplingRes.total;
+      const disinfectionRes = await this.disinfection.list({
         schoolId: sc.id,
         start: s,
         end: e,
         page: 1,
         pageSize: 100000,
-      }).total;
-      const dine = this.dine.list({
+      });
+      const disinfection = disinfectionRes.total;
+      const dineRes = await this.dine.list({
         schoolId: sc.id,
         start: s,
         end: e,
         page: 1,
         pageSize: 100000,
-      }).total;
-      const waste = this.waste.list({
+      });
+      const dine = dineRes.total;
+      const wasteRes = await this.waste.list({
         schoolId: sc.id,
         start: s,
         end: e,
         page: '1',
         pageSize: '100000',
-      }).total;
+      });
+      const waste = wasteRes.total;
       return { schoolId: sc.id, school: sc.name, morning, sampling, disinfection, dine, waste };
-    });
+    }));
     const totalSchools = rows.length;
     const sum = (k: keyof (typeof rows)[number]) =>
       rows.reduce((acc, r) => acc + Number(r[k] || 0), 0);

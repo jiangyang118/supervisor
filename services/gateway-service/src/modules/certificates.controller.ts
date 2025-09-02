@@ -33,14 +33,14 @@ export class CertificatesController {
   }
 
   @Get('export.csv')
-  exportCsv(
+  async exportCsv(
     @Query('owner') owner?: string,
     @Query('type') type?: string,
     @Query('status') status?: '有效' | '过期',
   ) {
-    const items = this.svc.list({ owner, type, status });
+    const items = await this.svc.list({ owner, type, status });
     const headers = ['id', 'owner', 'type', 'number', 'expireAt', 'status'];
-    const rows = items.map((r: any) => [r.id, r.owner, r.type, r.number, r.expireAt, r.status]);
+    const rows = (items as any[]).map((r: any) => [r.id, r.owner, r.type, r.number, r.expireAt, r.status]);
     const csv = [
       headers.join(','),
       ...rows.map((r) => r.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')),

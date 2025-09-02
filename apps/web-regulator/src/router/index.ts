@@ -36,6 +36,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/system/news', component: () => import('../views/SystemNews.vue') },
   { path: '/system/linkage', component: () => import('../views/SystemLinkage.vue') },
   { path: '/system/roles', component: () => import('../views/SystemRoles.vue') },
+  { path: '/system/schools', component: () => import('../views/SystemSchools.vue') },
 ];
 
 export default createRouter({

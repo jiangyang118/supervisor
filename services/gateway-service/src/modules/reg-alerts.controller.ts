@@ -53,10 +53,10 @@ export class RegAlertsController {
   }
 
   @Get('summary')
-  summary(@Query('start') start?: string, @Query('end') end?: string) {
+  async summary(@Query('start') start?: string, @Query('end') end?: string) {
     const schools = this.schools();
     // 证件过期
-    const certExpired = this.certs.list({ status: '过期' }).length;
+    const certExpired = (await this.certs.list({ status: '过期' })).length;
     // 食材过期（演示占位，真实接入入库保质期后实现）
     const foodExpired = 0;
     // 行为预警（AI OPEN）
@@ -73,26 +73,25 @@ export class RegAlertsController {
           d.metrics && typeof (d.metrics as any).temp === 'number' && (d.metrics as any).temp > 8,
       ).length;
     // 农残不合格
-    const pesticideBad = this.schools().reduce(
-      (sum, s) =>
-        sum +
-        this.pesticide.list({ schoolId: s.id, result: '不合格', page: 1, pageSize: 100000 }).items
-          .length,
-      0,
-    );
+    let pesticideBad = 0;
+    for (const s of schools) {
+      const res = await this.pesticide.list({ schoolId: s.id, result: '不合格', page: 1, pageSize: 100000 });
+      pesticideBad += res.items.length;
+    }
     // 上报预警（以晨检为例：今天无上报）
     const today = new Date();
     const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-    const noReport = schools.reduce((sum, s) => {
-      const c = this.morning.list({ schoolId: s.id, start: dayStart, page: 1, pageSize: 1 }).total;
-      return sum + (c === 0 ? 1 : 0);
-    }, 0);
+    let noReport = 0;
+    for (const s of schools) {
+      const res = await this.morning.list({ schoolId: s.id, start: dayStart, page: 1, pageSize: 1 });
+      noReport += res.total === 0 ? 1 : 0;
+    }
     // 投诉待处理
-    const pendingFeedback = this.feedback.list({
+    const pendingFeedback = (await this.feedback.list({
       status: '待处理',
       page: 1,
       pageSize: 100000,
-    }).total;
+    })).total;
 
     return {
       stats: [
@@ -109,7 +108,7 @@ export class RegAlertsController {
   }
 
   @Get('events')
-  events(
+  async events(
     @Query('type') type?: AlertType,
     @Query('schoolId') schoolId?: string,
     @Query('start') start?: string,
@@ -130,7 +129,7 @@ export class RegAlertsController {
     };
 
     if (!type || type === '证件过期') {
-      const certs = this.certs.list({ status: '过期' }).map((c) => ({
+      const certs = (await this.certs.list({ status: '过期' })).map((c: any) => ({
         id: c.id,
         school: '-',
         schoolId: '-',
@@ -200,7 +199,7 @@ export class RegAlertsController {
     if (!type || type === '农残预警') {
       for (const s of schools) {
         if (sid && s.id !== sid) continue;
-        const { items: arr } = this.pesticide.list({
+        const { items: arr } = await this.pesticide.list({
           schoolId: s.id,
           result: '不合格',
           page: 1,
@@ -229,13 +228,13 @@ export class RegAlertsController {
       ).toISOString();
       for (const s of schools) {
         if (sid && s.id !== sid) continue;
-        const c = this.morning.list({
+        const cRes = await this.morning.list({
           schoolId: s.id,
           start: dayStart,
           page: 1,
           pageSize: 1,
-        }).total;
-        if (c === 0)
+        });
+        if (cRes.total === 0)
           push([
             {
               id: `NR-${s.id}`,
@@ -249,7 +248,7 @@ export class RegAlertsController {
       }
     }
     if (!type || type === '投诉预警') {
-      const fb = this.feedback.list({ status: '待处理', page: 1, pageSize: 100000 }).items;
+      const fb = (await this.feedback.list({ status: '待处理', page: 1, pageSize: 100000 })).items;
       push(
         fb
           .filter((r: any) => (!sid || r.schoolId === sid) && inRange(r.at))
@@ -271,13 +270,13 @@ export class RegAlertsController {
   }
 
   @Get('events/export.csv')
-  exportCsv(
+  async exportCsv(
     @Query('type') type?: AlertType,
     @Query('schoolId') schoolId?: string,
     @Query('start') start?: string,
     @Query('end') end?: string,
   ) {
-    const { items } = this.events(type, schoolId, start, end, '1', '100000');
+    const { items } = await this.events(type, schoolId, start, end, '1', '100000');
     const headers = ['id', 'schoolId', 'school', 'kind', 'detail', 'at'];
     const rows = (items as any[]).map((r) => [
       r.id,

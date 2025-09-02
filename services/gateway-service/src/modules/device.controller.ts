@@ -9,8 +9,9 @@ export class DeviceController {
   constructor(private readonly morning: MorningCheckService) {}
 
   @Get('morningChecker/employeeList')
-  employeeList(@Query('equipmentCode') equipmentCode?: string) {
-    const { items } = this.morning.list({ page: 1, pageSize: 100000 });
+  async employeeList(@Query('equipmentCode') equipmentCode?: string) {
+    const res = await this.morning.list({ page: 1, pageSize: 100000 });
+    const items = res.items as any[];
     const map = new Map<string, any>();
     items.forEach((e: any) => {
       const id = e.staff;

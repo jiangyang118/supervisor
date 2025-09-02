@@ -62,18 +62,7 @@ export class InventoryService {
   private seq = 1;
   private events$ = new Subject<MessageEvent>();
 
-  categories: Category[] = [];
-  products: Product[] = [];
-  suppliers: Supplier[] = [];
-  warehouses: Warehouse[] = [];
-  inbound: Inbound[] = [];
-  outbound: Outbound[] = [];
-  tickets: Ticket[] = [];
-  additives: Additive[] = [];
-
-  constructor(private readonly repo?: InventoryRepository) {
-    this.seed();
-  }
+  constructor(private readonly repo?: InventoryRepository) {}
 
   private id(prefix: string) {
     return `${prefix}-${String(this.seq++).padStart(4, '0')}`;
@@ -86,20 +75,19 @@ export class InventoryService {
   }
 
   // Categories
-  listCategories() {
-    return this.categories;
+  async listCategories() {
+    return this.repo!.listCategories();
   }
   createCategory(body: { name: string }) {
     if (!body?.name) throw new BadRequestException('name required');
     const c = { id: this.id('CAT'), name: body.name };
-    this.categories.push(c);
     this.repo?.insertCategory(c.id, c.name).catch(() => void 0);
     return c;
   }
 
   // Products
-  listProducts() {
-    return this.products;
+  async listProducts() {
+    return this.repo!.listProducts();
   }
   createProduct(body: { name: string; unit: string; categoryId?: string }) {
     if (!body?.name) throw new BadRequestException('name required');
@@ -110,7 +98,6 @@ export class InventoryService {
       unit: body.unit,
       categoryId: body.categoryId,
     };
-    this.products.unshift(p);
     this.repo?.insertProduct(p.id, p.name, p.unit, p.categoryId).catch(() => void 0);
     return p;
   }
@@ -130,51 +117,25 @@ export class InventoryService {
   }
 
   // Suppliers
-  listSuppliers(params?: {
+  async listSuppliers(params?: {
     q?: string;
     enabled?: 'true' | 'false';
     page?: number | string;
     pageSize?: number | string;
   }) {
-    let arr = this.suppliers.filter((s) => !s.deleted);
-    if (params?.q) {
-      const q = params.q.toLowerCase();
-      arr = arr.filter(
-        (s) =>
-          (s.name || '').toLowerCase().includes(q) ||
-          (s.phone || '').includes(q) ||
-          (s.license || '').includes(q),
-      );
-    }
-    if (params?.enabled) {
-      const en = params.enabled === 'true';
-      arr = arr.filter((s) => (s.enabled ?? true) === en);
-    }
-    let p = Math.max(1, parseInt(String(params?.page ?? 1), 10) || 1);
+    const p = Math.max(1, parseInt(String(params?.page ?? 1), 10) || 1);
     const ps = Math.max(1, parseInt(String(params?.pageSize ?? 20), 10) || 20);
-    const total = arr.length;
-    const maxPage = Math.max(1, Math.ceil(total / ps) || 1);
-    if (p > maxPage) p = maxPage;
-    const items = arr
-      .slice((p - 1) * ps, p * ps)
-      .map((s) => ({ ...s, expired: this.isExpired(s.licenseExpireAt) }));
-    return { items, total, page: p, pageSize: ps };
+    const enabled = params?.enabled ? params.enabled === 'true' : undefined;
+    const res = await this.repo!.listSuppliers({ q: params?.q, enabled, page: p, pageSize: ps });
+    const items = res.items.map((s: any) => ({ ...s, expired: this.isExpired(s.licenseExpireAt) }));
+    return { ...res, items };
   }
   private isExpired(dateISO?: string) {
     if (!dateISO) return false;
     const t = Date.parse(dateISO);
     return Number.isFinite(t) ? t < Date.now() : false;
   }
-  private assertUnique(b: Partial<Supplier>, ignoreId?: string) {
-    if (b.phone) {
-      const hit = this.suppliers.find((s) => s.phone === b.phone && s.id !== ignoreId);
-      if (hit) throw new BadRequestException('phone already exists');
-    }
-    if (b.license) {
-      const hit = this.suppliers.find((s) => s.license === b.license && s.id !== ignoreId);
-      if (hit) throw new BadRequestException('license already exists');
-    }
-  }
+  private assertUnique(_b: Partial<Supplier>, _ignoreId?: string) {}
   private assertValid(b: Partial<Supplier>) {
     if (b.phone) {
       const ok = /^\+?\d{7,20}$/.test(b.phone);
@@ -211,80 +172,54 @@ export class InventoryService {
     this.assertValid(b);
     const s: Supplier = { id: this.id('SUP'), enabled: true, ...b };
     if (s.rating && (s.rating < 1 || s.rating > 5)) s.rating = Math.min(5, Math.max(1, s.rating));
-    this.suppliers.unshift(s);
     this.repo?.insertSupplier(s).catch(() => void 0);
     return s;
   }
-  getSupplier(id: string) {
-    const s = this.suppliers.find((x) => x.id === id);
+  async getSupplier(id: string) {
+    const s = await this.repo!.getSupplierById(id);
     if (!s) throw new BadRequestException('not found');
     return s;
   }
-  updateSupplier(id: string, b: Partial<Omit<Supplier, 'id'>>) {
-    const idx = this.suppliers.findIndex((x) => x.id === id);
-    if (idx === -1) throw new BadRequestException('not found');
-    this.assertUnique(b, id);
+  async updateSupplier(id: string, b: Partial<Omit<Supplier, 'id'>>) {
     this.assertValid(b);
-    const next = { ...this.suppliers[idx], ...b };
+    const next = { ...b } as any;
     if (next.rating && (next.rating < 1 || next.rating > 5))
       next.rating = Math.min(5, Math.max(1, next.rating));
-    this.suppliers[idx] = next;
-    this.repo?.updateSupplier(id, next).catch(() => void 0);
-    return this.suppliers[idx];
+    await this.repo!.updateSupplier(id, next);
+    return { id, ...next };
   }
-  deleteSupplier(id: string) {
-    const idx = this.suppliers.findIndex((s) => s.id === id);
-    if (idx === -1) return { ok: false };
-    this.suppliers[idx].deleted = true;
-    this.repo?.updateSupplier(id, { deleted: true }).catch(() => void 0);
+  async deleteSupplier(id: string) {
+    await this.repo!.updateSupplier(id, { deleted: true });
     return { ok: true };
   }
 
-  batchEnable(ids: string[], enabled: boolean) {
-    let count = 0;
-    for (const id of ids || []) {
-      const s = this.suppliers.find((x) => x.id === id);
-      if (!s) continue;
-      s.enabled = !!enabled;
-      count++;
-    }
+  async batchEnable(ids: string[], enabled: boolean) {
+    const count = await this.repo!.batchEnableSuppliers(ids || [], !!enabled);
     return { count };
   }
 
   // Warehouses
-  listWarehouses() {
-    return this.warehouses.filter((w) => !w.deleted);
+  async listWarehouses() {
+    return this.repo!.listWarehouses();
   }
   createWarehouse(b: { name: string; location?: string; capacity?: number }) {
     if (!b?.name) throw new BadRequestException('name required');
     const w = { id: this.id('WH'), ...b };
-    this.warehouses.unshift(w);
     this.repo?.insertWarehouse(w).catch(() => void 0);
     return w;
   }
-  updateWarehouse(id: string, b: Partial<Omit<Warehouse, 'id'>>) {
-    const idx = this.warehouses.findIndex((w) => w.id === id && !w.deleted);
-    if (idx === -1) throw new BadRequestException('not found');
-    const next = { ...this.warehouses[idx], ...b } as Warehouse;
-    this.warehouses[idx] = next;
-    this.repo?.updateWarehouse(id, next).catch(() => void 0);
-    return next;
+  async updateWarehouse(id: string, b: Partial<Omit<Warehouse, 'id'>>) {
+    await this.repo!.updateWarehouse(id, b as any);
+    return { id, ...(b as any) };
   }
-  deleteWarehouse(id: string) {
-    const idx = this.warehouses.findIndex((w) => w.id === id && !w.deleted);
-    if (idx === -1) return { ok: false };
-    this.warehouses[idx].deleted = true;
-    this.repo?.updateWarehouse(id, { deleted: true }).catch(() => void 0);
+  async deleteWarehouse(id: string) {
+    await this.repo!.updateWarehouse(id, { deleted: true });
     return { ok: true };
   }
 
   // Inbound / Outbound
-  listInbound() {
-    return this.inbound.sort((a, b) => (a.at < b.at ? 1 : -1));
-  }
-  listOutbound() {
-    return this.outbound.sort((a, b) => (a.at < b.at ? 1 : -1));
-  }
+  async listInbound() { return this.repo!.listInbound(); }
+  async listOutbound() { return this.repo!.listOutbound(); }
   createInbound(b: {
     productId: string;
     qty: number;
@@ -304,7 +239,6 @@ export class InventoryService {
       at: this.now(),
       source: 'manual',
     };
-    this.inbound.unshift(r);
     this.repo?.insertInbound(r).catch(() => void 0);
     this.emit('in-created', r);
     return r;
@@ -343,7 +277,6 @@ export class InventoryService {
       at: this.now(),
       source: 'manual',
     };
-    this.outbound.unshift(r);
     this.repo?.insertOutbound(r).catch(() => void 0);
     this.emit('out-created', r);
     return r;
@@ -365,44 +298,34 @@ export class InventoryService {
   }
 
   // Stock
-  getStock(): Stock[] {
-    const map = new Map<string, number>();
-    for (const i of this.inbound) map.set(i.productId, (map.get(i.productId) || 0) + i.qty);
-    for (const o of this.outbound) map.set(o.productId, (map.get(o.productId) || 0) - o.qty);
-    const res: Stock[] = [];
-    for (const [productId, qty] of map) res.push({ productId, qty, updatedAt: this.now() });
-    return res;
+  async getStock(): Promise<Stock[]> {
+    const list = await this.repo!.getStock();
+    return list.map((s) => ({ productId: s.productId, qty: Number(s.qty || 0), updatedAt: this.now() }));
   }
-  stocktake(adj: { productId: string; qty: number }) {
-    const current = this.getStock().find((s) => s.productId === adj.productId)?.qty || 0;
+  async stocktake(adj: { productId: string; qty: number }) {
+    const current = (await this.getStock()).find((s) => s.productId === adj.productId)?.qty || 0;
     const diff = adj.qty - current;
     if (diff === 0) return { ok: true };
-    if (diff > 0) this.createInbound({ productId: adj.productId, qty: diff });
-    else this.createOutbound({ productId: adj.productId, qty: -diff });
+    if (diff > 0) await this.createInbound({ productId: adj.productId, qty: diff });
+    else await this.createOutbound({ productId: adj.productId, qty: -diff });
     return { ok: true };
   }
 
   // Tickets
-  listTickets() {
-    return this.tickets.sort((a, b) => (a.at < b.at ? 1 : -1));
-  }
+  async listTickets() { return this.repo!.listTickets(); }
   createTicket(b: { productId: string; type: string; imageUrl?: string }) {
     if (!b?.productId || !b?.type) throw new BadRequestException('productId/type required');
     const t = { id: this.id('TK'), ...b, at: this.now() };
-    this.tickets.unshift(t as any);
     this.repo?.insertTicket(t as any).catch(() => void 0);
     return t;
   }
 
   // Additives
-  listAdditives() {
-    return this.additives.sort((a, b) => (a.at < b.at ? 1 : -1));
-  }
+  async listAdditives() { return this.repo!.listAdditives(); }
   createAdditive(b: { name: string; amount: number; dish?: string; by?: string }) {
     if (!b?.name) throw new BadRequestException('name required');
     if (!b?.amount || Number(b.amount) <= 0) throw new BadRequestException('amount>0');
     const a = { id: this.id('AD'), ...b, at: this.now() };
-    this.additives.unshift(a as any);
     this.repo?.insertAdditive(a as any).catch(() => void 0);
     return a;
   }
@@ -412,33 +335,5 @@ export class InventoryService {
     return this.events$.asObservable();
   }
 
-  private seed() {
-    const catMain = this.createCategory({ name: '主食' });
-    const catVeg = this.createCategory({ name: '蔬菜' });
-    const rice = this.createProduct({ name: '大米', unit: 'kg', categoryId: catMain.id });
-    const egg = this.createProduct({ name: '鸡蛋', unit: '枚', categoryId: catMain.id });
-    const cucumber = this.createProduct({ name: '黄瓜', unit: 'kg', categoryId: catVeg.id });
-    const sup = this.createSupplier({
-      name: '示例供应商',
-      phone: '13800000000',
-      license: 'LIC-123456',
-    });
-    const wh = this.createWarehouse({ name: '主仓库', location: '食堂东侧', capacity: 100 });
-    this.createInbound({
-      productId: rice.id,
-      qty: 100,
-      supplierId: sup.id,
-      warehouseId: wh.id,
-      imageUrl: '',
-    });
-    this.createOutbound({
-      productId: rice.id,
-      qty: 10,
-      purpose: '午餐',
-      by: '张三',
-      warehouseId: wh.id,
-    });
-    this.createTicket({ productId: rice.id, type: '合格证' });
-    this.createAdditive({ name: '食盐', amount: 10, dish: '青菜', by: '后厨' });
-  }
+  private seed() {}
 }

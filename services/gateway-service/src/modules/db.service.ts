@@ -51,13 +51,19 @@ export class DbService implements OnModuleInit {
     const env = process.env;
     const ssl = env.MYSQL_SSL === '1' || env.MYSQL_SSL === 'true';
     if (env.DATABASE_URL) return { connectionString: env.DATABASE_URL, ssl };
-    if (!env.MYSQL_HOST) return {};
+    // Support both MYSQL_* and DB_* variable families
+    const host = env.MYSQL_HOST || env.DB_HOST;
+    const port = env.MYSQL_PORT || env.DB_PORT;
+    const user = env.MYSQL_USER || env.DB_USER;
+    const password = env.MYSQL_PASSWORD || env.DB_PASSWORD;
+    const database = env.MYSQL_DATABASE || env.DB_NAME;
+    if (!host) return {};
     return {
-      host: env.MYSQL_HOST,
-      port: env.MYSQL_PORT ? Number(env.MYSQL_PORT) : 3306,
-      user: env.MYSQL_USER,
-      password: env.MYSQL_PASSWORD,
-      database: env.MYSQL_DATABASE,
+      host,
+      port: port ? Number(port) : 3306,
+      user,
+      password,
+      database,
       ssl,
     };
   }

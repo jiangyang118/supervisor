@@ -1,9 +1,12 @@
-/* eslint-disable no-console */
+require('dotenv').config({ path: '../../.env' });
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
 
 async function main() {
+  console.log('Using DATABASE_URL:', process.env.DATABASE_URL);
+  console.log('MySQL User:', process.env.MYSQL_USER);
+  
   const dir = path.join(__dirname, '..', 'migrations');
   if (!fs.existsSync(dir)) {
     console.log('No migrations directory. Skipping.');
@@ -13,41 +16,19 @@ async function main() {
   if (!files.length) { console.log('No migration files. Skipping.'); return; }
 
   const ssl = process.env.MYSQL_SSL === '1' || process.env.MYSQL_SSL === 'true';
-
-  let pool;
-  if (process.env.DATABASE_URL) {
-    const u = new URL(process.env.DATABASE_URL);
-    pool = await mysql.createPool({
-      host: u.hostname,
-      port: u.port ? Number(u.port) : 3306,
-      user: decodeURIComponent(u.username),
-      password: decodeURIComponent(u.password),
-      database: u.pathname.replace(/^\//, ''),
-      waitForConnections: true,
-      connectionLimit: 10,
-      multipleStatements: true,
-      timezone: '+08:00',
-      ssl: ssl ? { rejectUnauthorized: false } : undefined,
-    });
-  } else {
-    const host = process.env.DB_HOST || process.env.MYSQL_HOST;
-    const port = process.env.DB_PORT || process.env.MYSQL_PORT;
-    const user = process.env.DB_USER || process.env.MYSQL_USER;
-    const password = process.env.DB_PASSWORD || process.env.MYSQL_PASSWORD;
-    const database = process.env.DB_NAME || process.env.MYSQL_DATABASE;
-    pool = await mysql.createPool({
-      host,
-      port: port ? Number(port) : 3306,
-      user,
-      password,
-      database,
-      waitForConnections: true,
-      connectionLimit: 10,
-      multipleStatements: true,
-      timezone: '+08:00',
-      ssl: ssl ? { rejectUnauthorized: false } : undefined,
-    });
-  }
+  const pool = process.env.DATABASE_URL
+    ? await mysql.createPool(process.env.DATABASE_URL)
+    : await mysql.createPool({
+        host: process.env.MYSQL_HOST,
+        port: process.env.MYSQL_PORT ? Number(process.env.MYSQL_PORT) : 3306,
+        user: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        database: process.env.MYSQL_DATABASE,
+        waitForConnections: true,
+        connectionLimit: 10,
+        multipleStatements: true,
+        ssl: ssl ? { rejectUnauthorized: false } : undefined,
+      });
 
   // simple migrations table
   await pool.query('create table if not exists _migrations(id varchar(255) primary key, applied_at datetime not null default current_timestamp)');

@@ -31,7 +31,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="日期">
-        <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+        <el-date-picker v-model="filters.range" type="daterange" unlink-panels  />
       </el-form-item>
       <el-form-item>
         <el-button @click="applyFilters">查询</el-button>

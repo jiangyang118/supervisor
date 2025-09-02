@@ -15,7 +15,7 @@
     </template>
     <el-form :inline="true" :model="filters" class="filters">
       <el-form-item label="样品">
-        <el-input v-model="filters.sample" />
+        <el-input v-model="filters.sample" placeholder="请输入"/>
       </el-form-item>
       <el-form-item label="异常">
         <el-select v-model="filters.exception" clearable placeholder="全部" style="width: 120px">
@@ -25,7 +25,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="日期">
-        <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+        <el-date-picker v-model="filters.range" type="daterange" unlink-panels range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" />
       </el-form-item>
       <el-form-item>
         <el-button @click="applyFilters">查询</el-button>
@@ -89,7 +89,7 @@
   <el-dialog v-model="createVisible" title="新建留样记录" width="520px">
     <el-form :model="form" label-width="96px">
       <el-form-item label="样品" required>
-        <el-input v-model="form.sample" />
+        <el-input v-model="form.sample" placeholder="请输入"/>
       </el-form-item>
       <el-form-item label="重量(g)" required>
         <el-input-number v-model="form.weight" :min="1" />
@@ -101,10 +101,10 @@
         <el-input-number v-model="form.duration" :min="1" />
       </el-form-item>
       <el-form-item label="留样人" required>
-        <el-input v-model="form.by" />
+        <el-input v-model="form.by" placeholder="请输入"/>
       </el-form-item>
       <el-form-item label="留样柜">
-        <el-input v-model="form.cabinet" />
+        <el-input v-model="form.cabinet" placeholder="请输入"/>
       </el-form-item>
     </el-form>
     <template #footer>

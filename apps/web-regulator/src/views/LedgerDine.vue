@@ -21,14 +21,22 @@
         </el-select>
       </el-form-item>
       <el-form-item label="餐次">
-        <el-select v-model="filters.meal" clearable>
+        <el-select v-model="filters.meal" clearable placeholder="全部">
           <el-option label="早餐" value="早餐" />
           <el-option label="午餐" value="午餐" />
           <el-option label="晚餐" value="晚餐" />
         </el-select>
       </el-form-item>
       <el-form-item label="日期">
-        <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+        <el-date-picker
+          v-model="filters.range"
+          type="daterange"
+          unlink-panels
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          range-separator="至"
+          placeholder="选择日期范围"
+        />
       </el-form-item>
       <el-form-item><el-button type="primary" @click="applyFilters">查询</el-button></el-form-item>
     </el-form>

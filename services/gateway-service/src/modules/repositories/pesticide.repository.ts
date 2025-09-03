@@ -1,9 +1,37 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { DbService } from '../db.service';
 
 @Injectable()
-export class PesticideRepository {
+export class PesticideRepository implements OnModuleInit {
   constructor(private readonly db: DbService) {}
+
+  async onModuleInit() {
+    try {
+      await this.db.query(
+        `create table if not exists pesticide_records (
+           id int primary key auto_increment,
+           school_id int not null,
+           sample varchar(255) not null,
+           device varchar(128) not null,
+           result varchar(8) not null,
+           image_url varchar(255) null,
+           remark varchar(255) null,
+           at datetime not null,
+           source varchar(16) not null,
+           exception tinyint not null default 0,
+           measure varchar(255) null,
+           key idx_pest_school_at (school_id, at),
+           key idx_pest_result_at (result, at)
+         )`,
+      );
+      // Align types if older BIGINT schema exists
+      await this.db.query(
+        'alter table pesticide_records modify column id int not null auto_increment, modify column school_id int not null',
+      );
+    } catch {
+      // best effort; real migrations handle structure in normal deployments
+    }
+  }
 
   async list(filters: {
     schoolId?: number; q?: string; result?: '合格'|'不合格'; start?: string; end?: string; page: number; pageSize: number;

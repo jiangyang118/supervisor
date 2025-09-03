@@ -27,7 +27,12 @@ export class HygieneRepository {
        order by date desc limit ? offset ?`,
       [...params, filters.pageSize, (filters.page - 1) * filters.pageSize],
     );
-    return { items: rows.rows, total, page: filters.page, pageSize: filters.pageSize };
+    const items = (rows.rows as any[]).map((r) => ({
+      ...r,
+      id: Number(r.id),
+      schoolId: Number(r.schoolId),
+    }));
+    return { items, total, page: filters.page, pageSize: filters.pageSize };
   }
 
   async insertInspection(rec: { schoolId: number; date: string; result: '合格'|'不合格'; by: string; remark?: string }): Promise<number> {
@@ -55,7 +60,12 @@ export class HygieneRepository {
        order by date desc limit ? offset ?`,
       [...params, filters.pageSize, (filters.page - 1) * filters.pageSize],
     );
-    return { items: rows.rows, total, page: filters.page, pageSize: filters.pageSize };
+    const items = (rows.rows as any[]).map((r) => ({
+      ...r,
+      id: Number(r.id),
+      schoolId: Number(r.schoolId),
+    }));
+    return { items, total, page: filters.page, pageSize: filters.pageSize };
   }
 
   async insertAsset(rec: { schoolId: number; asset: string; date: string; action: string; by: string }): Promise<number> {

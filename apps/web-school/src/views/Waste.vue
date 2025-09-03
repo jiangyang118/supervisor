@@ -22,7 +22,7 @@
         <el-button link type="primary" @click="openCategoryDialog">新增类别</el-button>
       </el-form-item>
       <el-form-item label="日期">
-        <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+        <el-date-picker v-model="filters.range" type="daterange" unlink-panels start-placeholder="开始日期" end-placeholder="结束日期" range-separator="-" />
       </el-form-item>
       <el-form-item>
         <el-button @click="applyFilters">查询</el-button>

@@ -42,7 +42,6 @@ import { DevicesService } from './devices.service';
 import { RegCredentialsController } from './reg-credentials.controller';
 import { RegFoodWasteController } from './reg-food-waste.controller';
 import { DeviceController } from './device.controller';
-import { SchoolInspectionsController } from './school-inspections.controller';
 import { InspectionsService } from './inspections.service';
 import { RegInspectionsController } from './reg-inspections.controller';
 import { RegAlertsController } from './reg-alerts.controller';
@@ -105,7 +104,6 @@ import { InventoryModule } from '../inventory/inventory.module';
     RegFoodWasteController,
     RegInspectionsController,
     RegAlertsController,
-    SchoolInspectionsController,
     RegSystemController,
     DeviceController,
     IntegrationController,

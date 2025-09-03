@@ -15,22 +15,24 @@
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="方式">
-        <el-select v-model="filters.method" clearable placeholder="请选择">
-          <el-option label="全部" value="" />
+        <el-select v-model="filters.method" clearable placeholder="请选择" style="width: 120px">
           <el-option label="酒精" value="酒精" />
           <el-option label="紫外" value="紫外" />
           <el-option label="高温" value="高温" />
         </el-select>
       </el-form-item>
       <el-form-item label="异常">
-        <el-select v-model="filters.exception" clearable placeholder="请选择" style="width: 120px">
-          <el-option label="全部" value="" />
+        <el-select v-model="filters.exception" clearable placeholder="全部" style="width: 120px">
+        
           <el-option label="仅异常" value="true" />
           <el-option label="仅正常" value="false" />
         </el-select>
       </el-form-item>
       <el-form-item label="日期">
-        <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+        <el-date-picker v-model="filters.range" type="daterange" unlink-panels 
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          range-separator="-"/>
       </el-form-item>
       <el-form-item>
         <el-button @click="applyFilters">查询</el-button>

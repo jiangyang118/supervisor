@@ -321,42 +321,6 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  // Inspections (school)
-  inspTasks: (
-    params: {
-      schoolId?: string;
-      assignee?: string;
-      status?: '待处理' | '进行中' | '已完成' | '';
-      type?: '日常' | '专项' | '双随机' | '';
-      start?: string;
-      end?: string;
-      page?: number;
-      pageSize?: number;
-    } = {},
-  ) =>
-    get<{ items: any[]; total: number; page: number; pageSize: number }>(
-      `/school/inspections/tasks?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null)) as any).toString()}`,
-    ),
-  inspConfig: () =>
-    get<{ items: string[]; penalties: string[]; publications: string[] }>(
-      `/school/inspections/config`,
-    ),
-  inspSubmit: async (
-    id: string,
-    body: {
-      passed: boolean;
-      items: Array<{ item: string; ok: boolean; remark?: string; penaltyType?: string }>;
-      summary?: string;
-    },
-  ) => {
-    const r = await fetch(`${BASE}/school/inspections/tasks/${encodeURIComponent(id)}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
-  },
   // System news (platform infos)
   sysNews: (params: { page?: number; pageSize?: number; enabled?: 'true' | 'false' } = {}) =>
     get<{ items: any[]; total: number; page: number; pageSize: number }>(
@@ -372,7 +336,9 @@ export const api = {
       body: JSON.stringify({ filename, content }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json() as Promise<{ url: string }>;
+    const data = (await res.json()) as { url: string; filename?: string };
+    const url = data.url?.startsWith('/') ? `${BASE}${data.url}` : data.url;
+    return { url };
   },
   // Hygiene inspections + asset maintenance
   hygieneList: (

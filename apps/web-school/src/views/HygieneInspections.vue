@@ -18,7 +18,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="日期">
-        <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+        <el-date-picker v-model="filters.range" type="daterange" unlink-panels range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期"  clearable />
       </el-form-item>
       <el-form-item>
         <el-button @click="applyFilters">查询</el-button>
@@ -78,8 +78,16 @@ async function load() {
   const params: any = { schoolId: getCurrentSchoolIdNum() };
   if (filters.result) params.result = filters.result;
   if (filters.range && filters.range.length === 2) {
-    params.start = filters.range[0].toISOString();
-    params.end = filters.range[1].toISOString();
+    const [a, b] = filters.range as any;
+    const toIso = (v: any) => {
+      if (v instanceof Date) return v.toISOString();
+      const n = typeof v === 'string' ? Number(v) : v;
+      return Number.isFinite(n) ? new Date(n).toISOString() : undefined;
+    };
+    const s = toIso(a);
+    const e = toIso(b);
+    if (s) params.start = s;
+    if (e) params.end = e;
   }
   try {
     const res = await api.hygieneList(params);

@@ -1,8 +1,8 @@
 -- Sampling domain tables
 
 create table if not exists sampling_records (
-  id bigint primary key auto_increment,
-  school_id bigint not null,
+  id int primary key auto_increment,
+  school_id int not null,
   sample varchar(255) not null,
   weight decimal(10,2) not null,
   image_url varchar(255) null,
@@ -21,8 +21,8 @@ create table if not exists sampling_records (
 );
 
 create table if not exists sampling_cleanups (
-  id bigint primary key auto_increment,
-  school_id bigint not null,
+  id int primary key auto_increment,
+  school_id int not null,
   sample_id bigint null,
   sample varchar(255) not null,
   weight decimal(10,2) not null,

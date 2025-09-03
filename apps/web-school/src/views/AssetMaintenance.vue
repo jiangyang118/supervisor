@@ -11,10 +11,10 @@
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
       <el-form-item label="资产">
-        <el-input v-model="filters.asset" />
+        <el-input v-model="filters.asset" placeholder="资产名称" />
       </el-form-item>
       <el-form-item label="日期">
-        <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+        <el-date-picker v-model="filters.range" type="daterange" unlink-panels range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期"  clearable />
       </el-form-item>
       <el-form-item>
         <el-button @click="applyFilters">查询</el-button>

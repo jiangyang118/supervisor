@@ -16,7 +16,6 @@
             size="small"
             style="width: 120px; margin-right: 8px"
           >
-            <el-option label="全部" value="" />
             <el-option label="仅启用" value="true" />
             <el-option label="仅禁用" value="false" />
           </el-select>

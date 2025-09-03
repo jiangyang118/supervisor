@@ -1,5 +1,6 @@
 import { Injectable, MessageEvent, BadRequestException } from '@nestjs/common';
 import { Observable, Subject } from 'rxjs';
+import { DisinfectionRepository } from './repositories/disinfection.repository';
 
 export type DisinfectionMethod = '酒精' | '紫外' | '高温';
 
@@ -19,17 +20,9 @@ export type DisinfectionRecord = {
 
 @Injectable()
 export class DisinfectionService {
-  private seq = 1;
-  private records: DisinfectionRecord[] = [];
   private events$ = new Subject<MessageEvent>();
 
-  constructor() {
-    this.seed();
-  }
-
-  private id() {
-    return `DS-${String(this.seq++).padStart(4, '0')}`;
-  }
+  constructor(private readonly repo: DisinfectionRepository) {}
   private nowIso() {
     return new Date().toISOString();
   }
@@ -37,7 +30,7 @@ export class DisinfectionService {
     this.events$.next({ type, data });
   }
 
-  list(params: {
+  async list(params: {
     schoolId?: string;
     method?: DisinfectionMethod;
     exception?: 'true' | 'false';
@@ -46,24 +39,35 @@ export class DisinfectionService {
     page?: number | string;
     pageSize?: number | string;
   }) {
-    const sid = params.schoolId || 'sch-001';
-    let arr = this.records.filter((r) => r.schoolId === sid);
-    if (params.method) arr = arr.filter((r) => r.method === params.method);
-    if (params.exception === 'true') arr = arr.filter((r) => r.exception);
-    if (params.exception === 'false') arr = arr.filter((r) => !r.exception);
-    if (params.start) arr = arr.filter((r) => r.at >= params.start!);
-    if (params.end) arr = arr.filter((r) => r.at <= params.end!);
-    arr = arr.sort((a, b) => (a.at < b.at ? 1 : -1));
-    let p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
+    const sid = params.schoolId || '1';
+    const p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
     const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
-    const total = arr.length;
-    const maxPage = Math.max(1, Math.ceil(total / ps) || 1);
-    if (p > maxPage) p = maxPage;
-    const items = arr.slice((p - 1) * ps, p * ps);
-    return { items, total, page: p, pageSize: ps };
+    const res = await this.repo.search({
+      schoolId: sid,
+      method: params.method,
+      exception: params.exception === 'true' ? true : params.exception === 'false' ? false : undefined,
+      start: params.start,
+      end: params.end,
+      page: p,
+      pageSize: ps,
+    });
+    const items: DisinfectionRecord[] = res.items.map((r) => ({
+      id: `DS-${String(r.id).padStart(6, '0')}`,
+      schoolId: String(r.schoolId),
+      method: r.method as DisinfectionMethod,
+      duration: Number(r.duration),
+      items: r.items,
+      imageUrl: r.imageUrl || undefined,
+      at: new Date(r.at).toISOString(),
+      source: r.source,
+      exception: r.exception === 1,
+      exceptionReason: r.exceptionReason || undefined,
+      measure: r.measure || undefined,
+    }));
+    return { items, total: res.total, page: res.page, pageSize: res.pageSize };
   }
 
-  create(body: {
+  async create(body: {
     schoolId?: string;
     method: DisinfectionMethod;
     duration: number;
@@ -77,19 +81,33 @@ export class DisinfectionService {
     if (!body?.items || String(body.items).trim() === '')
       throw new BadRequestException('items is required');
     const duration = Number(body.duration);
-    const rec: DisinfectionRecord = {
-      id: this.id(),
-      schoolId: body.schoolId || 'sch-001',
+    const at = this.nowIso();
+    const exception = duration < 10 || !body.imageUrl;
+    const insertId = await this.repo.insert({
+      schoolId: Number(body.schoolId || 1),
       method: body.method,
       duration,
       items: body.items,
       imageUrl: body.imageUrl,
-      at: this.nowIso(),
+      at,
       source: body.source || 'manual',
-      exception: duration < 10 || !body.imageUrl,
+      exception: exception ? 1 : 0,
       exceptionReason: duration < 10 ? '时长不足' : !body.imageUrl ? '缺少图片' : undefined,
+      measure: undefined,
+    } as any);
+    const rec: DisinfectionRecord = {
+      id: `DS-${String(insertId).padStart(6, '0')}`,
+      schoolId: String(body.schoolId || 1),
+      method: body.method,
+      duration,
+      items: body.items,
+      imageUrl: body.imageUrl,
+      at,
+      source: body.source || 'manual',
+      exception,
+      exceptionReason: duration < 10 ? '时长不足' : !body.imageUrl ? '缺少图片' : undefined,
+      measure: undefined,
     };
-    this.records.unshift(rec);
     this.emit('disinfection-created', rec);
     return rec;
   }
@@ -104,12 +122,11 @@ export class DisinfectionService {
     return this.create({ ...body, source: 'device' });
   }
 
-  setMeasure(id: string, measure: string) {
-    const idx = this.records.findIndex((r) => r.id === id);
-    if (idx === -1) return { ok: false };
-    this.records[idx].measure = measure;
-    this.emit('disinfection-updated', this.records[idx]);
-    return { ok: true, record: this.records[idx] };
+  async setMeasure(id: string, measure: string) {
+    const num = this.idToNumber(id);
+    await this.repo.updateMeasure(num, measure);
+    this.emit('disinfection-updated', { id, measure });
+    return { ok: true } as any;
   }
 
   stream(): Observable<MessageEvent> {
@@ -117,34 +134,8 @@ export class DisinfectionService {
     return this.events$.asObservable();
   }
 
-  private seed() {
-    this.create({
-      schoolId: 'sch-001',
-      method: '酒精',
-      duration: 30,
-      items: '案板/台面',
-      imageUrl: 'https://example.com/d1.jpg',
-    });
-    this.create({
-      schoolId: 'sch-001',
-      method: '紫外',
-      duration: 8,
-      items: '餐具',
-      imageUrl: 'https://example.com/d2.jpg',
-    }); // 异常：时长不足
-    this.create({
-      schoolId: 'sch-001',
-      method: '高温',
-      duration: 20,
-      items: '蒸箱',
-      imageUrl: '' as any,
-    }); // 异常：缺少图片
-    this.create({
-      schoolId: 'sch-002',
-      method: '酒精',
-      duration: 25,
-      items: '储物柜',
-      imageUrl: 'https://example.com/d3.jpg',
-    });
+  private idToNumber(external: string) {
+    const m = String(external || '').match(/(\d+)/);
+    return m ? Number(m[1]) : Number(external);
   }
 }

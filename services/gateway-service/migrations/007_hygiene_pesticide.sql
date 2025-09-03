@@ -1,7 +1,7 @@
 -- Hygiene inspections
 create table if not exists hygiene_inspections (
-  id bigint primary key auto_increment,
-  school_id bigint not null,
+  id int primary key auto_increment,
+  school_id int not null,
   date datetime not null,
   result varchar(8) not null,
   created_by varchar(128) not null,
@@ -12,8 +12,8 @@ create table if not exists hygiene_inspections (
 
 -- Asset maintenance
 create table if not exists asset_maintenance (
-  id bigint primary key auto_increment,
-  school_id bigint not null,
+  id int primary key auto_increment,
+  school_id int not null,
   asset varchar(255) not null,
   date datetime not null,
   action varchar(255) not null,
@@ -24,8 +24,8 @@ create table if not exists asset_maintenance (
 
 -- Pesticide records
 create table if not exists pesticide_records (
-  id bigint primary key auto_increment,
-  school_id bigint not null,
+  id int primary key auto_increment,
+  school_id int not null,
   sample varchar(255) not null,
   device varchar(128) not null,
   result varchar(8) not null,

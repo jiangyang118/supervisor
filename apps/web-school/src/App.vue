@@ -41,7 +41,6 @@
             <el-menu-item index="/hygiene/inspections">卫生检查台账</el-menu-item>
             <el-menu-item index="/hygiene/assets">固定资产维护</el-menu-item>
           </el-sub-menu>
-          <el-menu-item index="/inspections/tasks">监督检查任务</el-menu-item>
           <el-sub-menu index="inventory">
             <template #title>出入库/食材</template>
             <el-menu-item index="/inventory/items">商品管理</el-menu-item>

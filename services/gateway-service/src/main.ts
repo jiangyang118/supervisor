@@ -2,10 +2,17 @@ import 'dotenv/config';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './modules/app.module';
+import { json, urlencoded } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
+
+  // Increase body size limits to support base64 image uploads
+  const limitMb = Number(process.env.BODY_LIMIT_MB || process.env.UPLOAD_LIMIT_MB || 10);
+  const limit = `${Math.max(1, limitMb)}mb`;
+  app.use(json({ limit }));
+  app.use(urlencoded({ limit, extended: true }));
 
   // Normalize legacy frontend prefixes: /api/school/* and /api/regulator/* → strip leading /api
   const http = app.getHttpAdapter().getInstance();

@@ -72,7 +72,12 @@ export class WasteRepository {
                  order by created_at desc limit ? offset ?`;
     params.push(filters.pageSize, (filters.page - 1) * filters.pageSize);
     const { rows } = await this.db.query<any>(sql, params);
-    return rows as any[];
+    return (rows as any[]).map((r) => ({
+      ...r,
+      id: Number(r.id),
+      schoolId: Number(r.schoolId),
+      amount: Number(r.amount),
+    }));
   }
 
   async insertRecord(rec: {
@@ -98,6 +103,9 @@ export class WasteRepository {
        from waste_records where id = ? limit 1`,
       [id],
     );
-    return rows[0] || null;
+    const row = rows[0] || null;
+    return row
+      ? { ...row, id: Number(row.id), schoolId: Number(row.schoolId), amount: Number(row.amount) }
+      : null;
   }
 }

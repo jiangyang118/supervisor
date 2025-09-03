@@ -90,7 +90,7 @@
       </el-form-item>
       <el-form-item label="检测图片">
         <div style="display: flex; align-items: center; gap: 8px">
-          <el-upload :show-file-list="false" :auto-upload="false" :http-request="onUpload">
+          <el-upload :show-file-list="false" :auto-upload="true" :http-request="onUpload" accept="image/*">
             <el-button>选择图片</el-button>
           </el-upload>
           <el-image
@@ -198,6 +198,9 @@ async function onUpload(opts: any) {
     });
     reader.readAsDataURL(file);
     const content = await p;
+    // 先本地预览，提升体验
+    form.imageUrl = content;
+    // 上传后替换为服务端可访问 URL
     const { url } = await api.uploadFile(file.name, content);
     form.imageUrl = url;
     ElMessage.success('图片已上传');

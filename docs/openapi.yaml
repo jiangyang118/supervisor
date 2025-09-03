@@ -50,3 +50,184 @@ components:
           type: string
         displayName:
           type: string
+    School:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+    SchoolConfig:
+      allOf:
+        - $ref: '#/components/schemas/School'
+        - type: object
+          properties:
+            enabled: { type: boolean }
+  /school/waste/records:
+    get:
+      summary: List waste records
+      parameters:
+        - in: query
+          name: schoolId
+          schema: { type: integer }
+        - in: query
+          name: category
+          schema: { type: string }
+        - in: query
+          name: start
+          schema: { type: string }
+        - in: query
+          name: end
+          schema: { type: string }
+        - in: query
+          name: page
+          schema: { type: integer, default: 1 }
+        - in: query
+          name: pageSize
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/WasteRecord'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  pageSize:
+                    type: integer
+    post:
+      summary: Create a waste record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [category, amount, buyer, person]
+              properties:
+                schoolId: { type: integer }
+                date: { type: string }
+                category: { type: string }
+                amount: { type: number }
+                buyer: { type: string }
+                person: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WasteRecord'
+  /school/waste/records/{id}:
+    get:
+      summary: Get waste record by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WasteRecord'
+  /reg/schools:
+    get:
+      summary: List schools
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/School'
+  /reg/schools/config:
+    get:
+      summary: List schools with enabled flag
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SchoolConfig'
+    post:
+      summary: Create school
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  id: { type: integer }
+    patch:
+      summary: Update school
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                enabled: { type: boolean }
+      responses:
+        '200':
+          description: OK
+    post-delete:
+      summary: Disable school
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: integer }
+      responses:
+        '200':
+          description: OK
+    WasteRecord:
+      type: object
+      required: [id, schoolId, date, category, amount, buyer, person, createdAt]
+      properties:
+        id: { type: integer }
+        schoolId: { type: integer }
+        date: { type: string }
+        category: { type: string }
+        amount: { type: number }
+        buyer: { type: string }
+        person: { type: string }
+        createdAt: { type: string }

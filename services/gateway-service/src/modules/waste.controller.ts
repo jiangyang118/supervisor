@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, ParseIntPipe } from '@nestjs/common';
 import { WasteService, WasteCategory } from './waste.service';
 
 @Controller('school/waste')
@@ -35,14 +35,21 @@ export class WasteController {
     @Query('page') page: string = '1',
     @Query('pageSize') pageSize: string = '20',
   ) {
-    return this.svc.list({ schoolId, category, start, end, page, pageSize });
+    return this.svc.list({
+      schoolId: schoolId !== undefined && schoolId !== null && schoolId !== '' ? Number(schoolId) : undefined,
+      category,
+      start,
+      end,
+      page,
+      pageSize,
+    });
   }
 
   @Post('records')
   create(
     @Body()
     body: {
-      schoolId?: string;
+      schoolId?: number;
       date?: string;
       category: WasteCategory;
       amount: number;
@@ -54,7 +61,7 @@ export class WasteController {
   }
 
   @Get('records/:id')
-  getOne(@Param('id') id: string) {
+  getOne(@Param('id', ParseIntPipe) id: number) {
     return this.svc.getById(id);
   }
 }

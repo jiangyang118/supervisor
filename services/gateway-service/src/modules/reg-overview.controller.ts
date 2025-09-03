@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Query, ParseIntPipe } from '@nestjs/common';
 import { MorningCheckService } from './morning-check.service';
 import { SamplingService } from './sampling.service';
 import { DisinfectionService } from './disinfection.service';
@@ -21,6 +21,12 @@ export class RegOverviewController {
     private readonly feedback: PublicFeedbackService,
     private readonly schoolsRepo: SchoolsRepository,
   ) {}
+  private numId(id: string | number | undefined) {
+    if (typeof id === 'number') return id;
+    if (!id) return 0;
+    const n = Number(String(id).replace(/\D/g, ''));
+    return Number.isFinite(n) ? n : 0;
+  }
   @Get('overview')
   async overview() {
     const schoolsList = await this.localSchools();
@@ -98,15 +104,15 @@ export class RegOverviewController {
   async schools() {
     try {
       const rows = await this.schoolsRepo.listAll();
-      return rows.map((r) => ({ id: r.id, name: r.name }));
+      return rows.map((r) => ({ id: this.numId(r.id), name: r.name }));
     } catch {
       // Fallback to local list if DB not ready
       return [
-        { id: 'sch-001', name: '示例一中' },
-        { id: 'sch-002', name: '示例二小' },
-        { id: 'sch-003', name: '示例三幼' },
-        { id: 'sch-004', name: '示例四小' },
-        { id: 'sch-005', name: '示例五中' },
+        { id: 1, name: '示例一中' },
+        { id: 2, name: '示例二小' },
+        { id: 3, name: '示例三幼' },
+        { id: 4, name: '示例四小' },
+        { id: 5, name: '示例五中' },
       ];
     }
   }
@@ -115,25 +121,44 @@ export class RegOverviewController {
   @Get('schools/config')
   async schoolsConfig() {
     const rows = await this.schoolsRepo.listAll(true);
-    return rows.map((r) => ({ id: r.id, name: r.name, enabled: !!r.enabled }));
+    return rows.map((r) => ({ id: this.numId(r.id), name: r.name, enabled: !!r.enabled }));
   }
   @Post('schools/config')
-  async createSchool(@Body() b: { id?: string; name: string; enabled?: boolean }) {
+  async createSchool(@Body() b: { name: string; enabled?: boolean }) {
     if (!b?.name || String(b.name).trim() === '') {
       return { ok: false, message: 'name required' };
     }
-    const id = b.id && String(b.id).trim() !== '' ? b.id : this.genId('sch');
-    await this.schoolsRepo.insert(id, b.name.trim(), b.enabled ?? true);
-    return { ok: true, id };
+    try {
+      const name = b.name.trim();
+      // Idempotent: if same name exists, return existing id (and optionally update enabled)
+      const exist = await this.schoolsRepo.findByName(name);
+      if (exist) {
+        if (typeof b.enabled === 'boolean') {
+          await this.schoolsRepo.update(exist.id, { enabled: b.enabled });
+        }
+        return { ok: true, id: exist.id, existed: true } as any;
+      }
+      const id = await this.schoolsRepo.insert(name, b.enabled ?? true);
+      return { ok: true, id };
+    } catch (e: any) {
+      const msg = String(e?.message || 'insert failed');
+      if (e?.code === 'ER_DUP_ENTRY' || /Duplicate entry/i.test(msg)) {
+        // Try resolve by lookup (race or pre-existing)
+        const exist = await this.schoolsRepo.findByName(String(b?.name || '').trim());
+        if (exist) return { ok: true, id: exist.id, existed: true } as any;
+        return { ok: false, status: 409, message: 'duplicate name or id' } as any;
+      }
+      return { ok: false, status: 500, message: msg } as any;
+    }
   }
   @Patch('schools/config')
-  async updateSchool(@Query('id') id: string, @Body() b: { name?: string; enabled?: boolean }) {
+  async updateSchool(@Query('id', ParseIntPipe) id: number, @Body() b: { name?: string; enabled?: boolean }) {
     if (!id) return { ok: false, message: 'id required' } as any;
     await this.schoolsRepo.update(id, b);
     return { ok: true };
   }
   @Post('schools/config/delete')
-  async deleteSchool(@Body() body: { id: string }) {
+  async deleteSchool(@Body() body: { id: number }) {
     if (!body?.id) return { ok: false, message: 'id required' } as any;
     await this.schoolsRepo.update(body.id, { enabled: false });
     return { ok: true };
@@ -149,15 +174,15 @@ export class RegOverviewController {
     });
   }
 
-  @Get('schools/sch-001/cameras')
+  @Get('schools/1/cameras')
   cams1() { return this._cameras('示例一中'); }
-  @Get('schools/sch-002/cameras')
+  @Get('schools/2/cameras')
   cams2() { return this._cameras('示例二小'); }
-  @Get('schools/sch-003/cameras')
+  @Get('schools/3/cameras')
   cams3() { return this._cameras('示例三幼'); }
-  @Get('schools/sch-004/cameras')
+  @Get('schools/4/cameras')
   cams4() { return this._cameras('示例四小'); }
-  @Get('schools/sch-005/cameras')
+  @Get('schools/5/cameras')
   cams5() { return this._cameras('示例五中'); }
 
   private _cameras(school: string) {
@@ -188,19 +213,15 @@ export class RegOverviewController {
     // Prefer DB, fallback to defaults
     try {
       const rows = await this.schoolsRepo.listAll();
-      if (rows && rows.length) return rows.map((r) => ({ id: r.id, name: r.name }));
+      if (rows && rows.length) return rows.map((r) => ({ id: this.numId(r.id), name: r.name }));
     } catch {}
     return [
-      { id: 'sch-001', name: '示例一中' },
-      { id: 'sch-002', name: '示例二小' },
-      { id: 'sch-003', name: '示例三幼' },
-      { id: 'sch-004', name: '示例四小' },
-      { id: 'sch-005', name: '示例五中' },
+      { id: 1, name: '示例一中' },
+      { id: 2, name: '示例二小' },
+      { id: 3, name: '示例三幼' },
+      { id: 4, name: '示例四小' },
+      { id: 5, name: '示例五中' },
     ];
   }
-
-  private genId(prefix: string) {
-    const rand = Math.random().toString(36).slice(2, 8);
-    return `${prefix}-${rand}`;
-  }
+  // id uses DB auto-increment
 }

@@ -41,10 +41,10 @@ export class WasteRepository {
   }
 
   // Records
-  async countRecords(filters: { schoolId?: string; category?: string; start?: string; end?: string }) {
+  async countRecords(filters: { schoolId?: number; category?: string; start?: string; end?: string }) {
     const where: string[] = [];
     const params: any[] = [];
-    if (filters.schoolId) { where.push('school_id = ?'); params.push(filters.schoolId); }
+    if (filters.schoolId !== undefined && filters.schoolId !== null) { where.push('school_id = ?'); params.push(filters.schoolId); }
     if (filters.category) { where.push('category = ?'); params.push(filters.category); }
     if (filters.start) { where.push('date >= ?'); params.push(filters.start); }
     if (filters.end) { where.push('date <= ?'); params.push(filters.end); }
@@ -54,7 +54,7 @@ export class WasteRepository {
   }
 
   async listRecords(filters: {
-    schoolId?: string;
+    schoolId?: number;
     category?: string;
     start?: string;
     end?: string;
@@ -63,7 +63,7 @@ export class WasteRepository {
   }) {
     const where: string[] = [];
     const params: any[] = [];
-    if (filters.schoolId) { where.push('school_id = ?'); params.push(filters.schoolId); }
+    if (filters.schoolId !== undefined && filters.schoolId !== null) { where.push('school_id = ?'); params.push(filters.schoolId); }
     if (filters.category) { where.push('category = ?'); params.push(filters.category); }
     if (filters.start) { where.push('date >= ?'); params.push(filters.start); }
     if (filters.end) { where.push('date <= ?'); params.push(filters.end); }
@@ -76,23 +76,23 @@ export class WasteRepository {
   }
 
   async insertRecord(rec: {
-    id: string;
-    schoolId: string;
+    schoolId: number;
     date: string;
     category: string;
     amount: number;
     buyer: string;
     person: string;
     createdAt: string;
-  }) {
-    await this.db.query(
-      `insert into waste_records(id, school_id, date, category, amount, buyer, person, created_at)
-       values(?,?,?,?,?,?,?,?)`,
-      [rec.id, rec.schoolId, rec.date, rec.category, rec.amount, rec.buyer, rec.person, new Date(rec.createdAt)],
+  }): Promise<number> {
+    const res = await this.db.query(
+      `insert into waste_records(school_id, date, category, amount, buyer, person, created_at)
+       values(?,?,?,?,?,?,?)`,
+      [rec.schoolId, rec.date, rec.category, rec.amount, rec.buyer, rec.person, new Date(rec.createdAt)],
     );
+    return res.insertId || 0;
   }
 
-  async getRecordById(id: string) {
+  async getRecordById(id: number) {
     const { rows } = await this.db.query<any>(
       `select id, school_id as schoolId, date, category, amount, buyer, person, created_at as createdAt
        from waste_records where id = ? limit 1`,

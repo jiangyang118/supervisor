@@ -9,8 +9,8 @@ create table if not exists waste_categories (
 );
 
 create table if not exists waste_records (
-  id varchar(64) not null primary key,
-  school_id varchar(64) not null,
+  id bigint not null primary key auto_increment,
+  school_id bigint not null,
   date date not null,
   category varchar(255) not null,
   amount decimal(18,3) not null default 0,

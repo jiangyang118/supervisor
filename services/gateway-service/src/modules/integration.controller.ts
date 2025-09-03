@@ -132,7 +132,6 @@ export class IntegrationController {
       // optional DB persist via repository (ignore on errors)
       try {
         await this.morningChecksRepo.insert({
-          id: recordId,
           equipmentCode: mc.equipmentCode,
           userId: mc.userId,
           checkTime: new Date(mc.checkTime),

@@ -9,6 +9,7 @@ import {
   Sse,
   MessageEvent,
 } from '@nestjs/common';
+import { ParseIntPipe } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { SamplingService, SampleStatus } from './sampling.service';
 
@@ -29,7 +30,7 @@ export class SamplingController {
     @Query('pageSize') pageSize: string = '20',
   ) {
     return this.svc.listSamples({
-      schoolId,
+      schoolId: schoolId ? Number(schoolId) : undefined,
       sample,
       status,
       exception,
@@ -44,7 +45,7 @@ export class SamplingController {
   createRecord(
     @Body()
     body: {
-      schoolId?: string;
+      schoolId?: number;
       sample: string;
       weight: number;
       imageUrl?: string;
@@ -60,7 +61,7 @@ export class SamplingController {
   deviceCallback(
     @Body()
     body: {
-      schoolId?: string;
+      schoolId?: number;
       sample: string;
       weight: number;
       imageUrl?: string;
@@ -73,7 +74,7 @@ export class SamplingController {
   }
 
   @Patch('records/:id/measure')
-  setMeasure(@Param('id') id: string, @Body() body: { measure: string }) {
+  setMeasure(@Param('id', ParseIntPipe) id: number, @Body() body: { measure: string }) {
     return this.svc.setSampleMeasure(id, body.measure);
   }
 
@@ -84,15 +85,15 @@ export class SamplingController {
     @Query('page') page = '1',
     @Query('pageSize') pageSize = '20',
   ) {
-    return this.svc.listCleanups({ schoolId, page, pageSize });
+    return this.svc.listCleanups({ schoolId: schoolId ? Number(schoolId) : undefined, page, pageSize });
   }
 
   @Post('cleanup')
   createCleanup(
     @Body()
     body: {
-      schoolId?: string;
-      sampleId?: string;
+      schoolId?: number;
+      sampleId?: number;
       sample: string;
       weight: number;
       imageUrl?: string;
@@ -107,8 +108,8 @@ export class SamplingController {
   cabinetCleanup(
     @Body()
     body: {
-      schoolId?: string;
-      sampleId?: string;
+      schoolId?: number;
+      sampleId?: number;
       sample: string;
       weight: number;
       imageUrl?: string;

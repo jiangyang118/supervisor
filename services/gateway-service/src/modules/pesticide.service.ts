@@ -5,8 +5,8 @@ import { PesticideRepository } from './repositories/pesticide.repository';
 export type PesticideResult = '合格' | '不合格';
 
 export type PesticideRecord = {
-  id: string;
-  schoolId: string;
+  id: number;
+  schoolId: number;
   sample: string;
   device: string;
   result: PesticideResult;
@@ -25,9 +25,7 @@ export class PesticideService {
 
   constructor(private readonly repo: PesticideRepository) {}
 
-  private id() {
-    return `PT-${String(this.seq++).padStart(4, '0')}`;
-  }
+  // id is DB auto-increment
   private nowIso() {
     return new Date().toISOString();
   }
@@ -36,7 +34,7 @@ export class PesticideService {
   }
 
   async list(params: {
-    schoolId?: string;
+    schoolId?: number | string;
     q?: string;
     result?: PesticideResult;
     start?: string;
@@ -46,8 +44,11 @@ export class PesticideService {
   }) {
     const p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
     const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
+    const sidInput = params.schoolId;
+    const sidNum = sidInput !== undefined && sidInput !== null && String(sidInput).trim() !== '' ? Number(sidInput) : NaN;
+    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : 1;
     return this.repo.list({
-      schoolId: params.schoolId || 'sch-001',
+      schoolId: sid,
       q: params.q,
       result: params.result,
       start: params.start,
@@ -58,7 +59,7 @@ export class PesticideService {
   }
 
   async create(body: {
-    schoolId?: string;
+    schoolId?: number | string;
     sample: string;
     device: string;
     result: PesticideResult;
@@ -71,25 +72,17 @@ export class PesticideService {
     if (!body?.device || String(body.device).trim() === '')
       throw new BadRequestException('device is required');
     if (!body?.result) throw new BadRequestException('result is required');
-    const rec: PesticideRecord = {
-      id: this.id(),
-      schoolId: body.schoolId || 'sch-001',
-      sample: body.sample,
-      device: body.device,
-      result: body.result,
-      imageUrl: body.imageUrl,
-      remark: body.remark,
-      at: this.nowIso(),
-      source: body.source || 'manual',
-      exception: body.result === '不合格',
-    };
-    await this.repo.insert(rec);
+    const schoolId = (() => { const s = body.schoolId; const n = s!==undefined&&s!==null&&String(s).trim()!==''?Number(s):NaN; return Number.isFinite(n)&&Number.isInteger(n)?n:1; })();
+    const at = this.nowIso();
+    const exception = body.result === '不合格';
+    const insertId = await this.repo.insert({ schoolId, sample: body.sample, device: body.device, result: body.result, imageUrl: body.imageUrl, remark: body.remark, at, source: body.source || 'manual', exception });
+    const rec: PesticideRecord = { id: insertId, schoolId, sample: body.sample, device: body.device, result: body.result, imageUrl: body.imageUrl, remark: body.remark, at, source: body.source || 'manual', exception };
     this.emit('pesticide-created', rec);
     return rec;
   }
 
   deviceCallback(body: {
-    schoolId?: string;
+    schoolId?: number | string;
     sample: string;
     device: string;
     result: PesticideResult;
@@ -98,7 +91,7 @@ export class PesticideService {
     return this.create({ ...body, source: 'device' });
   }
 
-  async setMeasure(id: string, measure: string) {
+  async setMeasure(id: number, measure: string) {
     await this.repo.setMeasure(id, measure);
     this.emit('pesticide-updated', { id, measure });
     return { ok: true } as any;

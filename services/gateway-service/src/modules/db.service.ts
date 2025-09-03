@@ -68,9 +68,11 @@ export class DbService implements OnModuleInit {
     };
   }
 
-  async query<T = any>(text: string, params?: any[]): Promise<{ rows: T[] }> {
+  async query<T = any>(text: string, params?: any[]): Promise<{ rows: T[]; insertId?: number; affectedRows?: number }> {
     if (!this.pool) throw new Error('DB not configured');
-    const [rows] = await this.pool.query(text, params);
-    return { rows: rows as T[] };
+    const [rows]: any = await this.pool.query(text, params);
+    const insertId = typeof rows?.insertId === 'number' ? rows.insertId : undefined;
+    const affectedRows = typeof rows?.affectedRows === 'number' ? rows.affectedRows : undefined;
+    return { rows: Array.isArray(rows) ? (rows as T[]) : ([] as T[]), insertId, affectedRows };
   }
 }

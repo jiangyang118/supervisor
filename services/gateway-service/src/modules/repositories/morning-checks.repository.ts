@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { DbService } from '../db.service';
 
 export type MorningCheckRow = {
-  id: string;
-  schoolId?: string | null;
+  id: number;
+  schoolId?: number | null;
   equipmentCode: string;
   userId: string;
   checkTime: string;
@@ -23,8 +23,7 @@ export class MorningChecksRepository {
   constructor(private readonly db: DbService) {}
 
   async insert(record: {
-    id: string;
-    schoolId?: string;
+    schoolId?: number;
     equipmentCode: string;
     userId: string;
     checkTime: Date;
@@ -37,13 +36,12 @@ export class MorningChecksRepository {
     health: number;
     images: any;
     raw: any;
-  }) {
-    const sql = `insert ignore into morning_checks
-      (id, school_id, equipment_code, user_id, check_time, forehead_temp, normal_temperature_min, normal_temperature_max, abnormal_temp, hand_check_result, health_ask_result, health, images, raw)
-      values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+  }): Promise<number> {
+    const sql = `insert into morning_checks
+      (school_id, equipment_code, user_id, check_time, forehead_temp, normal_temperature_min, normal_temperature_max, abnormal_temp, hand_check_result, health_ask_result, health, images, raw)
+      values (?,?,?,?,?,?,?,?,?,?,?,?,?)`;
     const params = [
-      record.id,
-      record.schoolId || null,
+      record.schoolId ?? null,
       record.equipmentCode,
       record.userId,
       record.checkTime,
@@ -57,7 +55,8 @@ export class MorningChecksRepository {
       JSON.stringify(record.images || {}),
       JSON.stringify(record.raw || {}),
     ];
-    await this.db.query(sql, params);
+    const res = await this.db.query(sql, params);
+    return res.insertId || 0;
   }
 
   async list(limit = 1000): Promise<MorningCheckRow[]> {
@@ -85,7 +84,7 @@ export class MorningChecksRepository {
   }
 
   async search(params: {
-    schoolId?: string;
+    schoolId?: number;
     userId?: string;
     equipmentCode?: string;
     abnormal?: boolean;
@@ -97,7 +96,7 @@ export class MorningChecksRepository {
   }): Promise<{ items: MorningCheckRow[]; total: number; page: number; pageSize: number }>{
     const where: string[] = [];
     const args: any[] = [];
-    if (params.schoolId) { where.push('school_id = ?'); args.push(params.schoolId); }
+    if (params.schoolId !== undefined && params.schoolId !== null) { where.push('school_id = ?'); args.push(params.schoolId); }
     if (params.userId) { where.push('user_id = ?'); args.push(params.userId); }
     if (params.equipmentCode) { where.push('equipment_code = ?'); args.push(params.equipmentCode); }
     if (typeof params.abnormal === 'boolean') { where.push('abnormal_temp = ?'); args.push(params.abnormal ? 1 : 0); }
@@ -137,7 +136,8 @@ export class MorningChecksRepository {
     return { items: rows, total, page: Math.max(1, params.page || 1), pageSize: limit };
   }
 
-  async getById(id: string): Promise<MorningCheckRow | null> {
+  async getById(id: number): Promise<MorningCheckRow | null> {
+    // id is numeric; accept string input but cast by caller when possible
     const { rows } = await this.db.query<MorningCheckRow>(
       `select id,
               school_id as schoolId,
@@ -159,11 +159,11 @@ export class MorningChecksRepository {
     return rows[0] || null;
   }
 
-  async remove(id: string) {
+  async remove(id: number) {
     await this.db.query('delete from morning_checks where id = ?', [id]);
   }
 
-  async setMeasure(id: string, measure?: string) {
+  async setMeasure(id: number, measure?: string) {
     // Persist measure into raw JSON under $.measure
     await this.db.query(
       `update morning_checks

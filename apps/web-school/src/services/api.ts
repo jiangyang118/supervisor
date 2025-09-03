@@ -26,7 +26,7 @@ export const api = {
   hygiene: () => get<any[]>('/home/hygiene'),
   devices: () => get<any[]>('/home/devices'),
   // Regulator meta for school options (shared list)
-  regSchools: () => get<Array<{ id: string; name: string }>>('/reg/schools'),
+  regSchools: () => get<Array<{ id: number; name: string }>>('/reg/schools'),
   // Bright kitchen (school)
   brightCameras: (schoolId?: string) =>
     get<any[]>(
@@ -172,7 +172,7 @@ export const api = {
       end?: string;
       page?: number;
       pageSize?: number;
-      schoolId?: string;
+      schoolId?: number;
     } = {},
   ) =>
     get<{ items: any[]; total: number; page: number; pageSize: number }>(
@@ -184,7 +184,7 @@ export const api = {
         ) as any,
       ).toString()}`,
     ),
-  morningCreate: async (body: { staff: string; temp: number; schoolId?: string }) => {
+  morningCreate: async (body: { staff: string; temp: number; schoolId?: number }) => {
     const res = await fetch(`${BASE}/school/morning-checks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -193,15 +193,15 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  morningDelete: async (id: string) => {
-    const res = await fetch(`${BASE}/school/morning-checks/${encodeURIComponent(id)}`, {
+  morningDelete: async (id: number) => {
+    const res = await fetch(`${BASE}/school/morning-checks/${encodeURIComponent(String(id))}`, {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  morningSetMeasure: async (id: string, measure: string) => {
-    const res = await fetch(`${BASE}/school/morning-checks/${encodeURIComponent(id)}/measure`, {
+  morningSetMeasure: async (id: number, measure: string) => {
+    const res = await fetch(`${BASE}/school/morning-checks/${encodeURIComponent(String(id))}/measure`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ measure }),
@@ -219,7 +219,7 @@ export const api = {
       end?: string;
       page?: number;
       pageSize?: number;
-      schoolId?: string;
+      schoolId?: number;
     } = {},
   ) =>
     get<{ items: any[]; total: number; page: number; pageSize: number }>(
@@ -238,7 +238,7 @@ export const api = {
     duration: number;
     by: string;
     cabinet?: string;
-    schoolId?: string;
+    schoolId?: number;
   }) => {
     const res = await fetch(`${BASE}/school/sampling/records`, {
       method: 'POST',
@@ -248,8 +248,8 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  samplingSetMeasure: async (id: string, measure: string) => {
-    const res = await fetch(`${BASE}/school/sampling/records/${encodeURIComponent(id)}/measure`, {
+  samplingSetMeasure: async (id: number, measure: string) => {
+    const res = await fetch(`${BASE}/school/sampling/records/${encodeURIComponent(String(id))}/measure`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ measure }),
@@ -257,7 +257,7 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  samplingCleanupList: (params: { schoolId?: string; page?: number; pageSize?: number } = {}) =>
+  samplingCleanupList: (params: { schoolId?: number; page?: number; pageSize?: number } = {}) =>
     get<{ items: any[]; total: number; page: number; pageSize: number }>(
       `/school/sampling/cleanup?${new URLSearchParams(
         Object.fromEntries(
@@ -268,13 +268,13 @@ export const api = {
       ).toString()}`,
     ),
   samplingCleanupCreate: async (body: {
-    sampleId?: string;
+    sampleId?: number;
     sample: string;
     weight: number;
     imageUrl?: string;
     method: string;
     by: string;
-    schoolId?: string;
+    schoolId?: number;
   }) => {
     const res = await fetch(`${BASE}/school/sampling/cleanup`, {
       method: 'POST',
@@ -293,7 +293,7 @@ export const api = {
       end?: string;
       page?: number;
       pageSize?: number;
-      schoolId?: string;
+      schoolId?: number;
     } = {},
   ) =>
     get<{ items: any[]; total: number; page: number; pageSize: number }>(
@@ -311,7 +311,7 @@ export const api = {
     result: '合格' | '不合格';
     imageUrl?: string;
     remark?: string;
-    schoolId?: string;
+    schoolId?: number;
   }) => {
     const res = await fetch(`${BASE}/school/pesticide/records`, {
       method: 'POST',
@@ -382,7 +382,7 @@ export const api = {
       end?: string;
       page?: number;
       pageSize?: number;
-      schoolId?: string;
+      schoolId?: number;
     } = {},
   ) =>
     get<{ items: any[]; total: number; page: number; pageSize: number }>(
@@ -399,7 +399,7 @@ export const api = {
     result: '合格' | '不合格';
     by: string;
     remark?: string;
-    schoolId?: string;
+    schoolId?: number;
   }) => {
     const res = await fetch(`${BASE}/school/hygiene/inspections`, {
       method: 'POST',
@@ -416,7 +416,7 @@ export const api = {
       end?: string;
       page?: number;
       pageSize?: number;
-      schoolId?: string;
+      schoolId?: number;
     } = {},
   ) =>
     get<{ items: any[]; total: number; page: number; pageSize: number }>(
@@ -433,7 +433,7 @@ export const api = {
     date?: string;
     action: string;
     by: string;
-    schoolId?: string;
+    schoolId?: number;
   }) => {
     const res = await fetch(`${BASE}/school/assets/maintenance`, {
       method: 'POST',
@@ -525,7 +525,7 @@ export const api = {
       end?: string;
       page?: number;
       pageSize?: number;
-      schoolId?: string;
+      schoolId?: number;
     } = {},
   ) =>
     get<{ items: any[]; total: number; page: number; pageSize: number }>(
@@ -543,7 +543,7 @@ export const api = {
     amount: number;
     buyer: string;
     person: string;
-    schoolId?: string;
+    schoolId?: number;
   }) => {
     const res = await fetch(`${BASE}/school/waste/records`, {
       method: 'POST',
@@ -558,7 +558,7 @@ export const api = {
     device: string;
     result: '合格' | '不合格';
     remark?: string;
-    schoolId?: string;
+    schoolId?: number;
   }) => {
     const res = await fetch(`${BASE}/school/pesticide/device/callback`, {
       method: 'POST',
@@ -568,8 +568,8 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  pesticideSetMeasure: async (id: string, measure: string) => {
-    const res = await fetch(`${BASE}/school/pesticide/records/${encodeURIComponent(id)}/measure`, {
+  pesticideSetMeasure: async (id: number, measure: string) => {
+    const res = await fetch(`${BASE}/school/pesticide/records/${encodeURIComponent(String(id))}/measure`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ measure }),
@@ -578,9 +578,12 @@ export const api = {
     return res.json();
   },
   // Dine-with APIs
+  dineMeals: () => get<{ items: string[] }>(`/school/dine/meals`),
+  dineMealOptions: () => get<{ items: Array<{ key: string; value: number; label: string }> }>(`/school/dine/meal-options`),
   dineList: (
     params: {
       meal?: string;
+      mealCode?: number;
       exception?: 'true' | 'false';
       start?: string;
       end?: string;
@@ -599,7 +602,8 @@ export const api = {
       ).toString()}`,
     ),
   dineCreate: async (body: {
-    meal: string;
+    meal?: string;
+    mealCode?: number;
     people: string[];
     imageUrl?: string;
     comment?: string;
@@ -622,11 +626,15 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  dineQrCreate: async (meal: string, schoolId?: string) => {
+  dineQrCreate: async (mealOrCode: string | number, schoolId?: string) => {
     const res = await fetch(`${BASE}/school/dine/qr/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ meal, schoolId }),
+      body: JSON.stringify(
+        typeof mealOrCode === 'number'
+          ? { mealCode: mealOrCode, schoolId }
+          : { mealKey: mealOrCode, schoolId },
+      ),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();

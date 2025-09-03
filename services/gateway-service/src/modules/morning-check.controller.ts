@@ -9,6 +9,7 @@ import {
   Query,
   Sse,
   MessageEvent,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { MorningCheckService, MCResult } from './morning-check.service';
@@ -27,28 +28,36 @@ export class MorningCheckController {
     @Query('page') page: string = '1',
     @Query('pageSize') pageSize: string = '20',
   ) {
-    return this.svc.list({ schoolId, staff, result, start, end, page, pageSize });
+    return this.svc.list({
+      schoolId: schoolId !== undefined && schoolId !== null && schoolId !== '' ? Number(schoolId) : undefined,
+      staff,
+      result,
+      start,
+      end,
+      page,
+      pageSize,
+    });
   }
 
   @Post()
   create(
-    @Body() body: { schoolId?: string; staff: string; temp: number; source?: 'manual' | 'device' },
+    @Body() body: { schoolId?: number; staff: string; temp: number; source?: 'manual' | 'device' },
   ) {
     return this.svc.create(body);
   }
 
   @Post('device/callback')
-  deviceCallback(@Body() body: { schoolId?: string; staff: string; temp: number }) {
+  deviceCallback(@Body() body: { schoolId?: number; staff: string; temp: number }) {
     return this.svc.deviceCallback(body);
   }
 
   @Patch(':id/measure')
-  setMeasure(@Param('id') id: string, @Body() body: { measure: string }) {
+  setMeasure(@Param('id', ParseIntPipe) id: number, @Body() body: { measure: string }) {
     return this.svc.setMeasure(id, body.measure);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseIntPipe) id: number) {
     return this.svc.remove(id);
   }
 

@@ -16,11 +16,9 @@
     </template>
     <el-form :inline="true" :model="filters" class="filters">
       <el-form-item label="餐次">
-        <el-select v-model="filters.meal" clearable placeholder="全部">
-          <el-option label="全部" value="" />
-          <el-option label="早餐" value="早餐" />
-          <el-option label="午餐" value="午餐" />
-          <el-option label="晚餐" value="晚餐" />
+        <el-select v-model="filters.meal" clearable placeholder="全部" style="width: 120px">
+          <el-option label="全部" :value="0" />
+          <el-option v-for="m in meals" :key="m.key" :label="m.label" :value="m.value" />
         </el-select>
       </el-form-item>
       <el-form-item label="异常">
@@ -30,8 +28,15 @@
           <el-option label="仅正常" value="false" />
         </el-select>
       </el-form-item>
-      <el-form-item label="日期">
-        <el-date-picker v-model="filters.range" type="daterange" unlink-panels  />
+      <el-form-item label="日期范围">
+        <el-date-picker
+          v-model="filters.range"
+          type="daterange"
+          unlink-panels
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          range-separator="-"
+        />
       </el-form-item>
       <el-form-item>
         <el-button @click="applyFilters">查询</el-button>
@@ -95,9 +100,12 @@
     <el-form :model="form" label-width="96px">
       <el-form-item label="餐次" required>
         <el-select v-model="form.meal" placeholder="请选择">
-          <el-option label="早餐" value="早餐" />
-          <el-option label="午餐" value="午餐" />
-          <el-option label="晚餐" value="晚餐" />
+          <el-option
+            v-for="m in meals"
+            :key="m.key"
+            :label="m.label"
+            :value="m.value"
+          />
         </el-select>
       </el-form-item>
       <el-form-item label="人员" required>
@@ -150,6 +158,7 @@ const handlePageChange = (p: number) => {
 };
 
 const rows = ref<any[]>([]);
+const meals = ref<Array<{ key: string; value: number; label: string }>>([]);
 const total = ref(0);
 const page = ref(1);
 const pageSize = ref(20);
@@ -157,10 +166,10 @@ const sseConnected = ref(false);
 let es: EventSource | null = null;
 
 const filters = reactive<{
-  meal: string | undefined;
+  meal: 0; // ''=全部，其它见枚举 key
   exception: '' | 'true' | 'false' | null;
   range: [Date, Date] | null;
-}>({ meal: '' as any, exception: '' as any, range: null });
+}>({ meal: 0, exception: 'false', range: null });
 
 async function load() {
   const params: any = {
@@ -188,9 +197,14 @@ function applyFilters() {
 }
 
 const createVisible = ref(false);
-const form = reactive({ meal: '早餐', peopleText: '', imageUrl: '', comment: '' });
+const form = reactive<{ meal: number; peopleText: string; imageUrl: string; comment: string }>({
+  meal: 1,
+  peopleText: '',
+  imageUrl: '',
+  comment: '',
+});
 function openCreate() {
-  form.meal = '早餐';
+  form.meal = 1;
   form.peopleText = '';
   form.imageUrl = '';
   form.comment = '';
@@ -204,6 +218,10 @@ async function save() {
       .filter(Boolean);
     if (!form.meal || people.length === 0) {
       ElMessage.warning('请填写餐次和陪餐人员');
+      return;
+    }
+    if (!form.meal) {
+      ElMessage.warning('请选择餐次');
       return;
     }
     await api.dineCreate({
@@ -225,7 +243,8 @@ const qrVisible = ref(false);
 const qr = reactive<{ link: string; token?: string }>({ link: '' });
 async function generateQr() {
   try {
-    const r = await api.dineQrCreate(filters.meal || '午餐', getCurrentSchoolId());
+    const mealKey = filters.meal || 0; // 默认午餐
+    const r = await api.dineQrCreate(mealKey, getCurrentSchoolId());
     qr.link = `${API_BASE}${r.link}`;
     qr.token = r.token;
     qrVisible.value = true;
@@ -295,6 +314,14 @@ function formatTime(iso: string) {
 let off: any = null;
 onMounted(() => {
   load();
+  // load meal enums (key/value)
+  api.dineMealOptions()
+    .then((res) => (meals.value = res.items || []))
+    .catch(() => (meals.value = [
+      { key: 'BREAKFAST', value: 1, label: '早餐' },
+      { key: 'LUNCH', value: 2, label: '午餐' },
+      { key: 'DINNER', value: 3, label: '晚餐' },
+    ]));
   connectSSE();
   const h = () => {
     page.value = 1;

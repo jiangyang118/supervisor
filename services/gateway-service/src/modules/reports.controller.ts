@@ -16,6 +16,12 @@ export class ReportsController {
     private readonly waste: WasteService,
   ) {}
 
+  private numId(id: string | number | undefined) {
+    if (typeof id === 'number') return id;
+    if (!id) return undefined;
+    const n = Number(String(id).replace(/\D/g, ''));
+    return Number.isFinite(n) ? n : undefined;
+  }
   private schoolList() {
     return [
       { id: 'sch-001', name: '示例一中' },
@@ -71,7 +77,7 @@ export class ReportsController {
       });
       const dine = dineRes.total;
       const wasteRes = await this.waste.list({
-        schoolId: sc.id,
+        schoolId: this.numId(sc.id),
         start: s,
         end: e,
         page: '1',

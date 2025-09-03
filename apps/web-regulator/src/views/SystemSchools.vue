@@ -62,12 +62,12 @@ import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
 import { api as api } from '../services/api';
 
-type Row = { id: string; name: string; enabled: boolean };
+type Row = { id: number; name: string; enabled: boolean };
 const rows = ref<Row[]>([]);
 const showAdd = ref(false);
 const showEdit = ref(false);
 const form = reactive<{ name: string; enabled: boolean }>({ name: '', enabled: true });
-const editForm = reactive<Row>({ id: '', name: '', enabled: true });
+const editForm = reactive<Row>({ id: 0, name: '', enabled: true });
 
 async function load() {
   rows.value = await api.sysSchools();

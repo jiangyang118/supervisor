@@ -9,6 +9,7 @@ import {
   Sse,
   MessageEvent,
 } from '@nestjs/common';
+import { ParseIntPipe } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { PesticideService, PesticideResult } from './pesticide.service';
 
@@ -26,14 +27,14 @@ export class PesticideController {
     @Query('page') page: string = '1',
     @Query('pageSize') pageSize: string = '20',
   ) {
-    return this.svc.list({ schoolId, q, result, start, end, page, pageSize });
+    return this.svc.list({ schoolId: schoolId ? Number(schoolId) : undefined, q, result, start, end, page, pageSize });
   }
 
   @Post('records')
   create(
     @Body()
     body: {
-      schoolId?: string;
+      schoolId?: number;
       sample: string;
       device: string;
       result: PesticideResult;
@@ -48,7 +49,7 @@ export class PesticideController {
   device(
     @Body()
     body: {
-      schoolId?: string;
+      schoolId?: number;
       sample: string;
       device: string;
       result: PesticideResult;
@@ -60,7 +61,7 @@ export class PesticideController {
   }
 
   @Patch('records/:id/measure')
-  setMeasure(@Param('id') id: string, @Body() body: { measure: string }) {
+  setMeasure(@Param('id', ParseIntPipe) id: number, @Body() body: { measure: string }) {
     return this.svc.setMeasure(id, body.measure);
   }
 

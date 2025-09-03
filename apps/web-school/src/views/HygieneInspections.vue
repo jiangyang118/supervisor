@@ -67,7 +67,7 @@
 import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
-import { getCurrentSchoolId } from '../utils/school';
+import { getCurrentSchoolIdNum } from '../utils/school';
 import { ElMessage } from 'element-plus';
 const rows = ref<any[]>([]);
 const filters = reactive<{ result: '' | '合格' | '不合格' | null; range: [Date, Date] | null }>({
@@ -75,7 +75,7 @@ const filters = reactive<{ result: '' | '合格' | '不合格' | null; range: [D
   range: null,
 });
 async function load() {
-  const params: any = { schoolId: getCurrentSchoolId() };
+  const params: any = { schoolId: getCurrentSchoolIdNum() };
   if (filters.result) params.result = filters.result;
   if (filters.range && filters.range.length === 2) {
     params.start = filters.range[0].toISOString();
@@ -107,7 +107,7 @@ async function save() {
   }
   try {
     await api.hygieneCreate({
-      schoolId: getCurrentSchoolId(),
+      schoolId: getCurrentSchoolIdNum(),
       result: form.result as any,
       by: form.by,
       remark: form.remark || undefined,

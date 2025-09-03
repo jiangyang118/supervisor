@@ -7,8 +7,8 @@ export type SampleSource = 'manual' | 'device';
 export type CleanupSource = 'manual' | 'cabinet';
 
 export type SampleRecord = {
-  id: string;
-  schoolId: string;
+  id: number;
+  schoolId: number;
   sample: string;
   weight: number; // g
   imageUrl?: string;
@@ -24,9 +24,9 @@ export type SampleRecord = {
 };
 
 export type CleanupRecord = {
-  id: string;
-  schoolId: string;
-  sampleId?: string;
+  id: number;
+  schoolId: number;
+  sampleId?: number;
   sample: string;
   weight: number;
   imageUrl?: string;
@@ -52,11 +52,7 @@ export class SamplingService {
     }
   }
 
-  private genId(prefix: string) {
-    const t = Date.now().toString(36);
-    const r = Math.random().toString(36).slice(2, 8);
-    return `${prefix}-${t}${r}`;
-  }
+  // ids are DB auto-increment
   private nowIso() {
     return new Date().toISOString();
   }
@@ -65,7 +61,7 @@ export class SamplingService {
   }
 
   async listSamples(params: {
-    schoolId?: string;
+    schoolId?: number | string;
     sample?: string;
     status?: SampleStatus;
     exception?: 'true' | 'false';
@@ -74,7 +70,9 @@ export class SamplingService {
     page?: number | string;
     pageSize?: number | string;
   }) {
-    const sid = params.schoolId || 'sch-001';
+    const sidInput = params.schoolId;
+    const sidNum = sidInput !== undefined && sidInput !== null && String(sidInput).trim() !== '' ? Number(sidInput) : NaN;
+    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : 1;
     const p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
     const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
     const res = await this.repo.searchSamples({
@@ -91,7 +89,7 @@ export class SamplingService {
   }
 
   async createSample(body: {
-    schoolId?: string;
+    schoolId?: number | string;
     sample: string;
     weight: number;
     imageUrl?: string;
@@ -107,25 +105,44 @@ export class SamplingService {
     if (body.duration === undefined || Number(body.duration) <= 0)
       throw new BadRequestException('duration must be > 0');
     if (!body?.by || String(body.by).trim() === '') throw new BadRequestException('by is required');
-    const rec: SampleRecord = {
-      id: this.genId('SP'),
-      schoolId: body.schoolId || 'sch-001',
+    const schoolId = (() => {
+      const s = body.schoolId;
+      const n = s !== undefined && s !== null && String(s).trim() !== '' ? Number(s) : NaN;
+      return Number.isFinite(n) && Number.isInteger(n) ? n : 1;
+    })();
+    const at = this.nowIso();
+    const exception = Number(body.weight) < 50;
+    const insertId = await this.repo.insertSample({
+      schoolId,
       sample: body.sample,
       weight: Number(body.weight),
       imageUrl: body.imageUrl,
       duration: Number(body.duration),
       by: body.by,
       cabinet: body.cabinet,
-      at: this.nowIso(),
+      at,
       status: 'ACTIVE',
       source: body.source || 'manual',
-      exception: Number(body.weight) < 50, // demo: 低于50g视为异常
-      exceptionReason: Number(body.weight) < 50 ? '重量不足' : undefined,
-    };
-    await this.repo.insertSample({
-      ...rec,
-      exception: rec.exception ? 1 : 0,
+      exception,
+      exceptionReason: exception ? '重量不足' : undefined,
+      measure: undefined,
     } as any);
+    const rec: SampleRecord = {
+      id: insertId,
+      schoolId,
+      sample: body.sample,
+      weight: Number(body.weight),
+      imageUrl: body.imageUrl,
+      duration: Number(body.duration),
+      by: body.by,
+      cabinet: body.cabinet,
+      at,
+      status: 'ACTIVE',
+      source: body.source || 'manual',
+      exception,
+      exceptionReason: exception ? '重量不足' : undefined,
+      measure: undefined,
+    } as any;
     this.devLog('insertSample.ok', { id: rec.id, schoolId: rec.schoolId, sample: rec.sample });
     this.emit('sample-created', rec);
     return rec;
@@ -143,23 +160,25 @@ export class SamplingService {
     return this.createSample({ ...body, source: 'device' });
   }
 
-  async setSampleMeasure(id: string, measure: string) {
+  async setSampleMeasure(id: number, measure: string) {
     await this.repo.updateSampleMeasure(id, measure);
     this.devLog('updateSampleMeasure.ok', { id, measure });
     this.emit('sample-updated', { id, measure });
     return { ok: true } as any;
   }
 
-  async listCleanups(params: { schoolId?: string; page?: number | string; pageSize?: number | string }) {
-    const sid = params.schoolId || 'sch-001';
+  async listCleanups(params: { schoolId?: number | string; page?: number | string; pageSize?: number | string }) {
+    const sidInput = params.schoolId;
+    const sidNum = sidInput !== undefined && sidInput !== null && String(sidInput).trim() !== '' ? Number(sidInput) : NaN;
+    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : 1;
     const p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
     const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
     return this.repo.listCleanups({ schoolId: sid, page: p, pageSize: ps });
   }
 
   async createCleanup(body: {
-    schoolId?: string;
-    sampleId?: string;
+    schoolId?: number | string;
+    sampleId?: number | string;
     sample: string;
     weight: number;
     imageUrl?: string;
@@ -172,22 +191,37 @@ export class SamplingService {
     if (!body?.method || String(body.method).trim() === '')
       throw new BadRequestException('method is required');
     if (!body?.by || String(body.by).trim() === '') throw new BadRequestException('by is required');
-    const rec: CleanupRecord = {
-      id: this.genId('CL'),
-      schoolId: body.schoolId || 'sch-001',
-      sampleId: body.sampleId,
-      sample: body.sample,
-      weight: Number(body.weight),
-      imageUrl: body.imageUrl,
-      method: body.method,
-      by: body.by,
-      at: this.nowIso(),
-      source: body.source || 'manual',
-    };
-    await this.repo.insertCleanup(rec);
+    const schoolId = (() => { const s = body.schoolId; const n = s!==undefined&&s!==null&&String(s).trim()!==''?Number(s):NaN; return Number.isFinite(n)&&Number.isInteger(n)?n:1; })();
+    const sampleId = (() => { const s = body.sampleId; const n = s!==undefined&&s!==null&&String(s).trim()!==''?Number(s):NaN; return Number.isFinite(n)&&Number.isInteger(n)?n:undefined; })();
+    const at = this.nowIso();
+    let insertId: number;
+    try {
+      insertId = await this.repo.insertCleanup({
+        schoolId,
+        sampleId: sampleId ?? null,
+        sample: body.sample,
+        weight: Number(body.weight),
+        imageUrl: body.imageUrl,
+        method: body.method,
+        by: body.by,
+        at,
+        source: body.source || 'manual',
+      } as any);
+    } catch (err: any) {
+      // Map common DB errors to 400 to avoid 500s for client mistakes
+      const code = err?.code || err?.errno;
+      if (code === 'ER_NO_REFERENCED_ROW_2' || code === 1452) {
+        throw new BadRequestException('Invalid schoolId or sampleId (foreign key not found)');
+      }
+      if (code === 'ER_TRUNCATED_WRONG_VALUE_FOR_FIELD' || code === 1366) {
+        throw new BadRequestException('Invalid field type or value');
+      }
+      throw err;
+    }
+    const rec: CleanupRecord = { id: insertId, schoolId, sampleId: sampleId as any, sample: body.sample, weight: Number(body.weight), imageUrl: body.imageUrl, method: body.method, by: body.by, at, source: body.source || 'manual' } as any;
     this.devLog('insertCleanup.ok', { id: rec.id, schoolId: rec.schoolId, sampleId: rec.sampleId });
-    if (body.sampleId) {
-      await this.repo.markSampleCleared(body.sampleId);
+    if (sampleId) {
+      await this.repo.markSampleCleared(sampleId);
       this.devLog('markSampleCleared.ok', { sampleId: body.sampleId });
     }
     this.emit('cleanup-created', rec);

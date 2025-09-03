@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { DbService } from '../db.service';
 
 export type SampleRow = {
-  id: string;
-  schoolId: string;
+  id: number;
+  schoolId: number;
   sample: string;
   weight: number;
   imageUrl?: string | null;
@@ -19,9 +19,9 @@ export type SampleRow = {
 };
 
 export type CleanupRow = {
-  id: string;
-  schoolId: string;
-  sampleId?: string | null;
+  id: number;
+  schoolId: number;
+  sampleId?: number | null;
   sample: string;
   weight: number;
   imageUrl?: string | null;
@@ -35,13 +35,12 @@ export type CleanupRow = {
 export class SamplingRepository {
   constructor(private readonly db: DbService) {}
 
-  async insertSample(r: SampleRow) {
-    await this.db.query(
+  async insertSample(r: Omit<SampleRow, 'id'>): Promise<number> {
+    const res = await this.db.query(
       `insert into sampling_records(
-         id, school_id, sample, weight, image_url, duration_hours, by_who, cabinet, at, status, source, exception, exception_reason, measure
-       ) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+         school_id, sample, weight, image_url, duration_hours, by_who, cabinet, at, status, source, exception, exception_reason, measure
+       ) values (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
-        r.id,
         r.schoolId,
         r.sample,
         r.weight,
@@ -57,18 +56,19 @@ export class SamplingRepository {
         r.measure || null,
       ],
     );
+    return res.insertId || 0;
   }
 
-  async updateSampleMeasure(id: string, measure?: string) {
+  async updateSampleMeasure(id: number, measure?: string) {
     await this.db.query('update sampling_records set measure = ? where id = ?', [measure || null, id]);
   }
 
-  async markSampleCleared(id: string) {
+  async markSampleCleared(id: number) {
     await this.db.query('update sampling_records set status = ? where id = ?', ['CLEARED', id]);
   }
 
   async searchSamples(params: {
-    schoolId: string;
+    schoolId: number;
     sample?: string;
     status?: 'ACTIVE' | 'EXPIRED' | 'CLEARED';
     exception?: boolean;
@@ -96,16 +96,22 @@ export class SamplingRepository {
          limit ? offset ?`,
       [...args, limit, offset],
     );
-    return { items: rows as SampleRow[], total, page: params.page, pageSize: params.pageSize };
+    const items: SampleRow[] = (rows as any[]).map((r) => ({
+      ...r,
+      id: Number(r.id),
+      schoolId: Number(r.schoolId),
+      weight: Number(r.weight),
+      duration: Number(r.duration),
+    }));
+    return { items, total, page: params.page, pageSize: params.pageSize };
   }
 
-  async insertCleanup(r: CleanupRow) {
-    await this.db.query(
+  async insertCleanup(r: Omit<CleanupRow, 'id'>): Promise<number> {
+    const res = await this.db.query(
       `insert into sampling_cleanups(
-         id, school_id, sample_id, sample, weight, image_url, method, by_who, at, source
-       ) values (?,?,?,?,?,?,?,?,?,?)`,
+         school_id, sample_id, sample, weight, image_url, method, by_who, at, source
+       ) values (?,?,?,?,?,?,?,?,?)`,
       [
-        r.id,
         r.schoolId,
         r.sampleId || null,
         r.sample,
@@ -117,9 +123,10 @@ export class SamplingRepository {
         r.source,
       ],
     );
+    return res.insertId || 0;
   }
 
-  async listCleanups(params: { schoolId: string; page: number; pageSize: number }) {
+  async listCleanups(params: { schoolId: number; page: number; pageSize: number }) {
     const whereSql = 'where school_id = ?';
     const cnt = await this.db.query<any>(`select count(1) as c from sampling_cleanups ${whereSql}`, [params.schoolId]);
     const total = Number(cnt.rows[0]?.c || 0);
@@ -130,6 +137,13 @@ export class SamplingRepository {
        from sampling_cleanups ${whereSql} order by at desc limit ? offset ?`,
       [params.schoolId, limit, offset],
     );
-    return { items: rows as CleanupRow[], total, page: params.page, pageSize: params.pageSize };
+    const items: CleanupRow[] = (rows as any[]).map((r) => ({
+      ...r,
+      id: Number(r.id),
+      schoolId: Number(r.schoolId),
+      sampleId: r.sampleId === null || r.sampleId === undefined ? null : Number(r.sampleId),
+      weight: Number(r.weight),
+    }));
+    return { items, total, page: params.page, pageSize: params.pageSize };
   }
 }

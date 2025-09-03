@@ -6,7 +6,7 @@ export class HygieneRepository {
   constructor(private readonly db: DbService) {}
 
   async listInspections(filters: {
-    schoolId?: string;
+    schoolId?: number;
     result?: '合格' | '不合格';
     start?: string;
     end?: string;
@@ -15,7 +15,7 @@ export class HygieneRepository {
   }) {
     const where: string[] = [];
     const params: any[] = [];
-    if (filters.schoolId) { where.push('school_id = ?'); params.push(filters.schoolId); }
+    if (filters.schoolId !== undefined && filters.schoolId !== null) { where.push('school_id = ?'); params.push(filters.schoolId); }
     if (filters.result) { where.push('result = ?'); params.push(filters.result); }
     if (filters.start) { where.push('date >= ?'); params.push(new Date(filters.start)); }
     if (filters.end) { where.push('date <= ?'); params.push(new Date(filters.end)); }
@@ -30,19 +30,20 @@ export class HygieneRepository {
     return { items: rows.rows, total, page: filters.page, pageSize: filters.pageSize };
   }
 
-  async insertInspection(rec: { id: string; schoolId: string; date: string; result: '合格'|'不合格'; by: string; remark?: string }) {
-    await this.db.query(
-      'insert into hygiene_inspections(id, school_id, date, result, created_by, remark) values(?,?,?,?,?,?)',
-      [rec.id, rec.schoolId, new Date(rec.date), rec.result, rec.by, rec.remark || null],
+  async insertInspection(rec: { schoolId: number; date: string; result: '合格'|'不合格'; by: string; remark?: string }): Promise<number> {
+    const res = await this.db.query(
+      'insert into hygiene_inspections(school_id, date, result, created_by, remark) values(?,?,?,?,?)',
+      [rec.schoolId, new Date(rec.date), rec.result, rec.by, rec.remark || null],
     );
+    return res.insertId || 0;
   }
 
   async listAssets(filters: {
-    schoolId?: string; asset?: string; start?: string; end?: string; page: number; pageSize: number;
+    schoolId?: number; asset?: string; start?: string; end?: string; page: number; pageSize: number;
   }) {
     const where: string[] = [];
     const params: any[] = [];
-    if (filters.schoolId) { where.push('school_id = ?'); params.push(filters.schoolId); }
+    if (filters.schoolId !== undefined && filters.schoolId !== null) { where.push('school_id = ?'); params.push(filters.schoolId); }
     if (filters.asset) { where.push('asset like ?'); params.push(`%${filters.asset}%`); }
     if (filters.start) { where.push('date >= ?'); params.push(new Date(filters.start)); }
     if (filters.end) { where.push('date <= ?'); params.push(new Date(filters.end)); }
@@ -57,11 +58,11 @@ export class HygieneRepository {
     return { items: rows.rows, total, page: filters.page, pageSize: filters.pageSize };
   }
 
-  async insertAsset(rec: { id: string; schoolId: string; asset: string; date: string; action: string; by: string }) {
-    await this.db.query(
-      'insert into asset_maintenance(id, school_id, asset, date, action, created_by) values(?,?,?,?,?,?)',
-      [rec.id, rec.schoolId, rec.asset, new Date(rec.date), rec.action, rec.by],
+  async insertAsset(rec: { schoolId: number; asset: string; date: string; action: string; by: string }): Promise<number> {
+    const res = await this.db.query(
+      'insert into asset_maintenance(school_id, asset, date, action, created_by) values(?,?,?,?,?)',
+      [rec.schoolId, rec.asset, new Date(rec.date), rec.action, rec.by],
     );
+    return res.insertId || 0;
   }
 }
-

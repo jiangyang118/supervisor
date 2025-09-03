@@ -101,11 +101,11 @@ import { onMounted, reactive, ref, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
 import { ElMessage, ElMessageBox } from 'element-plus';
-import { getCurrentSchoolId } from '../utils/school';
+import { getCurrentSchoolIdNum } from '../utils/school';
 type Category = { id: string; name: string; enabled: boolean } | string;
 const categories = ref<Category[]>([]);
 type Row = {
-  id: string;
+  id: number;
   date: string;
   category: string;
   amount: number;
@@ -118,7 +118,7 @@ const filters = reactive<{ category: string | undefined; range: [Date, Date] | n
   range: null,
 });
 const applyFilters = async () => {
-  const params: any = { schoolId: getCurrentSchoolId() };
+  const params: any = { schoolId: getCurrentSchoolIdNum() };
   if (filters.category) params.category = filters.category;
   if (filters.range && filters.range.length === 2) {
     const [s, e] = filters.range;
@@ -188,7 +188,7 @@ const save = async () => {
     amount: form.amount,
     buyer: form.buyer,
     person: form.person,
-    schoolId: getCurrentSchoolId(),
+    schoolId: getCurrentSchoolIdNum(),
   });
   createVisible.value = false;
   await applyFilters();

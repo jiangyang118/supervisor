@@ -11,6 +11,7 @@ import { HygieneRepository } from './repositories/hygiene.repository';
 import { PesticideRepository } from './repositories/pesticide.repository';
 import { SchoolsRepository } from './repositories/schools.repository';
 import { SamplingRepository } from './repositories/sampling.repository';
+import { DineRepository } from './repositories/dine.repository';
 
 @Global()
 @Module({
@@ -27,6 +28,7 @@ import { SamplingRepository } from './repositories/sampling.repository';
     PesticideRepository,
     SchoolsRepository,
     SamplingRepository,
+    DineRepository,
   ],
   exports: [
     DbService,
@@ -41,6 +43,7 @@ import { SamplingRepository } from './repositories/sampling.repository';
     PesticideRepository,
     SchoolsRepository,
     SamplingRepository,
+    DineRepository,
   ],
 })
 export class PersistenceModule {}

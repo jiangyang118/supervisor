@@ -4,8 +4,8 @@ import { WasteRepository } from './repositories/waste.repository';
 export type WasteCategory = string;
 
 export interface WasteRecord {
-  id: string;
-  schoolId: string;
+  id: number;
+  schoolId: number;
   date: string; // YYYY-MM-DD
   category: WasteCategory;
   amount: number; // kg
@@ -26,10 +26,11 @@ function todayStr() {
 export class WasteService {
   constructor(private readonly repo: WasteRepository) {}
 
-  private genId(prefix: string) {
+  private genStringId(prefix: string) {
     const rand = Math.random().toString(36).slice(2, 8).toUpperCase();
     return `${prefix}${rand}`;
   }
+  // id 由数据库自增生成
 
   // Categories
   async listCategories() {
@@ -39,7 +40,7 @@ export class WasteService {
   async createCategory(name: string) {
     const trimmed = (name || '').trim();
     if (!trimmed) throw new HttpException('Invalid name', HttpStatus.BAD_REQUEST);
-    const id = `wc-${this.genId('')}`.toLowerCase();
+    const id = `wc-${this.genStringId('')}`.toLowerCase();
     return this.repo.createCategory(id, trimmed);
   }
 
@@ -55,7 +56,7 @@ export class WasteService {
 
   // Records
   async list(params: {
-    schoolId?: string;
+    schoolId?: number | string;
     category?: string;
     start?: string;
     end?: string;
@@ -64,14 +65,22 @@ export class WasteService {
   }) {
     const page = Math.max(parseInt(params.page || '1', 10) || 1, 1);
     const pageSize = Math.min(Math.max(parseInt(params.pageSize || '20', 10) || 20, 1), 200);
+    const schoolIdNum =
+      params.schoolId !== undefined && params.schoolId !== null
+        ? Number(params.schoolId)
+        : undefined;
+    const schoolId =
+      schoolIdNum !== undefined && Number.isFinite(schoolIdNum) && Number.isInteger(schoolIdNum)
+        ? schoolIdNum
+        : (params.schoolId !== undefined ? -1 : undefined);
     const total = await this.repo.countRecords({
-      schoolId: params.schoolId,
+      schoolId,
       category: params.category,
       start: params.start,
       end: params.end,
     });
     const items = await this.repo.listRecords({
-      schoolId: params.schoolId,
+      schoolId,
       category: params.category,
       start: params.start,
       end: params.end,
@@ -82,29 +91,38 @@ export class WasteService {
   }
 
   async create(body: {
-    schoolId?: string;
+    schoolId?: number | string;
     date?: string;
     category: WasteCategory;
     amount: number;
     buyer: string;
     person: string;
   }) {
-    const id = this.genId('WS-');
-    const rec: WasteRecord = {
-      id,
-      schoolId: body.schoolId || 'sch-001',
+    const schoolId = Number(body.schoolId ?? 0) || 0;
+    const createdAt = new Date().toISOString();
+    const insertId = await this.repo.insertRecord({
+      schoolId,
       date: body.date || todayStr(),
       category: body.category || '餐厨垃圾',
       amount: Number(body.amount) || 0,
       buyer: body.buyer || '',
       person: body.person || '',
-      createdAt: new Date().toISOString(),
+      createdAt,
+    });
+    const rec: WasteRecord = {
+      id: insertId,
+      schoolId,
+      date: body.date || todayStr(),
+      category: body.category || '餐厨垃圾',
+      amount: Number(body.amount) || 0,
+      buyer: body.buyer || '',
+      person: body.person || '',
+      createdAt,
     };
-    await this.repo.insertRecord(rec);
     return rec;
   }
 
-  async getById(id: string) {
+  async getById(id: number) {
     const rec = await this.repo.getRecordById(id);
     if (!rec) {
       throw new HttpException('Not found', HttpStatus.NOT_FOUND);

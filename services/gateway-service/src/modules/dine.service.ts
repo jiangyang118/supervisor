@@ -1,11 +1,19 @@
 import { Injectable, MessageEvent, BadRequestException } from '@nestjs/common';
 import { Observable, Subject } from 'rxjs';
+import { DineRepository } from './repositories/dine.repository';
+import { MealTypeEnum, MealTypeLabel } from '../enums/meal-type.enum';
 
 export type Meal = '早餐' | '午餐' | '晚餐';
+export const MEALS: Meal[] = ['早餐', '午餐', '晚餐'];
+export const MEAL_OPTIONS: Array<{ key: Meal; value: string }> = [
+  { key: '早餐', value: '早餐' },
+  { key: '午餐', value: '午餐' },
+  { key: '晚餐', value: '晚餐' },
+];
 export type DineSource = 'manual' | 'qr' | 'camera';
 
 export type DineRecord = {
-  id: string;
+  id: string; // external ID like DW-000001
   schoolId: string;
   meal: Meal;
   people: string[];
@@ -20,18 +28,9 @@ export type DineRecord = {
 
 @Injectable()
 export class DineService {
-  private seq = 1;
-  private records: DineRecord[] = [];
   private events$ = new Subject<MessageEvent>();
   private qrTokens = new Map<string, { schoolId: string; meal: Meal; createdAt: number }>();
-
-  constructor() {
-    this.seed();
-  }
-
-  private id() {
-    return `DW-${String(this.seq++).padStart(4, '0')}`;
-  }
+  constructor(private readonly repo: DineRepository) {}
   private nowIso() {
     return new Date().toISOString();
   }
@@ -39,7 +38,7 @@ export class DineService {
     this.events$.next({ type: event, data });
   }
 
-  list(params: {
+  async list(params: {
     schoolId?: string;
     meal?: Meal;
     exception?: 'true' | 'false';
@@ -48,24 +47,35 @@ export class DineService {
     page?: number | string;
     pageSize?: number | string;
   }) {
-    const sid = params.schoolId || 'sch-001';
-    let arr = this.records.filter((r) => r.schoolId === sid);
-    if (params.meal) arr = arr.filter((r) => r.meal === params.meal);
-    if (params.exception === 'true') arr = arr.filter((r) => r.exception);
-    if (params.exception === 'false') arr = arr.filter((r) => !r.exception);
-    if (params.start) arr = arr.filter((r) => r.at >= params.start!);
-    if (params.end) arr = arr.filter((r) => r.at <= params.end!);
-    arr = arr.sort((a, b) => (a.at < b.at ? 1 : -1));
-    let p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
-    const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
-    const total = arr.length;
-    const maxPage = Math.max(1, Math.ceil(total / ps) || 1);
-    if (p > maxPage) p = maxPage;
-    const items = arr.slice((p - 1) * ps, p * ps);
-    return { items, total, page: p, pageSize: ps };
+    const sid = params.schoolId || '1';
+    const page = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
+    const pageSize = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
+    const res = await this.repo.search({
+      schoolId: sid,
+      meal: params.meal,
+      exception: params.exception === 'true' ? true : params.exception === 'false' ? false : undefined,
+      start: params.start,
+      end: params.end,
+      page,
+      pageSize,
+    });
+    const items: DineRecord[] = res.items.map((r) => ({
+      id: `DW-${String(r.id).padStart(6, '0')}`,
+      schoolId: String(r.schoolId),
+      meal: (r.meal as Meal),
+      people: (r.people || '').split(',').filter(Boolean),
+      imageUrl: r.imageUrl || undefined,
+      comment: r.comment || undefined,
+      at: new Date(r.at).toISOString(),
+      source: r.source,
+      exception: r.exception === 1,
+      exceptionReason: r.exceptionReason || undefined,
+      measure: r.measure || undefined,
+    }));
+    return { items, total: res.total, page: res.page, pageSize: res.pageSize };
   }
 
-  create(body: {
+  async create(body: {
     schoolId?: string;
     meal: Meal;
     people: string[];
@@ -76,23 +86,39 @@ export class DineService {
     if (!body?.meal) throw new BadRequestException('meal is required');
     if (!Array.isArray(body.people) || body.people.length === 0)
       throw new BadRequestException('people is required');
+    const at = this.nowIso();
+    const exception = !body.imageUrl || (body.people?.length ?? 0) === 0;
+    const mealKey = this.mealToKey(body.meal);
+    const insertId = await this.repo.insert({
+      schoolId: Number(body.schoolId || 1),
+      mealKey,
+      meal: body.meal,
+      people: body.people.join(','),
+      imageUrl: body.imageUrl,
+      comment: body.comment,
+      at,
+      source: body.source || 'manual',
+      exception: exception ? 1 : 0,
+      exceptionReason: exception
+        ? (!body.imageUrl ? '缺少陪餐图片' : (body.people?.length ?? 0) === 0 ? '缺少陪餐人员' : undefined)
+        : undefined,
+      measure: undefined,
+    } as any);
     const rec: DineRecord = {
-      id: this.id(),
-      schoolId: body.schoolId || 'sch-001',
+      id: `DW-${String(insertId).padStart(6, '0')}`,
+      schoolId: String(body.schoolId || 1),
       meal: body.meal,
       people: body.people,
       imageUrl: body.imageUrl,
       comment: body.comment,
-      at: this.nowIso(),
+      at,
       source: body.source || 'manual',
-      exception: !body.imageUrl || (body.people?.length ?? 0) === 0,
-      exceptionReason: !body.imageUrl
-        ? '缺少陪餐图片'
-        : (body.people?.length ?? 0) === 0
-          ? '缺少陪餐人员'
-          : undefined,
+      exception,
+      exceptionReason: exception
+        ? (!body.imageUrl ? '缺少陪餐图片' : (body.people?.length ?? 0) === 0 ? '缺少陪餐人员' : undefined)
+        : undefined,
+      measure: undefined,
     };
-    this.records.unshift(rec);
     this.emit('dine-created', rec);
     return rec;
   }
@@ -108,12 +134,11 @@ export class DineService {
     return this.create({ ...body, source: 'camera' });
   }
 
-  setMeasure(id: string, measure: string) {
-    const idx = this.records.findIndex((r) => r.id === id);
-    if (idx === -1) return { ok: false };
-    this.records[idx].measure = measure;
-    this.emit('dine-updated', this.records[idx]);
-    return { ok: true, record: this.records[idx] };
+  async setMeasure(id: string, measure: string) {
+    const numericId = this.externalIdToNumber(id);
+    await this.repo.updateMeasure(numericId, measure);
+    this.emit('dine-updated', { id, measure });
+    return { ok: true } as any;
   }
 
   // QR
@@ -149,30 +174,14 @@ export class DineService {
     return this.events$.asObservable();
   }
 
-  private seed() {
-    this.create({
-      schoolId: 'sch-001',
-      meal: '午餐',
-      people: ['校长', '食堂主管'],
-      imageUrl: null as any,
-      comment: '满意',
-      source: 'manual',
-    });
-    this.create({
-      schoolId: 'sch-001',
-      meal: '早餐',
-      people: ['年级主任'],
-      imageUrl: 'https://example.com/img1.jpg',
-      comment: '良好',
-      source: 'camera',
-    });
-    this.create({
-      schoolId: 'sch-002',
-      meal: '晚餐',
-      people: ['后勤'],
-      imageUrl: 'https://example.com/img2.jpg',
-      comment: '一般',
-      source: 'manual',
-    });
+  private mealToKey(meal: Meal): string {
+    // reverse map label -> enum key
+    const code = Object.entries(MealTypeLabel).find(([, v]) => v === meal)?.[0];
+    const key = Object.keys(MealTypeEnum).find((k) => (MealTypeEnum as any)[k] === Number(code));
+    return key || 'LUNCH';
+  }
+  private externalIdToNumber(external: string): number {
+    const m = String(external || '').match(/(\d+)/);
+    return m ? Number(m[1]) : Number(external);
   }
 }

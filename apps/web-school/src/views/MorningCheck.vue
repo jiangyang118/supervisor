@@ -120,11 +120,11 @@
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api, API_BASE } from '../services/api';
-import { getCurrentSchoolId } from '../utils/school';
+import { getCurrentSchoolIdNum } from '../utils/school';
 import { ElMessage } from 'element-plus';
 
 type Row = {
-  id: string;
+  id: number;
   staff: string;
   temp: number;
   result: '正常' | '异常';
@@ -157,7 +157,7 @@ async function load() {
     const params: any = {
       page: page.value,
       pageSize: pageSize.value,
-      schoolId: getCurrentSchoolId(),
+      schoolId: getCurrentSchoolIdNum(),
     };
     if (filters.staff) params.staff = filters.staff;
     if (filters.result) params.result = filters.result;
@@ -192,7 +192,7 @@ async function save() {
     return;
   }
   try {
-    await api.morningCreate({ staff: form.staff, temp: form.temp, schoolId: getCurrentSchoolId() });
+    await api.morningCreate({ staff: form.staff, temp: form.temp, schoolId: getCurrentSchoolIdNum() });
     createVisible.value = false;
     ElMessage.success('已保存并上报');
     load();
@@ -201,7 +201,7 @@ async function save() {
   }
 }
 
-async function remove(id: string) {
+async function remove(id: number) {
   await api.morningDelete(id);
   ElMessage.success('已删除');
   load();
@@ -246,7 +246,7 @@ function connectSSE() {
     });
     es.addEventListener('updated', (ev: MessageEvent) => {
       const data = JSON.parse(ev.data);
-      const i = rows.value.findIndex((r) => r.id === data.id);
+  const i = rows.value.findIndex((r) => r.id === data.id);
       if (i !== -1) rows.value[i] = data;
     });
   } catch (e) {

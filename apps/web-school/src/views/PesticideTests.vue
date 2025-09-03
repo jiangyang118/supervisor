@@ -18,14 +18,15 @@
         <el-input v-model="filters.q" placeholder="样品/检测仪" clearable />
       </el-form-item>
       <el-form-item label="结果">
-        <el-select v-model="filters.result" placeholder="全部" clearable>
-          <el-option label="全部" value="" />
+        <el-select v-model="filters.result" placeholder="全部" clearable style="width:120px">
           <el-option label="合格" value="合格" />
           <el-option label="不合格" value="不合格" />
         </el-select>
       </el-form-item>
       <el-form-item label="日期">
-        <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+        <el-date-picker v-model="filters.range" type="daterange" unlink-panels  start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          range-separator="-" />
       </el-form-item>
       <el-form-item>
         <el-button @click="applyFilters">查询</el-button>
@@ -123,7 +124,7 @@
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api, API_BASE } from '../services/api';
-import { getCurrentSchoolId } from '../utils/school';
+import { getCurrentSchoolIdNum } from '../utils/school';
 import { ElMessage } from 'element-plus';
 
 const rows = ref<any[]>([]);
@@ -137,7 +138,7 @@ const filters = reactive<{
 }>({ q: '', result: '' as any, range: null });
 
 async function load() {
-  const params: any = { schoolId: getCurrentSchoolId() };
+  const params: any = { schoolId: getCurrentSchoolIdNum() };
   if (filters.q) params.q = filters.q;
   if (filters.result) params.result = filters.result;
   if (filters.range && filters.range.length === 2) {
@@ -172,7 +173,7 @@ async function save() {
   }
   try {
     await api.pesticideCreate({
-      schoolId: getCurrentSchoolId(),
+      schoolId: getCurrentSchoolIdNum(),
       sample: form.sample,
       device: form.device,
       result: form.result as any,

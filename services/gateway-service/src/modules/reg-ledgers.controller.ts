@@ -15,6 +15,12 @@ export class RegLedgersController {
     private readonly training: TrainingService,
   ) {}
 
+  private numId(id: string | number | undefined) {
+    if (typeof id === 'number') return id;
+    if (!id) return undefined;
+    const n = Number(String(id).replace(/\D/g, ''));
+    return Number.isFinite(n) ? n : undefined;
+  }
   private schools() {
     return [
       { id: 'sch-001', name: '示例一中' },
@@ -298,11 +304,11 @@ export class RegLedgersController {
     const items = (
       await Promise.all(
         schools.map(async (s) => {
-          const res = await this.waste.list({ schoolId: s.id, category, start, end, page: '1', pageSize: '100000' });
+          const res = await this.waste.list({ schoolId: this.numId(s.id), category, start, end, page: '1', pageSize: '100000' });
           return res.items.map((r: any) => ({
             id: r.id,
             schoolId: r.schoolId,
-            school: this.schools().find((x) => x.id === r.schoolId)?.name || r.schoolId,
+            school: this.schools().find((x) => this.numId(x.id) === r.schoolId)?.name || r.schoolId,
             date: r.date,
             category: r.category,
             amount: r.amount,

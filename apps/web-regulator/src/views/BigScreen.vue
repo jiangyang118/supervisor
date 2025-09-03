@@ -171,11 +171,9 @@ async function loadSchools() {
     }
   } catch {
     schools.value = [
-      { id: 'sch-001', name: '示例一中' },
-      { id: 'sch-002', name: '示例二小' },
-      { id: 'sch-003', name: '示例三幼' },
+     
     ];
-    onSelectSchool('sch-001');
+    onSelectSchool(0);
   }
 }
 async function loadCams(schoolId: string) {

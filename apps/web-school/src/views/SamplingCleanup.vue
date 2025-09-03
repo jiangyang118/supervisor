@@ -64,7 +64,7 @@
 import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
-import { getCurrentSchoolId } from '../utils/school';
+import { getCurrentSchoolIdNum } from '../utils/school';
 import { ElMessage } from 'element-plus';
 
 const rows = ref<any[]>([]);
@@ -73,7 +73,7 @@ const form = reactive({ sample: '', weight: 0, imageUrl: '', method: '销毁', b
 
 async function load() {
   try {
-    const res = await api.samplingCleanupList({ schoolId: getCurrentSchoolId() });
+    const res = await api.samplingCleanupList({ schoolId: getCurrentSchoolIdNum() });
     rows.value = res.items;
   } catch (e) {
     ElMessage.error('加载清理记录失败');
@@ -94,7 +94,7 @@ async function save() {
     return;
   }
   try {
-    await api.samplingCleanupCreate({ ...form, schoolId: getCurrentSchoolId() } as any);
+    await api.samplingCleanupCreate({ ...form, schoolId: getCurrentSchoolIdNum() } as any);
     ElMessage.success('已上报');
     createVisible.value = false;
     load();

@@ -4,8 +4,8 @@ import { Observable, Subject } from 'rxjs';
 
 export type MCResult = '正常' | '异常';
 export type MCEntry = {
-  id: string;
-  schoolId: string;
+  id: number;
+  schoolId: number;
   staff: string;
   temp: number;
   result: MCResult;
@@ -23,7 +23,9 @@ export class MorningCheckService {
   constructor(private readonly repo?: MorningChecksRepository) {}
 
   private makeId() {
-    return `MC-${String(this.seq++).padStart(4, '0')}`;
+    const ts = Date.now();
+    const rand = Math.floor(Math.random() * 1000);
+    return ts * 1000 + rand;
   }
   private nowIso() {
     return new Date().toISOString();
@@ -36,7 +38,7 @@ export class MorningCheckService {
   }
 
   async list(params: {
-    schoolId?: string;
+    schoolId?: number | string;
     staff?: string;
     result?: MCResult;
     start?: string;
@@ -44,7 +46,9 @@ export class MorningCheckService {
     page?: number | string;
     pageSize?: number | string;
   }) {
-    const sid = params.schoolId || 'sch-001';
+    const sidRaw = params.schoolId;
+    const sidNum = sidRaw !== undefined && sidRaw !== null && String(sidRaw).trim() !== '' ? Number(sidRaw) : NaN;
+    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : 1;
     const p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
     const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
     if (this.repo) {
@@ -60,8 +64,8 @@ export class MorningCheckService {
           pageSize: ps,
         });
         const mapped = items.map((r) => ({
-          id: r.id,
-          schoolId: r.schoolId || sid,
+          id: Number(r.id),
+          schoolId: Number(r.schoolId ?? sid),
           staff: r.userId,
           temp: Number(r.foreheadTemp),
           result: r.abnormalTemp ? ('异常' as MCResult) : ('正常' as MCResult),
@@ -78,7 +82,7 @@ export class MorningCheckService {
   }
 
   async create(body: {
-    schoolId?: string;
+    schoolId?: number | string;
     staff: string;
     temp: number;
     source?: 'manual' | 'device';
@@ -89,49 +93,51 @@ export class MorningCheckService {
       throw new BadRequestException('temp is required');
     const t = Number(body.temp);
     if (t < 30 || t > 45) throw new BadRequestException('temp out of range');
-    const sid = body.schoolId || 'sch-001';
+    const sidInput = body.schoolId;
+    const sidNum = sidInput !== undefined && sidInput !== null && String(sidInput).trim() !== '' ? Number(sidInput) : NaN;
+    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : 1;
+    // 先写库，获取自增 id
+    const atIso = this.nowIso();
+    const insertId = await this.repo!.insert({
+      schoolId: sid,
+      equipmentCode: body.source === 'device' ? 'DEVICE' : 'MANUAL',
+      userId: body.staff,
+      checkTime: new Date(atIso),
+      foreheadTemp: t,
+      normalTemperatureMin: 35.5,
+      normalTemperatureMax: 37.2,
+      abnormalTemp: this.judge(t) === '异常' ? 1 : 0,
+      handCheckResult: [],
+      healthAskResult: [],
+      health: this.judge(t) === '异常' ? 0 : 1,
+      images: {},
+      raw: { measure: undefined, schoolId: sid },
+    } as any);
     const entry: MCEntry = {
-      id: this.makeId(),
+      id: insertId,
       schoolId: sid,
       staff: body.staff,
       temp: t,
       result: this.judge(t),
-      at: this.nowIso(),
+      at: atIso,
       source: body.source || 'manual',
       reported: true,
     };
-    // 落库至 morning_checks（002 表结构）
-    await this.repo!.insert({
-      id: entry.id,
-      schoolId: sid,
-      equipmentCode: body.source === 'device' ? 'DEVICE' : 'MANUAL',
-      userId: body.staff,
-      checkTime: new Date(entry.at),
-      foreheadTemp: entry.temp,
-      normalTemperatureMin: 35.5,
-      normalTemperatureMax: 37.2,
-      abnormalTemp: entry.result === '异常' ? 1 : 0,
-      handCheckResult: [],
-      healthAskResult: [],
-      health: entry.result === '异常' ? 0 : 1,
-      images: {},
-      raw: { measure: undefined, schoolId: sid },
-    } as any);
     this.emit('created', entry);
     return entry;
   }
 
-  async deviceCallback(body: { schoolId?: string; staff: string; temp: number }) {
+  async deviceCallback(body: { schoolId?: number | undefined; staff: string; temp: number }) {
     return this.create({ ...body, source: 'device' });
   }
 
-  async setMeasure(id: string, measure: string) {
+  async setMeasure(id: number, measure: string) {
     await this.repo!.setMeasure(id, measure);
     this.emit('updated', { id, measure });
     return { ok: true } as any;
   }
 
-  async remove(id: string) {
+  async remove(id: number) {
     await this.repo!.remove(id);
     this.emit('deleted', { id });
     return { ok: true } as any;

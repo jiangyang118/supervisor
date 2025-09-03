@@ -126,7 +126,7 @@
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api, API_BASE } from '../services/api';
-import { getCurrentSchoolId } from '../utils/school';
+import { getCurrentSchoolIdNum } from '../utils/school';
 import { ElMessage } from 'element-plus';
 
 const handlePageChange = (p: number) => {
@@ -151,7 +151,7 @@ async function load() {
   const params: any = {
     page: page.value,
     pageSize: pageSize.value,
-    schoolId: getCurrentSchoolId(),
+    schoolId: getCurrentSchoolIdNum(),
   };
   if (filters.sample) params.sample = filters.sample;
   if (filters.exception) params.exception = filters.exception;
@@ -190,7 +190,7 @@ async function save() {
     return;
   }
   try {
-    await api.samplingCreate({ ...form, schoolId: getCurrentSchoolId() } as any);
+    await api.samplingCreate({ ...form, schoolId: getCurrentSchoolIdNum() } as any);
     ElMessage.success('已上报');
     createVisible.value = false;
     load();

@@ -1,10 +1,10 @@
 export type SchoolOption = { id: string; name: string };
 
-const KEY = 'current_school_id';
+const KEY = 0;
 
 export function getCurrentSchoolId(): string {
-  if (typeof localStorage === 'undefined') return 'sch-001';
-  return localStorage.getItem(KEY) || 'sch-001';
+  if (typeof localStorage === 'undefined') return 0;
+  return localStorage.getItem(KEY) || 0;
 }
 
 export function setCurrentSchoolId(id: string) {
@@ -12,9 +12,15 @@ export function setCurrentSchoolId(id: string) {
   localStorage.setItem(KEY, id);
 }
 
-export function getSchoolOptions(): SchoolOption[] {
-  return [
-    { id: 'sch-001', name: '示例一中' },
-    { id: 'sch-002', name: '示例二小' },
-  ];
+export function toNumericSchoolId(id: string | number | undefined): number | undefined {
+  if (typeof id === 'number') return id;
+  if (!id) return undefined;
+  const n = Number(String(id).replace(/\D/g, ''));
+  return Number.isFinite(n) ? n : undefined;
 }
+
+export function getCurrentSchoolIdNum(): number | undefined {
+  return toNumericSchoolId(getCurrentSchoolId());
+}
+
+

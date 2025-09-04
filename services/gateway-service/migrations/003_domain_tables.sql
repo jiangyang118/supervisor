@@ -39,7 +39,8 @@ create table if not exists inv_warehouses (
 );
 
 create table if not exists inv_inbound (
-  id varchar(64) primary key,
+  id int primary key auto_increment,
+  school_id int not null,
   product_id varchar(64) not null,
   qty decimal(18,3) not null,
   supplier_id varchar(64) null,
@@ -47,12 +48,13 @@ create table if not exists inv_inbound (
   image_url varchar(255) null,
   at datetime not null,
   source varchar(32) not null,
-  key idx_inv_in_at (at),
+  key idx_inv_in_school_at (school_id, at),
   key idx_inv_in_product (product_id)
 );
 
 create table if not exists inv_outbound (
-  id varchar(64) primary key,
+  id int primary key auto_increment,
+  school_id int not null,
   product_id varchar(64) not null,
   qty decimal(18,3) not null,
   purpose varchar(255) null,
@@ -60,27 +62,29 @@ create table if not exists inv_outbound (
   warehouse_id varchar(64) null,
   at datetime not null,
   source varchar(32) not null,
-  key idx_inv_out_at (at),
+  key idx_inv_out_school_at (school_id, at),
   key idx_inv_out_product (product_id)
 );
 
 create table if not exists inv_tickets (
-  id varchar(64) primary key,
+  id int primary key auto_increment,
+  school_id int not null,
   product_id varchar(64) not null,
   type varchar(128) not null,
   image_url varchar(255) null,
   at datetime not null,
-  key idx_inv_tickets_at (at)
+  key idx_inv_tickets_school_at (school_id, at)
 );
 
 create table if not exists inv_additives (
-  id varchar(64) primary key,
+  id int primary key auto_increment,
+  school_id int not null,
   name varchar(128) not null,
   amount decimal(18,3) not null,
   dish varchar(128) null,
   by_who varchar(128) null,
   at datetime not null,
-  key idx_inv_additives_at (at desc)
+  key idx_inv_additives_school_at (school_id, at desc)
 );
 
 -- Public feedback

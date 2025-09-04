@@ -28,9 +28,36 @@ const products = ref<any[]>([]);
 function productName(id: string) {
   return products.value.find((p: any) => p.id === id)?.name || id;
 }
+function fmtSeconds(d: Date) {
+  try {
+    // 本地时间，精确到秒
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return (
+      d.getFullYear() +
+      '-' + pad(d.getMonth() + 1) +
+      '-' + pad(d.getDate()) +
+      ' ' + pad(d.getHours()) +
+      ':' + pad(d.getMinutes()) +
+      ':' + pad(d.getSeconds())
+    );
+  } catch {
+    return d.toISOString().replace(/\..+/, '');
+  }
+}
 async function load() {
-  rows.value = await api.invStock(getCurrentSchoolId());
+  // 先取产品，便于映射名称与单位
   products.value = await api.invProducts(getCurrentSchoolId());
+  const stock = await api.invStock(getCurrentSchoolId());
+  rows.value = (stock || []).map((r: any) => {
+    const p = products.value.find((x: any) => x.id === r.productId);
+    return {
+      productId: r.productId,
+      item: p?.name || r.productId,
+      unit: p?.unit || '',
+      qty: Number(r.qty || 0),
+      updatedAt: r.updatedAt,
+    };
+  });
 }
 async function doCheck() {
   if (rows.value.length > 0)
@@ -42,7 +69,7 @@ async function doCheck() {
   await load();
 }
 const onExportCsv = () =>
-  exportCsv('库存盘点', rows.value, { productId: '商品ID', qty: '库存', updatedAt: '更新时间' });
+  exportCsv('库存盘点', rows.value, { item: '商品', qty: '库存', unit: '单位', updatedAt: '更新时间' });
 let off: any = null;
 onMounted(() => {
   load();

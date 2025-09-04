@@ -11,9 +11,8 @@
     </template>
     <el-table :data="rows" size="small" border>
       <el-table-column prop="id" label="ID" width="140" />
-      <el-table-column prop="item" label="商品" />
-      <el-table-column prop="type" label="类型" />
-      <el-table-column prop="status" label="状态" width="120" />
+      <el-table-column label="商品"><template #default="{ row }">{{ productName(row.productId) }}</template></el-table-column>
+      <el-table-column prop="type" label="类型" width="140" />
       <el-table-column prop="at" label="时间" width="180" />
     </el-table>
   </el-card>
@@ -21,7 +20,9 @@
   <el-dialog v-model="createVisible" title="补传索证凭证" width="520px">
     <el-form :model="form" label-width="96px">
       <el-form-item label="商品">
-        <el-input v-model="form.item" />
+        <el-select v-model="form.productId" placeholder="请选择" style="width:260px">
+          <el-option v-for="p in products" :key="p.id" :label="p.name" :value="p.id" />
+        </el-select>
       </el-form-item>
       <el-form-item label="类型">
         <el-select v-model="form.type" placeholder="请选择">
@@ -44,33 +45,53 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
-type Row = { id: string; item: string; type: string; status: string; at: string };
-const rows = ref<Row[]>([
-  { id: 'TK-001', item: '大米', type: '合格证', status: '已上传', at: new Date().toLocaleString() },
-]);
+import { api } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
+import { ElMessage } from 'element-plus';
+
+const rows = ref<any[]>([]);
+const products = ref<any[]>([]);
 const createVisible = ref(false);
-const form = reactive({ item: '', type: '检验报告' });
+const form = reactive({ productId: undefined as any, type: '检验报告', imageUrl: '' });
+
+function productName(id?: number | string) {
+  return products.value.find((p: any) => String(p.id) === String(id))?.name || '-';
+}
+async function load() {
+  products.value = await api.invProducts(getCurrentSchoolId());
+  rows.value = await api.invTickets(getCurrentSchoolId());
+}
 const openCreate = () => {
+  form.productId = products.value[0]?.id;
+  form.type = '检验报告';
+  form.imageUrl = '';
   createVisible.value = true;
 };
-const save = () => {
-  rows.value.unshift({
-    id: `TK-${String(rows.value.length + 1).padStart(3, '0')}`,
-    item: form.item,
-    type: form.type,
-    status: '已上传',
-    at: new Date().toLocaleString(),
-  });
+const save = async () => {
+  if (!form.productId) return ElMessage.warning('请选择商品');
+  await api.invTicketCreate({ schoolId: getCurrentSchoolId(), productId: form.productId, type: form.type, imageUrl: form.imageUrl });
+  ElMessage.success('已补传');
   createVisible.value = false;
+  await load();
 };
 const onExportCsv = () =>
   exportCsv('索票索证', rows.value, {
     id: 'ID',
-    item: '商品',
+    productId: '商品ID',
     type: '类型',
-    status: '状态',
     at: '时间',
   });
+
+let off: any = null;
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  off = () => window.removeEventListener('school-changed', h as any);
+});
+onBeforeUnmount(() => {
+  try { off?.(); } catch {}
+});
 </script>

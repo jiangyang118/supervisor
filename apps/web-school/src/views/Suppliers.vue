@@ -7,54 +7,58 @@
           <el-input
             v-model="filters.q"
             placeholder="名称/电话/执照号"
-            size="small"
             style="width: 220px; margin-right: 8px"
           />
           <el-select
             v-model="filters.enabled"
             placeholder="请选择"
-            size="small"
             style="width: 120px; margin-right: 8px"
+            clearable
           >
             <el-option label="仅启用" value="true" />
             <el-option label="仅禁用" value="false" />
           </el-select>
-          <el-button size="small" @click="load">查询</el-button>
+          <el-checkbox v-model="filters.expired" style="margin-right:8px">仅显示已过期</el-checkbox>
+          <el-date-picker
+            v-model="filters.expireRange"
+            type="datetimerange"
+            start-placeholder="到期开始"
+            end-placeholder="到期结束"
+            style="margin-right:8px"
+          />
+          <el-button @click="load">查询</el-button>
           <el-divider direction="vertical" />
-          <el-button size="small" @click="onExportCsv">导出 CSV</el-button>
-          <el-button size="small" @click="openImport">导入 CSV</el-button>
-          <el-button type="primary" size="small" @click="openCreate">新增供应商</el-button>
+          <el-button   @click="onExportCsv">导出 CSV</el-button>
+          <el-button   @click="openImport">导入 CSV</el-button>
+          <el-button type="primary"   @click="openCreate">新增供应商</el-button>
         </div>
       </div>
     </template>
-    <el-table :data="rows" size="small" border @selection-change="onSelChange">
+    <el-table :data="rows"   border @selection-change="onSelChange" :row-class-name="rowClassName">
       <el-table-column type="selection" width="46" />
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="name" label="名称" />
       <el-table-column prop="phone" label="电话" width="140" />
       <el-table-column prop="license" label="营业执照号" />
-      <el-table-column label="证照到期" width="140">
+      <el-table-column label="证照到期" width="180">
         <template #default="{ row }">
           <span :style="{ color: row.expired ? '#f56c6c' : '#67c23a' }">{{
-            row.licenseExpireAt || '-'
+            fmtTime(row.licenseExpireAt) || '-'
           }}</span>
         </template>
       </el-table-column>
       <el-table-column label="启用" width="100">
         <template #default="{ row }">
-          <el-switch
-            :model-value="row.enabled ?? true"
-            @change="(v: boolean) => toggleEnable(row, v)"
-          />
+          <el-switch v-model="row.enabled" @change="(v: boolean) => toggleEnable(row, v)" />
         </template>
       </el-table-column>
       <el-table-column label="操作" width="260">
         <template #default="{ row }">
-          <el-button size="small" @click="toggleEnable(row, !(row.enabled ?? true))">
+          <el-button   @click="toggleEnable(row, !(row.enabled ?? true))">
             {{ (row.enabled ?? true) ? '禁用' : '启动' }}
           </el-button>
-          <el-button size="small" @click="openEdit(row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="del(row)">删除</el-button>
+          <el-button   @click="openEdit(row)">编辑</el-button>
+          <el-button   type="danger" @click="del(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -62,10 +66,10 @@
       style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center"
     >
       <div>
-        <el-button size="small" :disabled="selected.length === 0" @click="batchEnable(true)"
+        <el-button   :disabled="selected.length === 0" @click="batchEnable(true)"
           >批量启用</el-button
         >
-        <el-button size="small" :disabled="selected.length === 0" @click="batchEnable(false)"
+        <el-button   :disabled="selected.length === 0" @click="batchEnable(false)"
           >批量禁用</el-button
         >
       </div>
@@ -114,7 +118,7 @@
         </el-select>
       </el-form-item>
       <el-form-item label="证照到期">
-        <el-date-picker v-model="form.licenseExpireAt" type="date" />
+        <el-date-picker v-model="form.licenseExpireAt" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" />
       </el-form-item>
       <el-form-item label="证照图片URL">
         <el-input v-model="form.licenseImageUrl" placeholder="http(s)://..." />
@@ -149,19 +153,29 @@ const rows = ref<any[]>([]);
 const total = ref(0);
 const page = ref(1);
 const pageSize = ref(20);
-const filters = reactive<{ q: string; enabled: '' | 'true' | 'false' }>({ q: '', enabled: '' });
+const filters = reactive<{ q: string; enabled: '' | 'true' | 'false'; expired: boolean; expireRange: [Date, Date] | null }>({ q: '', enabled: '', expired: false, expireRange: null });
 const selected = ref<any[]>([]);
 const onSelChange = (arr: any[]) => (selected.value = arr);
+
+function rowClassName({ row }: { row: any }) {
+  return row?.expired ? 'row-expired' : '';
+}
 
 async function load() {
   const res = await api.invSuppliers({
     q: filters.q || undefined,
     enabled: filters.enabled || undefined,
+    expired: filters.expired ? 'true' : undefined,
+    expireStart: filters.expireRange?.[0]?.toISOString(),
+    expireEnd: filters.expireRange?.[1]?.toISOString(),
     page: page.value,
     pageSize: pageSize.value,
     schoolId: getCurrentSchoolId(),
   });
-  rows.value = res.items;
+  rows.value = res.items.map(item=>({
+    ...item,
+    enabled:!!item.enabled,
+  }));
   total.value = res.total;
 }
 
@@ -215,7 +229,7 @@ async function save() {
 }
 function normalizeForm() {
   const obj: any = { ...form };
-  if (obj.licenseExpireAt instanceof Date) obj.licenseExpireAt = obj.licenseExpireAt.toISOString();
+  // 使用 datetime 选择器的字符串值（YYYY-MM-DD HH:mm:ss），后端保存为 DATETIME
   return obj;
 }
 async function del(row: any) {
@@ -280,4 +294,28 @@ onBeforeUnmount(() => {
     off?.();
   } catch {}
 });
+
+function fmtTime(v?: string) {
+  if (!v) return '';
+  try {
+    const d = new Date(v);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return (
+      d.getFullYear() +
+      '-' + pad(d.getMonth() + 1) +
+      '-' + pad(d.getDate()) +
+      ' ' + pad(d.getHours()) +
+      ':' + pad(d.getMinutes()) +
+      ':' + pad(d.getSeconds())
+    );
+  } catch {
+    return v as string;
+  }
+}
 </script>
+
+<style scoped>
+.row-expired td {
+  background: #fff6f7;
+}
+</style>

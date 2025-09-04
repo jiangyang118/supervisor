@@ -2,8 +2,8 @@ import { Injectable, MessageEvent, BadRequestException } from '@nestjs/common';
 import { InventoryRepository } from './inventory.repository';
 import { Observable, Subject } from 'rxjs';
 
-export type Category = { id: string; name: string };
-export type Product = { id: string; name: string; unit: string; categoryId?: string };
+export type Category = { id: number; name: string };
+export type Product = { id: number; name: string; unit: string; categoryId?: number };
 export type Supplier = {
   id: string;
   name: string;
@@ -27,7 +27,7 @@ export type Warehouse = {
   deleted?: boolean;
 };
 export type Inbound = {
-  id: string;
+  id: number;
   productId: string;
   qty: number;
   supplierId?: string;
@@ -37,7 +37,7 @@ export type Inbound = {
   source: 'manual' | 'scale';
 };
 export type Outbound = {
-  id: string;
+  id: number;
   productId: string;
   qty: number;
   purpose?: string;
@@ -75,31 +75,25 @@ export class InventoryService {
   }
 
   // Categories
-  async listCategories() {
-    return this.repo!.listCategories();
+  async listCategories(schoolId?: number | string) {
+    return this.repo!.listCategories(schoolId);
   }
-  createCategory(body: { name: string }) {
+  createCategory(body: { schoolId?: number | string; name: string }) {
     if (!body?.name) throw new BadRequestException('name required');
-    const c = { id: this.id('CAT'), name: body.name };
-    this.repo?.insertCategory(c.id, c.name).catch(() => void 0);
-    return c;
+    const sid = body.schoolId !== undefined && body.schoolId !== null && String(body.schoolId).trim() !== '' ? Number(body.schoolId) : 1;
+    return this.repo!.insertCategory(sid, body.name).then((id) => ({ id, name: body.name }));
   }
 
   // Products
-  async listProducts() {
-    return this.repo!.listProducts();
+  async listProducts(schoolId?: number | string) {
+    return this.repo!.listProducts(schoolId);
   }
-  createProduct(body: { name: string; unit: string; categoryId?: string }) {
+  createProduct(body: { schoolId?: number | string; name: string; unit: string; categoryId?: number | string }) {
     if (!body?.name) throw new BadRequestException('name required');
     if (!body?.unit) throw new BadRequestException('unit required');
-    const p: Product = {
-      id: this.id('PRD'),
-      name: body.name,
-      unit: body.unit,
-      categoryId: body.categoryId,
-    };
-    this.repo?.insertProduct(p.id, p.name, p.unit, p.categoryId).catch(() => void 0);
-    return p;
+    const sid = body.schoolId !== undefined && body.schoolId !== null && String(body.schoolId).trim() !== '' ? Number(body.schoolId) : 1;
+    const categoryId = body.categoryId !== undefined && body.categoryId !== null && String(body.categoryId).trim() !== '' ? Number(body.categoryId) : undefined;
+    return this.repo!.insertProduct(sid, body.name, body.unit, categoryId).then((id) => ({ id, name: body.name, unit: body.unit, categoryId } as Product));
   }
   importFromCloud() {
     const list = [
@@ -118,16 +112,21 @@ export class InventoryService {
 
   // Suppliers
   async listSuppliers(params?: {
+    schoolId?: number | string;
     q?: string;
     enabled?: 'true' | 'false';
+    expired?: 'true' | 'false';
+    expireStart?: string;
+    expireEnd?: string;
     page?: number | string;
     pageSize?: number | string;
   }) {
     const p = Math.max(1, parseInt(String(params?.page ?? 1), 10) || 1);
     const ps = Math.max(1, parseInt(String(params?.pageSize ?? 20), 10) || 20);
     const enabled = params?.enabled ? params.enabled === 'true' : undefined;
-    const res = await this.repo!.listSuppliers({ q: params?.q, enabled, page: p, pageSize: ps });
-    const items = res.items.map((s: any) => ({ ...s, expired: this.isExpired(s.licenseExpireAt) }));
+    const expired = params?.expired === 'true' ? true : params?.expired === 'false' ? false : undefined;
+    const res = await this.repo!.listSuppliers({ schoolId: params?.schoolId, q: params?.q, enabled, expired, expireStart: params?.expireStart, expireEnd: params?.expireEnd, page: p, pageSize: ps });
+    const items = res.items.map((s: any) => ({ ...s, licenseExpireAt: s.licenseExpireAt ? this.fmtSeconds(s.licenseExpireAt) : undefined, expired: this.isExpired(s.licenseExpireAt) }));
     return { ...res, items };
   }
   private isExpired(dateISO?: string) {
@@ -155,6 +154,7 @@ export class InventoryService {
     }
   }
   createSupplier(b: {
+    schoolId?: number | string;
     name: string;
     phone?: string;
     license?: string;
@@ -170,17 +170,17 @@ export class InventoryService {
     if (!b?.name) throw new BadRequestException('name required');
     this.assertUnique(b);
     this.assertValid(b);
-    const s: Supplier = { id: this.id('SUP'), enabled: true, ...b };
-    if (s.rating && (s.rating < 1 || s.rating > 5)) s.rating = Math.min(5, Math.max(1, s.rating));
-    this.repo?.insertSupplier(s).catch(() => void 0);
-    return s;
+    const sid = b.schoolId !== undefined && b.schoolId !== null && String(b.schoolId).trim() !== '' ? Number(b.schoolId) : 1;
+    const payload = { schoolId: sid, ...b } as any;
+    if (payload.rating && (payload.rating < 1 || payload.rating > 5)) payload.rating = Math.min(5, Math.max(1, payload.rating));
+    return this.repo!.insertSupplier(payload).then((id) => ({ id, enabled: payload.enabled ?? true, ...b } as any));
   }
-  async getSupplier(id: string) {
+  async getSupplier(id: number | string) {
     const s = await this.repo!.getSupplierById(id);
     if (!s) throw new BadRequestException('not found');
     return s;
   }
-  async updateSupplier(id: string, b: Partial<Omit<Supplier, 'id'>>) {
+  async updateSupplier(id: number | string, b: Partial<Omit<Supplier, 'id'>>) {
     this.assertValid(b);
     const next = { ...b } as any;
     if (next.rating && (next.rating < 1 || next.rating > 5))
@@ -188,7 +188,7 @@ export class InventoryService {
     await this.repo!.updateSupplier(id, next);
     return { id, ...next };
   }
-  async deleteSupplier(id: string) {
+  async deleteSupplier(id: number | string) {
     await this.repo!.updateSupplier(id, { deleted: true });
     return { ok: true };
   }
@@ -199,28 +199,28 @@ export class InventoryService {
   }
 
   // Warehouses
-  async listWarehouses() {
-    return this.repo!.listWarehouses();
+  async listWarehouses(schoolId?: number | string) {
+    return this.repo!.listWarehouses(schoolId);
   }
-  createWarehouse(b: { name: string; location?: string; capacity?: number }) {
+  createWarehouse(b: { schoolId?: number | string; name: string; location?: string; capacity?: number }) {
     if (!b?.name) throw new BadRequestException('name required');
-    const w = { id: this.id('WH'), ...b };
-    this.repo?.insertWarehouse(w).catch(() => void 0);
-    return w;
+    const sid = b.schoolId !== undefined && b.schoolId !== null && String(b.schoolId).trim() !== '' ? Number(b.schoolId) : 1;
+    return this.repo!.insertWarehouse({ schoolId: sid, name: b.name, location: b.location, capacity: b.capacity }).then((id) => ({ id, ...b } as any));
   }
-  async updateWarehouse(id: string, b: Partial<Omit<Warehouse, 'id'>>) {
+  async updateWarehouse(id: number | string, b: Partial<Omit<Warehouse, 'id'>>) {
     await this.repo!.updateWarehouse(id, b as any);
     return { id, ...(b as any) };
   }
-  async deleteWarehouse(id: string) {
+  async deleteWarehouse(id: number | string) {
     await this.repo!.updateWarehouse(id, { deleted: true });
     return { ok: true };
   }
 
   // Inbound / Outbound
-  async listInbound() { return this.repo!.listInbound(); }
-  async listOutbound() { return this.repo!.listOutbound(); }
+  async listInbound(schoolId?: number | string) { return this.repo!.listInbound(schoolId); }
+  async listOutbound(schoolId?: number | string) { return this.repo!.listOutbound(schoolId); }
   createInbound(b: {
+    schoolId?: number | string;
     productId: string;
     qty: number;
     supplierId?: string;
@@ -229,8 +229,9 @@ export class InventoryService {
   }) {
     if (!b?.productId) throw new BadRequestException('productId required');
     if (!b?.qty || Number(b.qty) <= 0) throw new BadRequestException('qty must be > 0');
+    const sid = b.schoolId !== undefined && b.schoolId !== null && String(b.schoolId).trim() !== '' ? Number(b.schoolId) : 1;
     const r: Inbound = {
-      id: this.id('IN'),
+      id: 0 as any,
       productId: b.productId,
       qty: Number(b.qty),
       supplierId: b.supplierId,
@@ -239,11 +240,14 @@ export class InventoryService {
       at: this.now(),
       source: 'manual',
     };
-    this.repo?.insertInbound(r).catch(() => void 0);
-    this.emit('in-created', r);
-    return r;
+    return this.repo!.insertInbound({ schoolId: sid, ...r }).then((insertId) => {
+      const rec = { ...r, id: insertId };
+      this.emit('in-created', rec);
+      return rec;
+    });
   }
   scaleInbound(b: {
+    schoolId?: number | string;
     productId: string;
     weight: number;
     supplierId?: string;
@@ -251,6 +255,7 @@ export class InventoryService {
     imageUrl?: string;
   }) {
     return this.createInbound({
+      schoolId: b.schoolId,
       productId: b.productId,
       qty: b.weight,
       supplierId: b.supplierId,
@@ -259,6 +264,7 @@ export class InventoryService {
     });
   }
   createOutbound(b: {
+    schoolId?: number | string;
     productId: string;
     qty: number;
     purpose?: string;
@@ -267,8 +273,9 @@ export class InventoryService {
   }) {
     if (!b?.productId) throw new BadRequestException('productId required');
     if (!b?.qty || Number(b.qty) <= 0) throw new BadRequestException('qty must be > 0');
+    const sid = b.schoolId !== undefined && b.schoolId !== null && String(b.schoolId).trim() !== '' ? Number(b.schoolId) : 1;
     const r: Outbound = {
-      id: this.id('OUT'),
+      id: 0 as any,
       productId: b.productId,
       qty: Number(b.qty),
       purpose: b.purpose,
@@ -277,11 +284,14 @@ export class InventoryService {
       at: this.now(),
       source: 'manual',
     };
-    this.repo?.insertOutbound(r).catch(() => void 0);
-    this.emit('out-created', r);
-    return r;
+    return this.repo!.insertOutbound({ schoolId: sid, ...r }).then((insertId) => {
+      const rec = { ...r, id: insertId };
+      this.emit('out-created', rec);
+      return rec;
+    });
   }
   scaleOutbound(b: {
+    schoolId?: number | string;
     productId: string;
     weight: number;
     purpose?: string;
@@ -289,6 +299,7 @@ export class InventoryService {
     warehouseId?: string;
   }) {
     return this.createOutbound({
+      schoolId: b.schoolId,
       productId: b.productId,
       qty: b.weight,
       purpose: b.purpose,
@@ -298,36 +309,49 @@ export class InventoryService {
   }
 
   // Stock
-  async getStock(): Promise<Stock[]> {
-    const list = await this.repo!.getStock();
-    return list.map((s) => ({ productId: s.productId, qty: Number(s.qty || 0), updatedAt: this.now() }));
+  private fmtSeconds(d?: Date | string | null) {
+    if (!d) return this.now();
+    const dt = typeof d === 'string' ? new Date(d) : d;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return (
+      dt.getFullYear() +
+      '-' + pad(dt.getMonth() + 1) +
+      '-' + pad(dt.getDate()) +
+      ' ' + pad(dt.getHours()) +
+      ':' + pad(dt.getMinutes()) +
+      ':' + pad(dt.getSeconds())
+    );
   }
-  async stocktake(adj: { productId: string; qty: number }) {
-    const current = (await this.getStock()).find((s) => s.productId === adj.productId)?.qty || 0;
+  async getStock(schoolId?: number | string): Promise<Stock[]> {
+    const list = await this.repo!.getStock(schoolId);
+    return list.map((s: any) => ({ productId: s.productId, qty: Number(s.qty || 0), updatedAt: this.fmtSeconds(s.updatedAt) }));
+  }
+  async stocktake(adj: { schoolId?: number | string; productId: string; qty: number }) {
+    const current = (await this.getStock(adj.schoolId)).find((s) => s.productId === adj.productId)?.qty || 0;
     const diff = adj.qty - current;
     if (diff === 0) return { ok: true };
-    if (diff > 0) await this.createInbound({ productId: adj.productId, qty: diff });
-    else await this.createOutbound({ productId: adj.productId, qty: -diff });
+    if (diff > 0) await this.createInbound({ schoolId: adj.schoolId, productId: adj.productId, qty: diff });
+    else await this.createOutbound({ schoolId: adj.schoolId, productId: adj.productId, qty: -diff });
     return { ok: true };
   }
 
   // Tickets
-  async listTickets() { return this.repo!.listTickets(); }
-  createTicket(b: { productId: string; type: string; imageUrl?: string }) {
+  async listTickets(schoolId?: number | string) { return this.repo!.listTickets(schoolId); }
+  createTicket(b: { schoolId?: number | string; productId: string; type: string; imageUrl?: string }) {
     if (!b?.productId || !b?.type) throw new BadRequestException('productId/type required');
-    const t = { id: this.id('TK'), ...b, at: this.now() };
-    this.repo?.insertTicket(t as any).catch(() => void 0);
-    return t;
+    const sid = b.schoolId !== undefined && b.schoolId !== null && String(b.schoolId).trim() !== '' ? Number(b.schoolId) : 1;
+    const at = this.now();
+    return this.repo!.insertTicket({ schoolId: sid, productId: b.productId, type: b.type, imageUrl: b.imageUrl, at }).then((insertId) => ({ id: insertId, productId: b.productId, type: b.type, imageUrl: b.imageUrl, at } as any));
   }
 
   // Additives
-  async listAdditives() { return this.repo!.listAdditives(); }
-  createAdditive(b: { name: string; amount: number; dish?: string; by?: string }) {
+  async listAdditives(schoolId?: number | string) { return this.repo!.listAdditives(schoolId); }
+  createAdditive(b: { schoolId?: number | string; name: string; amount: number; dish?: string; by?: string }) {
     if (!b?.name) throw new BadRequestException('name required');
     if (!b?.amount || Number(b.amount) <= 0) throw new BadRequestException('amount>0');
-    const a = { id: this.id('AD'), ...b, at: this.now() };
-    this.repo?.insertAdditive(a as any).catch(() => void 0);
-    return a;
+    const sid = b.schoolId !== undefined && b.schoolId !== null && String(b.schoolId).trim() !== '' ? Number(b.schoolId) : 1;
+    const at = this.now();
+    return this.repo!.insertAdditive({ schoolId: sid, name: b.name, amount: Number(b.amount), dish: b.dish, by: b.by, at }).then((insertId) => ({ id: insertId, name: b.name, amount: Number(b.amount), dish: b.dish, by: b.by, at } as any));
   }
 
   stream(): Observable<MessageEvent> {

@@ -9,12 +9,12 @@
             <el-option label="整改中" value="整改中" />
             <el-option label="已整改" value="已整改" />
           </el-select>
-          <el-date-picker v-model="range" type="daterange" unlink-panels />
+          <el-date-picker v-model="range" type="daterange" unlink-panels style="width: 240px" range-separator="-" start-placeholder="开始日期" end-placeholder="结束日期"  clearable />
           <el-button @click="loadReports">查询</el-button>
           <el-button @click="exportReportsCsv">导出上报CSV</el-button>
           <el-button type="primary" @click="openReportCreate">新增上报</el-button>
         </div>
-        <el-table :data="reports.items" size="small" border>
+        <el-table :data="reports.items"   border>
           <el-table-column prop="id" label="上报ID" width="140" />
           <el-table-column prop="at" label="时间" width="180" />
           <el-table-column prop="location" label="地点" />
@@ -23,11 +23,11 @@
           <el-table-column prop="status" label="状态" width="120" />
           <el-table-column label="操作" width="360"
             ><template #default="{ row }">
-              <el-button size="small" @click="openReportDetail(row)">查看</el-button>
-              <el-button v-if="row.status !== '已整改'" size="small" @click="openRectify(row)"
+              <el-button   @click="openReportDetail(row)">查看</el-button>
+              <el-button v-if="row.status !== '已整改'"   @click="openRectify(row)"
                 >标记整改</el-button
               >
-              <el-button size="small" @click="openTaskCreate(row)">派发任务</el-button>
+              <el-button   @click="openTaskCreate(row)">派发任务</el-button>
             </template></el-table-column
           >
         </el-table>
@@ -59,7 +59,7 @@
           <el-button @click="exportTasksCsv">导出任务CSV</el-button>
           <el-button type="primary" @click="openTaskCreate()">新增任务</el-button>
         </div>
-        <el-table :data="pagedTasks" size="small" border>
+        <el-table :data="pagedTasks"   border>
           <el-table-column prop="id" label="任务ID" width="140" />
           <el-table-column prop="assignee" label="检查人员" width="140" />
           <el-table-column prop="location" label="地点" />
@@ -67,9 +67,9 @@
           <el-table-column prop="status" label="状态" width="120" />
           <el-table-column label="操作" width="320"
             ><template #default="{ row }">
-              <el-button size="small" @click="openTaskDetail(row)">详情</el-button>
-              <el-button size="small" @click="setTask(row, '进行中')">进行中</el-button>
-              <el-button size="small" type="success" @click="openTaskSubmit(row)">完成</el-button>
+              <el-button   @click="openTaskDetail(row)">详情</el-button>
+              <el-button   @click="setTask(row, '进行中')">进行中</el-button>
+              <el-button   type="success" @click="openTaskSubmit(row)">完成</el-button>
             </template></el-table-column
           >
         </el-table>
@@ -93,15 +93,15 @@
           <el-button type="primary" @click="openCatalogCreate">新增风险点</el-button>
           <el-button @click="exportCatalogCsv">导出清单CSV</el-button>
         </div>
-        <el-table :data="catalog" size="small" border>
+        <el-table :data="catalog"   border>
           <el-table-column prop="id" label="ID" width="140" />
           <el-table-column prop="category" label="分类" width="140" />
           <el-table-column prop="title" label="风险点" />
           <el-table-column prop="level" label="等级" width="120" />
           <el-table-column label="操作" width="220"
             ><template #default="{ row }">
-              <el-button size="small" @click="openCatalogEdit(row)">编辑</el-button>
-              <el-button size="small" type="danger" @click="delCatalog(row)">删除</el-button>
+              <el-button   @click="openCatalogEdit(row)">编辑</el-button>
+              <el-button   type="danger" @click="delCatalog(row)">删除</el-button>
             </template></el-table-column
           >
         </el-table>
@@ -135,7 +135,7 @@
 
   <!-- 上报详情 -->
   <el-dialog v-model="dlgReportDetail" title="上报详情" width="600px">
-    <el-descriptions :column="2" size="small" border>
+    <el-descriptions :column="2"   border>
       <el-descriptions-item label="ID">{{ reportDetail?.id }}</el-descriptions-item>
       <el-descriptions-item label="时间">{{ reportDetail?.at }}</el-descriptions-item>
       <el-descriptions-item label="地点">{{ reportDetail?.location }}</el-descriptions-item>
@@ -174,7 +174,7 @@
 
   <!-- 任务详情 -->
   <el-dialog v-model="dlgTaskDetail" title="任务详情" width="600px">
-    <el-descriptions :column="2" size="small" border>
+    <el-descriptions :column="2"   border>
       <el-descriptions-item label="ID">{{ taskDetail?.id }}</el-descriptions-item>
       <el-descriptions-item label="检查人员">{{ taskDetail?.assignee }}</el-descriptions-item>
       <el-descriptions-item label="地点">{{ taskDetail?.location }}</el-descriptions-item>

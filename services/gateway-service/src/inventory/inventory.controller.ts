@@ -7,18 +7,18 @@ export class InventoryController {
   constructor(private readonly svc: InventoryService) {}
 
   // Categories
-  @Get('categories') listCategories() {
-    return this.svc.listCategories();
+  @Get('categories') listCategories(@Query('schoolId') schoolId?: string) {
+    return this.svc.listCategories(schoolId);
   }
-  @Post('categories') createCategory(@Body() b: { name: string }) {
+  @Post('categories') createCategory(@Body() b: { schoolId?: string; name: string }) {
     return this.svc.createCategory(b);
   }
 
   // Products
-  @Get('products') listProducts() {
-    return this.svc.listProducts();
+  @Get('products') listProducts(@Query('schoolId') schoolId?: string) {
+    return this.svc.listProducts(schoolId);
   }
-  @Post('products') createProduct(@Body() b: { name: string; unit: string; categoryId?: string }) {
+  @Post('products') createProduct(@Body() b: { schoolId?: string; name: string; unit: string; categoryId?: number | string }) {
     return this.svc.createProduct(b);
   }
   @Post('products/import/cloud') importCloud() {
@@ -32,12 +32,16 @@ export class InventoryController {
 
   // Suppliers
   @Get('suppliers') listSuppliers(
+    @Query('schoolId') schoolId?: string,
     @Query('q') q?: string,
     @Query('enabled') enabled?: 'true' | 'false',
+    @Query('expired') expired?: 'true' | 'false',
+    @Query('expireStart') expireStart?: string,
+    @Query('expireEnd') expireEnd?: string,
     @Query('page') page = '1',
     @Query('pageSize') pageSize = '20',
   ) {
-    return this.svc.listSuppliers({ q, enabled, page, pageSize });
+    return this.svc.listSuppliers({ schoolId, q, enabled, expired, expireStart, expireEnd, page, pageSize });
   }
   @Get('suppliers/detail') getSupplier(@Query('id') id: string) {
     return this.svc.getSupplier(id);
@@ -45,6 +49,7 @@ export class InventoryController {
   @Post('suppliers') createSupplier(
     @Body()
     b: {
+      schoolId?: string;
       name: string;
       phone?: string;
       license?: string;
@@ -133,11 +138,11 @@ export class InventoryController {
   }
 
   // Warehouses
-  @Get('warehouses') listWarehouses() {
-    return this.svc.listWarehouses();
+  @Get('warehouses') listWarehouses(@Query('schoolId') schoolId?: string) {
+    return this.svc.listWarehouses(schoolId);
   }
   @Post('warehouses') createWarehouse(
-    @Body() b: { name: string; location?: string; capacity?: number },
+    @Body() b: { schoolId?: string; name: string; location?: string; capacity?: number },
   ) {
     return this.svc.createWarehouse(b);
   }
@@ -152,12 +157,13 @@ export class InventoryController {
   }
 
   // Inbound/Outbound
-  @Get('inbound') listInbound() {
-    return this.svc.listInbound();
+  @Get('inbound') listInbound(@Query('schoolId')  schoolId?: number) {
+    return this.svc.listInbound(schoolId);
   }
   @Post('inbound') createInbound(
     @Body()
     b: {
+       schoolId?: number;
       productId: string;
       qty: number;
       supplierId?: string;
@@ -170,6 +176,7 @@ export class InventoryController {
   @Post('inbound/scale') scaleInbound(
     @Body()
     b: {
+       schoolId?: number;
       productId: string;
       weight: number;
       supplierId?: string;
@@ -180,12 +187,13 @@ export class InventoryController {
     return this.svc.scaleInbound(b);
   }
 
-  @Get('outbound') listOutbound() {
-    return this.svc.listOutbound();
+  @Get('outbound') listOutbound(@Query('schoolId')  schoolId?: number) {
+    return this.svc.listOutbound(schoolId);
   }
   @Post('outbound') createOutbound(
     @Body()
     b: {
+       schoolId?: number;
       productId: string;
       qty: number;
       purpose?: string;
@@ -198,6 +206,7 @@ export class InventoryController {
   @Post('outbound/scale') scaleOutbound(
     @Body()
     b: {
+       schoolId?: number;
       productId: string;
       weight: number;
       purpose?: string;
@@ -209,27 +218,27 @@ export class InventoryController {
   }
 
   // Stock
-  @Get('stock') stock() {
-    return this.svc.getStock();
+  @Get('stock') stock(@Query('schoolId')  schoolId?: number) {
+    return this.svc.getStock(schoolId);
   }
-  @Post('stock/stocktake') stocktake(@Body() b: { productId: string; qty: number }) {
+  @Post('stock/stocktake') stocktake(@Body() b: {  schoolId?: number; productId: string; qty: number }) {
     return this.svc.stocktake(b);
   }
 
   // Tickets
-  @Get('tickets') listTickets() {
-    return this.svc.listTickets();
+  @Get('tickets') listTickets(@Query('schoolId')  schoolId?: number) {
+    return this.svc.listTickets(schoolId);
   }
-  @Post('tickets') createTicket(@Body() b: { productId: string; type: string; imageUrl?: string }) {
+  @Post('tickets') createTicket(@Body() b: {  schoolId?: number; productId: string; type: string; imageUrl?: string }) {
     return this.svc.createTicket(b);
   }
 
   // Additives
-  @Get('additives') listAdditives() {
-    return this.svc.listAdditives();
+  @Get('additives') listAdditives(@Query('schoolId')  schoolId?: number) {
+    return this.svc.listAdditives(schoolId);
   }
   @Post('additives') createAdditive(
-    @Body() b: { name: string; amount: number; dish?: string; by?: string },
+    @Body() b: {  schoolId?: number; name: string; amount: number; dish?: string; by?: string },
   ) {
     return this.svc.createAdditive(b);
   }

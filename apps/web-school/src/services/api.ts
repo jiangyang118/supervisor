@@ -579,12 +579,12 @@ export const api = {
     return res.json();
   },
   // Inventory module
-  invCategories: () => get<any[]>(`/school/inventory/categories`),
-  invCategoryCreate: async (name: string) => {
+  invCategories: (schoolId?: string) => get<any[]>(`/school/inventory/categories${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`),
+  invCategoryCreate: async (name: string, schoolId?: string) => {
     const res = await fetch(`${BASE}/school/inventory/categories`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, schoolId }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
@@ -596,7 +596,7 @@ export const api = {
   invProductCreate: async (body: {
     name: string;
     unit: string;
-    categoryId?: string;
+    categoryId?: number | string;
     schoolId?: string;
   }) => {
     const res = await fetch(`${BASE}/school/inventory/products`, {
@@ -621,6 +621,9 @@ export const api = {
     params: {
       q?: string;
       enabled?: 'true' | 'false';
+      expired?: 'true' | 'false';
+      expireStart?: string;
+      expireEnd?: string;
       page?: number;
       pageSize?: number;
       schoolId?: string;
@@ -973,8 +976,7 @@ export const api = {
       `/school/analytics/food-index${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
     ),
   // Devices
-  deviceTypes: () => get<string[]>(`/school/devices/types`),
-  deviceStatuses: () => get<string[]>(`/school/devices/statuses`),
+  // deviceTypes/deviceStatuses defined earlier; keep single source to avoid duplicates
   devicesList: (params: { schoolId?: string; type?: string; status?: string; q?: string } = {}) =>
     get<any[]>(
       `/school/devices?${new URLSearchParams(
@@ -1312,19 +1314,5 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  // Devices
-  devicesList: (
-    params: { schoolId?: string; type?: string; status?: string; q?: string } = {},
-  ) =>
-    get<any[]>(
-      `/school/devices?${new URLSearchParams(
-        Object.fromEntries(
-          Object.entries(params)
-            .filter(([, v]) => v !== undefined && v !== '' && v !== null)
-            .map(([k, v]) => [k, String(v)]),
-        ) as any,
-      ).toString()}`,
-    ),
-  deviceTypes: () => get<string[]>(`/school/devices/types`),
-  deviceStatuses: () => get<string[]>(`/school/devices/statuses`),
+  // Devices (defined earlier: devicesList/deviceTypes/deviceStatuses)
 };

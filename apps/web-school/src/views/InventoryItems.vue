@@ -5,6 +5,7 @@
         <span>商品管理</span>
         <div>
           <el-button type="primary" @click="openCreate">新增商品</el-button>
+          <el-button @click="openCategoryDialog">商品分类</el-button>
           <el-button @click="onExportCsv">导出 CSV</el-button>
         </div>
       </div>
@@ -31,6 +32,7 @@
         <el-select v-model="form.categoryId" placeholder="请选择" style="width: 240px">
           <el-option v-for="c in categories" :key="c.id" :label="c.name" :value="c.id" />
         </el-select>
+        <el-button link type="primary" @click="openCategoryDialog">新增类别</el-button>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -38,7 +40,20 @@
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
-</template>
+  <el-dialog v-model="categoryDialogVisible" title="商品分类" width="520px">
+    <div style="margin-bottom: 12px">
+      <el-input v-model="newCategory" placeholder="输入类别名称后点击添加" style="width: 320px; margin-right: 8px" />
+      <el-button type="primary" @click="addCategory">添加</el-button>
+    </div>
+    <el-table :data="categories" size="small" border>
+      <el-table-column prop="id" label="ID" width="160" />
+      <el-table-column prop="name" label="名称" />
+    </el-table>
+    <template #footer>
+      <el-button @click="categoryDialogVisible = false">关闭</el-button>
+    </template>
+  </el-dialog>
+ </template>
 
 <script setup lang="ts">
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
@@ -57,7 +72,7 @@ function categoryName(id?: string) {
 }
 async function load() {
   rows.value = await api.invProducts(getCurrentSchoolId());
-  categories.value = await api.invCategories();
+  categories.value = await api.invCategories(getCurrentSchoolId());
 }
 const openCreate = () => {
   form.name = '';
@@ -72,6 +87,24 @@ async function save() {
 }
 const onExportCsv = () =>
   exportCsv('商品管理', rows.value, { id: 'ID', name: '名称', unit: '单位', categoryId: '分类ID' });
+
+// 类别管理（简化版：新增 + 查看列表）
+const categoryDialogVisible = ref(false);
+const newCategory = ref('');
+function openCategoryDialog() {
+  newCategory.value = '';
+  categoryDialogVisible.value = true;
+}
+async function addCategory() {
+  const name = newCategory.value.trim();
+  if (!name) return;
+  await api.invCategoryCreate(name, getCurrentSchoolId());
+  categories.value = await api.invCategories(getCurrentSchoolId());
+  // 选中新建的类别
+  const created = categories.value.find((c: any) => c.name === name);
+  if (created) form.categoryId = created.id;
+  categoryDialogVisible.value = false;
+}
 let off: any = null;
 onMounted(() => {
   load();
@@ -85,3 +118,5 @@ onBeforeUnmount(() => {
   } catch {}
 });
 </script>
+
+ 

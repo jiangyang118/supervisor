@@ -1312,19 +1312,5 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  // Devices
-  devicesList: (
-    params: { schoolId?: string; type?: string; status?: string; q?: string } = {},
-  ) =>
-    get<any[]>(
-      `/school/devices?${new URLSearchParams(
-        Object.fromEntries(
-          Object.entries(params)
-            .filter(([, v]) => v !== undefined && v !== '' && v !== null)
-            .map(([k, v]) => [k, String(v)]),
-        ) as any,
-      ).toString()}`,
-    ),
-  deviceTypes: () => get<string[]>(`/school/devices/types`),
-  deviceStatuses: () => get<string[]>(`/school/devices/statuses`),
+  // Devices (duplicate definitions removed; see earlier block around analytics)
 };

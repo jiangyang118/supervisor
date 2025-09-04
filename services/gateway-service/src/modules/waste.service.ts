@@ -1,7 +1,7 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { WasteRepository } from './repositories/waste.repository';
 
-export type WasteCategory = string;
+export type WasteCategory = number;
 
 export interface WasteRecord {
   id: number;
@@ -40,24 +40,23 @@ export class WasteService {
   async createCategory(name: string) {
     const trimmed = (name || '').trim();
     if (!trimmed) throw new HttpException('Invalid name', HttpStatus.BAD_REQUEST);
-    const id = `wc-${this.genStringId('')}`.toLowerCase();
-    return this.repo.createCategory(id, trimmed);
+    return this.repo.createCategory(trimmed);
   }
 
-  async setCategoryEnabled(id: string, enabled: boolean) {
-    await this.repo.setCategoryEnabled(id, !!enabled);
-    return { id, enabled: !!enabled };
+  async setCategoryEnabled(id: number, enabled: boolean) {
+    await this.repo.setCategoryEnabled(Number(id), !!enabled);
+    return { id: Number(id), enabled: !!enabled };
   }
 
-  async deleteCategory(id: string) {
-    await this.repo.deleteCategory(id);
-    return { id };
+  async deleteCategory(id: number) {
+    await this.repo.deleteCategory(Number(id));
+    return { id: Number(id) };
   }
 
   // Records
   async list(params: {
     schoolId?: number | string;
-    category?: string;
+    category?: number;
     start?: string;
     end?: string;
     page?: string;

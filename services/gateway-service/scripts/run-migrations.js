@@ -17,12 +17,23 @@ async function main() {
   let pool;
   if (process.env.DATABASE_URL) {
     const u = new URL(process.env.DATABASE_URL);
+    const dbName = u.pathname.replace(/^\//, '');
+    // ensure database exists
+    const admin = await mysql.createConnection({
+      host: u.hostname,
+      port: u.port ? Number(u.port) : 3306,
+      user: decodeURIComponent(u.username),
+      password: decodeURIComponent(u.password),
+      timezone: '+08:00',
+      ssl: ssl ? { rejectUnauthorized: false } : undefined,
+    });
+    try { await admin.query(`create database if not exists \`${dbName}\``); } finally { await admin.end(); }
     pool = await mysql.createPool({
       host: u.hostname,
       port: u.port ? Number(u.port) : 3306,
       user: decodeURIComponent(u.username),
       password: decodeURIComponent(u.password),
-      database: u.pathname.replace(/^\//, ''),
+      database: dbName,
       waitForConnections: true,
       connectionLimit: 10,
       multipleStatements: true,
@@ -35,6 +46,16 @@ async function main() {
     const user = process.env.DB_USER || process.env.MYSQL_USER;
     const password = process.env.DB_PASSWORD || process.env.MYSQL_PASSWORD;
     const database = process.env.DB_NAME || process.env.MYSQL_DATABASE;
+    // ensure database exists
+    const admin = await mysql.createConnection({
+      host,
+      port: port ? Number(port) : 3306,
+      user,
+      password,
+      timezone: '+08:00',
+      ssl: ssl ? { rejectUnauthorized: false } : undefined,
+    });
+    try { if (database) await admin.query(`create database if not exists \`${database}\``); } finally { await admin.end(); }
     pool = await mysql.createPool({
       host,
       port: port ? Number(port) : 3306,

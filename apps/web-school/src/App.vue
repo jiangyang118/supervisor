@@ -91,7 +91,7 @@
         </el-menu>
       </el-aside>
       <el-main>
-        <div v-if="!integration.base" class="integration-banner">
+        <div v-if="showIntegrationBanner && !integration.base" class="integration-banner">
           <el-alert
             title="未检测到学校端集成服务地址（SCHOOL_INTEGRATION_BASE）"
             type="warning"
@@ -100,7 +100,7 @@
             show-icon
           />
         </div>
-        <div v-else class="integration-banner">
+        <div v-else-if="showIntegrationBanner" class="integration-banner">
           <el-alert :closable="false" type="success" show-icon>
             <template #title>
               设备集成：{{ integration.base }}
@@ -170,6 +170,8 @@ const integration = computed(() => ({
   base: (window as any).SCHOOL_INTEGRATION_BASE as string | undefined,
   candidates: (window as any).MEGO_CANDIDATES as string | undefined,
 }));
+
+const showIntegrationBanner = computed(() => route.path.startsWith('/morning-check'));
 
 const healthOk = ref<boolean | null>(null);
 async function testHealth() {

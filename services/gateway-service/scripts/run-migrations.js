@@ -3,6 +3,22 @@ const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
 
+// Load env from repo root .env if available
+try {
+  const candidates = [
+    path.join(__dirname, '../../../.env'), // repo root
+    path.join(__dirname, '../../.env'),    // services/.env (if exists)
+    path.join(__dirname, '..', '.env'),    // services/gateway-service/.env
+    path.join(process.cwd(), '.env'),      // cwd .env as a last resort
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      require('dotenv').config({ path: p });
+      break;
+    }
+  }
+} catch {}
+
 async function main() {
   const dir = path.join(__dirname, '..', 'migrations');
   if (!fs.existsSync(dir)) {
@@ -46,6 +62,11 @@ async function main() {
     const user = process.env.DB_USER || process.env.MYSQL_USER;
     const password = process.env.DB_PASSWORD || process.env.MYSQL_PASSWORD;
     const database = process.env.DB_NAME || process.env.MYSQL_DATABASE;
+    if (!user) {
+      console.log('[migrate] Using split vars (no DATABASE_URL). Host:', host, 'DB:', database, 'User:', user);
+    } else {
+      console.log('[migrate] Using split vars. Host:', host, 'DB:', database, 'User:', user);
+    }
     // ensure database exists
     const admin = await mysql.createConnection({
       host,

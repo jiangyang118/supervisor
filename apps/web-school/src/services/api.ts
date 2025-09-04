@@ -1319,3 +1319,39 @@ export const api = {
   },
 
 };
+
+
+// TrustIVS helpers (attach time/uuid/token headers)
+function nowMs() { return Date.now(); }
+function genUUID() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0,
+      v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+function trustivsHeaders(extra?: Record<string, string>) {
+  const h: Record<string, string> = {
+    'Content-Type': 'application/json',
+    time: String(nowMs()),
+    uuid: genUUID(),
+  };
+  const token = localStorage.getItem('TRUSTIVS_TOKEN');
+  if (token) h['token'] = token;
+  if (extra) Object.assign(h, extra);
+  return h;
+}
+export const trustivsApi = {
+  setToken(token: string) { localStorage.setItem('TRUSTIVS_TOKEN', token || ''); },
+  async post<T>(path: string, body?: any, headers?: Record<string, string>): Promise<T> {
+    const res = await fetch(`${BASE}${path}`, { method: 'POST', headers: trustivsHeaders(headers), body: JSON.stringify(body || {}) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json() as Promise<T>;
+  },
+  async get<T>(path: string, query?: Record<string, any>, headers?: Record<string, string>): Promise<T> {
+    const qs = query && Object.keys(query).length ? `?${new URLSearchParams(Object.entries(query).flatMap(([k,v]) => Array.isArray(v)? v.map(x=>[k,x]): [[k, v]]) as any).toString()}` : '';
+    const res = await fetch(`${BASE}${path}${qs}`, { method: 'GET', headers: trustivsHeaders(headers) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json() as Promise<T>;
+  },
+};

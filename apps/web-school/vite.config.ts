@@ -12,6 +12,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
+      '/trustivs': {
+        target: 'http://localhost:3300',
+        changeOrigin: true,
+      },
     },
   },
 });

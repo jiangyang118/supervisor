@@ -1,0 +1,3186 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "TrustIVS AIoT 管理平台 OpenAPI",
+    "summary": "基于《TrustIVS AIoT 管理平台 OpenAPI V2.0》整理的 OpenAPI 3.1 规范。",
+    "version": "2.0-derived",
+    "description": "本规范由 PDF 文档（TrustIVS AIoT 管理平台 OpenAPI V2.0）梳理而成，覆盖鉴权、AI 抓拍、回放与直播、在线设备/通道、设备/通道配置、人脸库/人脸信息、人脸识别记录、车辆库/车辆信息、车牌识别记录、心跳上报、环境监控上报、监管单位、机构等模块。",
+    "contact": {
+      "name": "深圳市亚略特科技股份有限公司",
+      "url": "https://www.aratek.com.cn"
+    },
+    "x-generated-at": "2025-09-04T02:28:38.743660"
+  },
+  "servers": [
+    {
+      "url": "http://{ip}:{port}",
+      "description": "HTTP 服务器",
+      "variables": {
+        "ip": {
+          "default": "127.0.0.1"
+        },
+        "port": {
+          "default": "9086"
+        }
+      }
+    },
+    {
+      "url": "https://{ip}:{port}",
+      "description": "HTTPS 服务器",
+      "variables": {
+        "ip": {
+          "default": "127.0.0.1"
+        },
+        "port": {
+          "default": "443"
+        }
+      }
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "鉴权"
+    },
+    {
+      "name": "AI Capture",
+      "description": "AI 抓拍与设备/通道/视频接口"
+    },
+    {
+      "name": "Face Library",
+      "description": "人脸库别"
+    },
+    {
+      "name": "Face Info",
+      "description": "人脸信息"
+    },
+    {
+      "name": "Face Records",
+      "description": "人脸识别记录"
+    },
+    {
+      "name": "Vehicle Library",
+      "description": "车辆库别"
+    },
+    {
+      "name": "Vehicle Info",
+      "description": "车辆信息"
+    },
+    {
+      "name": "Plate Records",
+      "description": "车牌识别记录"
+    },
+    {
+      "name": "Heartbeat",
+      "description": "设备/通道状态上报"
+    },
+    {
+      "name": "Environment",
+      "description": "环境监控上报"
+    },
+    {
+      "name": "Regulator",
+      "description": "监管单位"
+    },
+    {
+      "name": "Company",
+      "description": "机构"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "ApiToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "token",
+        "description": "会话 Token"
+      }
+    },
+    "parameters": {
+      "HdrTime": {
+        "name": "time",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "时间戳"
+      },
+      "HdrUUID": {
+        "name": "uuid",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string"
+        },
+        "description": "UUID"
+      }
+    },
+    "schemas": {
+      "StdResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "1 成功，0 失败"
+          },
+          "message": {
+            "type": "string"
+          },
+          "data": {}
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "Paged": {
+        "type": "object",
+        "properties": {
+          "pageNum": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "pages": {
+            "type": "integer"
+          },
+          "list": {
+            "type": "array",
+            "items": {}
+          }
+        }
+      },
+      "TokenResponse": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/StdResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "data": {
+                "type": "string",
+                "description": "token"
+              }
+            }
+          }
+        ]
+      },
+      "Company": {
+        "type": "object",
+        "properties": {
+          "fnumber": {
+            "type": "string"
+          },
+          "fname": {
+            "type": "string"
+          },
+          "fcity": {
+            "type": "string"
+          },
+          "fprovince": {
+            "type": "string"
+          },
+          "fregion": {
+            "type": "string"
+          },
+          "fmobile": {
+            "type": "string"
+          },
+          "fcontacts": {
+            "type": "string"
+          },
+          "faddress": {
+            "type": "string"
+          },
+          "fsimplename": {
+            "type": "string"
+          },
+          "fsocialcreditcode": {
+            "type": "string"
+          },
+          "fregulatorname": {
+            "type": "string"
+          },
+          "flongitude": {
+            "type": "number"
+          },
+          "fdimension": {
+            "type": "number"
+          },
+          "fenttype": {
+            "type": "integer",
+            "description": "0餐饮 1学校 2加油站 3冷库 4社区"
+          },
+          "fplatacc": {
+            "type": "string"
+          },
+          "fthirdcomnum": {
+            "type": "string"
+          }
+        }
+      },
+      "Camera": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string"
+          },
+          "fname": {
+            "type": "string"
+          },
+          "deviceHostIp": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ON",
+              "OFF",
+              "on",
+              "off"
+            ]
+          },
+          "deviceSn": {
+            "type": "string"
+          },
+          "updateTime": {
+            "type": "string"
+          },
+          "fnationcode": {
+            "type": "string"
+          },
+          "flv": {
+            "type": "string"
+          },
+          "hls": {
+            "type": "string"
+          },
+          "rtmp": {
+            "type": "string"
+          },
+          "webrtc": {
+            "type": "string"
+          },
+          "ws_flv": {
+            "type": "string"
+          }
+        }
+      },
+      "AIRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "fsocialcreditcode": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "thumbnailBase64": {
+            "type": "string"
+          },
+          "originalBase64": {
+            "type": "string"
+          },
+          "fimgpath": {
+            "type": "string"
+          },
+          "foriginimgpath": {
+            "type": "string"
+          },
+          "createTime": {
+            "type": "string"
+          },
+          "nvrsn": {
+            "type": "string"
+          },
+          "deviceId": {
+            "type": "string"
+          },
+          "equipId": {
+            "type": "string"
+          },
+          "mp4Path": {
+            "type": "string"
+          },
+          "channelId": {
+            "type": "string"
+          },
+          "fnumber": {
+            "type": "string"
+          }
+        }
+      },
+      "EnvironmentRecord": {
+        "type": "object",
+        "properties": {
+          "fid": {
+            "type": "string"
+          },
+          "fcreatetime": {
+            "type": "string"
+          },
+          "fisalarm": {
+            "type": "integer"
+          },
+          "fequipmentname": {
+            "type": "string"
+          },
+          "fequipmentno": {
+            "type": "string"
+          },
+          "fmaxthresholdvalue": {
+            "type": "number"
+          },
+          "fminthresholdvalue": {
+            "type": "number"
+          },
+          "fnetgateno": {
+            "type": "string"
+          },
+          "ftype": {
+            "type": "integer"
+          },
+          "fvalue": {
+            "type": "number"
+          },
+          "fnodecode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fid",
+          "fcreatetime",
+          "fisalarm",
+          "fequipmentname",
+          "fequipmentno",
+          "fmaxthresholdvalue",
+          "fminthresholdvalue",
+          "fnetgateno",
+          "ftype",
+          "fvalue",
+          "fnodecode"
+        ]
+      },
+      "FaceLib": {
+        "type": "object",
+        "properties": {
+          "fnumber": {
+            "type": "string"
+          },
+          "fname": {
+            "type": "string"
+          },
+          "fstatus": {
+            "type": "integer",
+            "description": "0启用 1禁用"
+          },
+          "fdescription": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fnumber",
+          "fname",
+          "fstatus"
+        ]
+      },
+      "FaceInfo": {
+        "type": "object",
+        "properties": {
+          "fidnum": {
+            "type": "string"
+          },
+          "fname": {
+            "type": "string"
+          },
+          "fsex": {
+            "type": "integer"
+          },
+          "fage": {
+            "type": "integer"
+          },
+          "fidtype": {
+            "type": "string"
+          },
+          "fidno": {
+            "type": "string"
+          },
+          "faddress": {
+            "type": "string"
+          },
+          "flabel": {
+            "type": "string"
+          },
+          "ffacelibid": {
+            "type": "string"
+          },
+          "imgBase64": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fidnum",
+          "ffacelibid",
+          "imgBase64"
+        ]
+      },
+      "FaceRecord": {
+        "type": "object",
+        "properties": {
+          "fid": {
+            "type": "string"
+          },
+          "fcreatetime": {
+            "type": "string"
+          },
+          "flastupdatetime": {
+            "type": "string"
+          },
+          "fcompdate": {
+            "type": "string"
+          },
+          "fscore": {
+            "type": "number"
+          },
+          "fheadpicpath": {
+            "type": "string"
+          },
+          "fidnum": {
+            "type": "string"
+          },
+          "fname": {
+            "type": "string"
+          },
+          "fsex": {
+            "type": "integer"
+          },
+          "faisleinfoid": {
+            "type": "string"
+          },
+          "fcontrolunitid": {
+            "type": "string"
+          },
+          "fnetgateno": {
+            "type": "string"
+          },
+          "fregpicpath": {
+            "type": "string"
+          },
+          "fthreshold": {
+            "type": "number"
+          },
+          "fcompanyName": {
+            "type": "string"
+          }
+        }
+      },
+      "AutoLib": {
+        "type": "object",
+        "properties": {
+          "fnumber": {
+            "type": "string"
+          },
+          "fname": {
+            "type": "string"
+          },
+          "fstatus": {
+            "type": "integer"
+          },
+          "fdescription": {
+            "type": "string"
+          }
+        }
+      },
+      "AutoInfo": {
+        "type": "object",
+        "properties": {
+          "fautono": {
+            "type": "string"
+          },
+          "fvehicledesc": {
+            "type": "string"
+          },
+          "fdriveidno": {
+            "type": "string"
+          },
+          "fname": {
+            "type": "string"
+          },
+          "fidno": {
+            "type": "string"
+          },
+          "faddress": {
+            "type": "string"
+          },
+          "flabel": {
+            "type": "string"
+          },
+          "fautolibid": {
+            "type": "string"
+          },
+          "ftelephone": {
+            "type": "string"
+          },
+          "imgBase64": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "fautono",
+          "fautolibid",
+          "imgBase64"
+        ]
+      },
+      "AutoRecord": {
+        "type": "object",
+        "properties": {
+          "fid": {
+            "type": "string"
+          },
+          "fcreatetime": {
+            "type": "string"
+          },
+          "fcontrolunitid": {
+            "type": "string"
+          },
+          "faisleinfoid": {
+            "type": "string"
+          },
+          "fnetgateno": {
+            "type": "string"
+          },
+          "fcatchdate": {
+            "type": "string"
+          },
+          "fbrandpicpath": {
+            "type": "string"
+          },
+          "foriginpicpath": {
+            "type": "string"
+          },
+          "fissync": {
+            "type": "integer"
+          },
+          "fautono": {
+            "type": "string"
+          },
+          "fnationcode": {
+            "type": "string"
+          },
+          "fscore": {
+            "type": "number"
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "ApiToken": []
+    }
+  ],
+  "paths": {
+    "/gatewayGBS/openApi/token/getOpenApiToken": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "获取 Token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fnumber": {
+                    "type": "string",
+                    "description": "账号"
+                  },
+                  "fpwd": {
+                    "type": "string",
+                    "description": "MD5 32 位密码"
+                  }
+                },
+                "required": [
+                  "fnumber",
+                  "fpwd"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getCompanyList": {
+      "post": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "获取机构信息",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fplatacc": {
+                    "type": "string",
+                    "description": "第三方平台账号"
+                  },
+                  "regulatorSocialCreditCode": {
+                    "type": "string",
+                    "description": "监管单位社会统一信用代码"
+                  },
+                  "pageSize": {
+                    "type": "integer",
+                    "default": 10,
+                    "maximum": 50
+                  },
+                  "pageNum": {
+                    "type": "integer",
+                    "default": 1
+                  }
+                },
+                "required": [
+                  "fplatacc"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/StdResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Paged"
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "list": {
+                                  "items": {
+                                    "$ref": "#/components/schemas/Company"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getCameraByCompany": {
+      "post": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "根据机构查询摄像头与直播地址",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fthirdcomnum": {
+                    "type": "string",
+                    "description": "第三方机构编码"
+                  },
+                  "deviceSn": {
+                    "type": "string",
+                    "description": "设备 SN"
+                  },
+                  "pageSize": {
+                    "type": "integer",
+                    "maximum": 100,
+                    "default": 10
+                  },
+                  "pageNum": {
+                    "type": "integer",
+                    "default": 1
+                  }
+                },
+                "required": [
+                  "fthirdcomnum",
+                  "deviceSn"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/StdResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Paged"
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "list": {
+                                  "items": {
+                                    "$ref": "#/components/schemas/Camera"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getAIRecordByCompany": {
+      "post": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "根据机构查询 AI 抓拍记录",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fthirdcomnum": {
+                    "type": "string"
+                  },
+                  "fsocialcreditcode": {
+                    "type": "string"
+                  },
+                  "nvrsn": {
+                    "type": "string"
+                  },
+                  "typeId": {
+                    "type": "integer"
+                  },
+                  "page": {
+                    "type": "integer",
+                    "default": 1
+                  },
+                  "pageSize": {
+                    "type": "integer",
+                    "default": 10
+                  },
+                  "timeStart": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "timeEnd": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "fthirdcomnum"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "fsocialcreditcode"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/StdResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/Paged"
+                            },
+                            {
+                              "type": "object",
+                              "properties": {
+                                "list": {
+                                  "items": {
+                                    "$ref": "#/components/schemas/AIRecord"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openApi/sendAIRecordByCompany": {
+      "post": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "AI 抓拍信息推送（第三方接收端）",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AIRecord"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getBackUrl": {
+      "get": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "获取回放地址",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "serial",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "starttime",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endtime",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/StdResponse"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "data": {
+                          "type": "object",
+                          "properties": {
+                            "rtmp": {
+                              "type": "string"
+                            },
+                            "flv": {
+                              "type": "string"
+                            },
+                            "webrtc": {
+                              "type": "string"
+                            },
+                            "ws_flv": {
+                              "type": "string"
+                            },
+                            "hls": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getDeviceStatus": {
+      "post": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "获取在线设备列表",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getChannelStatus": {
+      "post": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "获取在线通道列表",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "unitSocailCreditCode": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getDeviceStatusByCompany": {
+      "post": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "按机构获取在线设备列表",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "unitSocailCreditCode": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "unitSocailCreditCode"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getDownloadUrl": {
+      "get": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "获取回放下载地址",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "serial",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "starttime",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endtime",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getStreamURL": {
+      "post": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "获取通道直播地址",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "unitSocailCreditCode": {
+                    "type": "string"
+                  },
+                  "deviceId": {
+                    "type": "string"
+                  },
+                  "channelId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "unitSocailCreditCode",
+                  "deviceId",
+                  "channelId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getSnap": {
+      "get": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "获取通道快照",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "channelId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getDeviceListByCompany": {
+      "post": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "根据机构查询设备列表",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fsocialcreditcode": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "fsocialcreditcode"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/getChannelByDevice": {
+      "post": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "根据设备国标号获取通道列表",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deviceId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "deviceId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/device/getConfig": {
+      "get": {
+        "tags": [
+          "AI Capture"
+        ],
+        "summary": "根据设备国标号获取配置相关列表",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "deviceId",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/facelib/add": {
+      "post": {
+        "tags": [
+          "Face Library"
+        ],
+        "summary": "新增人脸库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FaceLib"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/facelib/update": {
+      "post": {
+        "tags": [
+          "Face Library"
+        ],
+        "summary": "修改人脸库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FaceLib"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/facelib/delete": {
+      "get": {
+        "tags": [
+          "Face Library"
+        ],
+        "summary": "删除人脸库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "fnumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/facelib/enable": {
+      "get": {
+        "tags": [
+          "Face Library"
+        ],
+        "summary": "启用人脸库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "fnumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/facelib/disable": {
+      "get": {
+        "tags": [
+          "Face Library"
+        ],
+        "summary": "禁用人脸库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "fnumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/facelib/get": {
+      "post": {
+        "tags": [
+          "Face Library"
+        ],
+        "summary": "查询人脸库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/faceinfo/add": {
+      "post": {
+        "tags": [
+          "Face Info"
+        ],
+        "summary": "新增人脸信息",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FaceInfo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/faceinfo/update": {
+      "post": {
+        "tags": [
+          "Face Info"
+        ],
+        "summary": "修改人脸信息",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FaceInfo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/faceinfo/delete": {
+      "get": {
+        "tags": [
+          "Face Info"
+        ],
+        "summary": "删除人脸信息",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "idnum",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/faceinfo/bind": {
+      "post": {
+        "tags": [
+          "Face Info"
+        ],
+        "summary": "绑定人脸到设备",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "faceInfoIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "deviceIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "faceInfoIdList",
+                  "deviceIdList"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/faceinfo/unbound": {
+      "post": {
+        "tags": [
+          "Face Info"
+        ],
+        "summary": "解绑人脸与设备",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "faceInfoIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "deviceSn": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "faceInfoIdList"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/faceinfo/get": {
+      "post": {
+        "tags": [
+          "Face Info"
+        ],
+        "summary": "查询人脸信息",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fthirdcomnum": {
+                    "type": "string"
+                  },
+                  "fsocialcreditcode": {
+                    "type": "string"
+                  },
+                  "fidnum": {
+                    "type": "string"
+                  },
+                  "fname": {
+                    "type": "string"
+                  },
+                  "fidno": {
+                    "type": "string"
+                  },
+                  "ffacelibid": {
+                    "type": "string"
+                  },
+                  "pageNum": {
+                    "type": "integer"
+                  },
+                  "pageSize": {
+                    "type": "integer"
+                  },
+                  "queryCreateTimeEnd": {
+                    "type": "string"
+                  },
+                  "queryCreateTimeStart": {
+                    "type": "string"
+                  }
+                },
+                "anyOf": [
+                  {
+                    "required": [
+                      "fthirdcomnum"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "fsocialcreditcode"
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/facerecord/get": {
+      "post": {
+        "tags": [
+          "Face Records"
+        ],
+        "summary": "查询人脸识别记录",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autolib/add": {
+      "post": {
+        "tags": [
+          "Vehicle Library"
+        ],
+        "summary": "新增车辆库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoLib"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autolib/update": {
+      "post": {
+        "tags": [
+          "Vehicle Library"
+        ],
+        "summary": "修改车辆库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoLib"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autolib/delete": {
+      "get": {
+        "tags": [
+          "Vehicle Library"
+        ],
+        "summary": "删除车辆库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "fnumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autolib/enable": {
+      "get": {
+        "tags": [
+          "Vehicle Library"
+        ],
+        "summary": "启用车辆库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "fnumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autolib/disable": {
+      "get": {
+        "tags": [
+          "Vehicle Library"
+        ],
+        "summary": "禁用车辆库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "fnumber",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autolib/get": {
+      "post": {
+        "tags": [
+          "Vehicle Library"
+        ],
+        "summary": "查询车辆库别",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autoinfo/add": {
+      "post": {
+        "tags": [
+          "Vehicle Info"
+        ],
+        "summary": "新增车辆信息",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoInfo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autoinfo/update": {
+      "post": {
+        "tags": [
+          "Vehicle Info"
+        ],
+        "summary": "修改车辆信息",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoInfo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autoinfo/delete": {
+      "get": {
+        "tags": [
+          "Vehicle Info"
+        ],
+        "summary": "删除车辆信息",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          },
+          {
+            "name": "autono",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autoinfo/bind": {
+      "post": {
+        "tags": [
+          "Vehicle Info"
+        ],
+        "summary": "绑定车辆到设备",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "autoInfoIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "deviceIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "autoInfoIdList",
+                  "deviceIdList"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autoinfo/unbound": {
+      "post": {
+        "tags": [
+          "Vehicle Info"
+        ],
+        "summary": "解绑车辆与设备",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "autoInfoIdList": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "autoInfoIdList"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autoinfo/get": {
+      "post": {
+        "tags": [
+          "Vehicle Info"
+        ],
+        "summary": "查询车辆信息",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/v1/autorecord/get": {
+      "post": {
+        "tags": [
+          "Plate Records"
+        ],
+        "summary": "查询车牌识别记录",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openApi/sendHeartInfo": {
+      "post": {
+        "tags": [
+          "Heartbeat"
+        ],
+        "summary": "设备状态推送（第三方接收端）",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "fsocialcreditcode": {
+                      "type": "string"
+                    },
+                    "fthirdcomnum": {
+                      "type": "string"
+                    },
+                    "fdevicesn": {
+                      "type": "string"
+                    },
+                    "deviceid": {
+                      "type": "string"
+                    },
+                    "fcuprate": {
+                      "type": "number"
+                    },
+                    "fmemrate": {
+                      "type": "number"
+                    },
+                    "fdiskrate": {
+                      "type": "number"
+                    },
+                    "flastupdatetime": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "deviceid",
+                    "flastupdatetime"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openApi/sendChannel": {
+      "post": {
+        "tags": [
+          "Heartbeat"
+        ],
+        "summary": "通道状态推送（第三方接收端）",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "channelid": {
+                      "type": "string"
+                    },
+                    "fnvrsn": {
+                      "type": "string"
+                    },
+                    "fnationcode": {
+                      "type": "string"
+                    },
+                    "flastupdatetime": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "channelid",
+                    "flastupdatetime"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openApi/sendHumRecord": {
+      "post": {
+        "tags": [
+          "Environment"
+        ],
+        "summary": "环境监控记录推送（第三方接收端）",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnvironmentRecord"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/regulator/saveOrUpdateReagulator": {
+      "post": {
+        "tags": [
+          "Regulator"
+        ],
+        "summary": "新增或修改监管单位",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/regulator/updateReagulatorStatus": {
+      "post": {
+        "tags": [
+          "Regulator"
+        ],
+        "summary": "修改监管单位状态",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "regulatorSocialCreditCode": {
+                    "type": "string"
+                  },
+                  "fstatus": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "regulatorSocialCreditCode",
+                  "fstatus"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/regulator/getRegulatorTree": {
+      "post": {
+        "tags": [
+          "Regulator"
+        ],
+        "summary": "查询监管单位结构树",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "regulatorSocialCreditCode": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "regulatorSocialCreditCode"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/company/saveOrUpdateCompany": {
+      "post": {
+        "tags": [
+          "Company"
+        ],
+        "summary": "新增或修改机构",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/company/changeCompanyStatus": {
+      "post": {
+        "tags": [
+          "Company"
+        ],
+        "summary": "修改机构状态",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "companySocialCreditCode": {
+                    "type": "string"
+                  },
+                  "fstatus": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "companySocialCreditCode",
+                  "fstatus"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gatewayGBS/openApi/company/getCompanyBySocialCreditCode": {
+      "post": {
+        "tags": [
+          "Company"
+        ],
+        "summary": "根据社会统一代码获取机构",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/HdrTime"
+          },
+          {
+            "$ref": "#/components/parameters/HdrUUID"
+          }
+        ],
+        "security": [
+          {
+            "ApiToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fsocialcreditcode": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "fsocialcreditcode"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StdResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

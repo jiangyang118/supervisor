@@ -80,6 +80,7 @@
             <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item>
             <el-menu-item index="/system/app-download">移动端扫码</el-menu-item>
             <el-menu-item index="/system/users">用户与角色权限</el-menu-item>
+            <el-menu-item index="/system/trustivs-test">TrustIVS 接口测试</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>

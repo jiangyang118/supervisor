@@ -1,0 +1,6 @@
+export const ERROR_CODES = {
+  VALIDATION: 'E_VALIDATION',
+  UPSTREAM: 'E_UPSTREAM',
+  CACHE: 'E_CACHE',
+};
+

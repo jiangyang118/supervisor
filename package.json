@@ -13,7 +13,11 @@
     "test": "echo 'Use per-app test'",
     "lint": "echo '[root] no lint configured; skipping'",
     "typecheck": "echo '[root] no typecheck configured; skipping'",
+    "gen:trustivs": "npm --prefix services/gateway-service run gen:trustivs",
     "demo:mego": "node scripts/mego-demo.js",
     "demo:mego:emit": "node scripts/mego-emit.js"
+  },
+  "dependencies": {
+    "flv.js": "^1.6.2"
   }
 }

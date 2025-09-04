@@ -29,6 +29,7 @@ const routes: RouteRecordRaw[] = [
     path: '/bright-kitchen/channels',
     component: () => import('../views/bright/BrightChannels.vue'),
   },
+  { path: '/system/trustivs-test', component: () => import('../views/TrustivsTest.vue') },
 
   // Operational ledgers
   { path: '/morning-check', component: () => import('../views/MorningCheck.vue') },

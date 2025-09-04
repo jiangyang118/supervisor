@@ -33,6 +33,8 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
+  // Note: validation was previously enabled globally; reverting per request.
+
   // 使用环境变量或默认端口3300
   const port = process.env.PORT ? Number(process.env.PORT) : 3300;
   await app.listen(port);

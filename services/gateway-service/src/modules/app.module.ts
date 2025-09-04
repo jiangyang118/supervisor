@@ -65,6 +65,7 @@ import { SchoolDineModule } from '../areas/school/dine.module';
 import { RegulatorOverviewModule } from '../areas/regulator/overview.module';
 import { RegulatorLedgersModule } from '../areas/regulator/ledgers.module';
 import { InventoryModule } from '../inventory/inventory.module';
+import { TrustivsModule } from './trustivs/trustivs.module';
 
 @Module({
   imports: [
@@ -77,6 +78,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     RegulatorLedgersModule,
     // Domain modules
     InventoryModule,
+    TrustivsModule,
   ],
   controllers: [
     HealthController,

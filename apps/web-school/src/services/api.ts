@@ -4,8 +4,13 @@ export const API_BASE = BASE;
 // 学校端集成服务（MEGO 对接演示服务，默认 4001）
 const SCHOOL_INTEGRATION_BASE = (window as any)?.SCHOOL_INTEGRATION_BASE || 'http://localhost:4001';
 
+function authHeaders() {
+  const token = localStorage.getItem('AUTH_TOKEN');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`);
+  const res = await fetch(`${BASE}${path}`, { headers: { ...authHeaders() } });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json() as Promise<T>;
 }
@@ -13,7 +18,7 @@ async function get<T>(path: string): Promise<T> {
 async function post<T>(path: string, body?: any): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -23,8 +28,20 @@ async function post<T>(path: string, body?: any): Promise<T> {
 export const api = {
   inbound: () => get<any[]>('/home/inbound'),
   outbound: () => get<any[]>('/home/outbound'),
+  // Deprecated home mocks kept for compatibility; avoid using in new code
   hygiene: () => get<any[]>('/home/hygiene'),
   devices: () => get<any[]>('/home/devices'),
+  // Real endpoints for homepage data
+  schoolHygieneInspections: (params: { schoolId?: string; page?: number; pageSize?: number } = {}) =>
+    get<{ items: any[]; total: number; page: number; pageSize: number }>(
+      `/school/hygiene/inspections?${new URLSearchParams(
+        Object.fromEntries(
+          Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null),
+        ) as any,
+      ).toString()}`,
+    ),
+  schoolDevices: (schoolId?: string) =>
+    get<any[]>(`/school/devices${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`),
   // Regulator meta for school options (shared list)
   regSchools: () => get<Array<{ id: number; name: string }>>('/reg/schools'),
   // Bright kitchen (school)
@@ -923,8 +940,8 @@ export const api = {
     return res.json();
   },
   // Public config
-  publicConfigGet: () => get<any>(`/school/public/config`),
-  publicConfigUpdate: async (cfg: any) => {
+  publicConfigGet: (schoolId?: string) => get<any>(`/school/public/config${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`),
+  publicConfigUpdate: async (cfg: any & { schoolId?: string }) => {
     const res = await fetch(`${BASE}/school/public/config`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -933,7 +950,7 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  publicConfigAudit: () => get<any[]>(`/school/public/config/audit`),
+  publicConfigAudit: (schoolId?: string) => get<any[]>(`/school/public/config/audit${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`),
   publicFeedbackExportCsv: async (params: any = {}) => {
     const res = await fetch(
       `${BASE}/school/public/feedback/export.csv?${new URLSearchParams(
@@ -975,8 +992,13 @@ export const api = {
     get<any>(
       `/school/analytics/food-index${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
     ),
+  analyticsAlerts: (schoolId?: string) =>
+    get<any>(
+      `/school/analytics/alerts${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
+    ),
   // Devices
-  // deviceTypes/deviceStatuses defined earlier; keep single source to avoid duplicates
+  deviceTypes: () => get<any[]>(`/school/devices/types`),
+  deviceStatuses: () => get<any[]>(`/school/devices/statuses`),
   devicesList: (params: { schoolId?: string; type?: string; status?: string; q?: string } = {}) =>
     get<any[]>(
       `/school/devices?${new URLSearchParams(
@@ -1180,7 +1202,80 @@ export const api = {
   },
   sysApps: () => get<any[]>(`/school/system/apps`),
   sysUsers: () => get<any[]>(`/school/system/users`),
-  sysRoles: () => get<any[]>(`/school/system/roles`),
+  sysUserCreate: async (body: { name: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean }) => {
+    const r = await fetch(`${BASE}/school/system/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
+  sysUserUpdate: async (id: number, patch: { name?: string; phone?: string; remark?: string; enabled?: boolean }) => {
+    const r = await fetch(`${BASE}/school/system/users`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ id, patch }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
+  sysUserDelete: async (id: number) => {
+    const r = await fetch(`${BASE}/school/system/users/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ id }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
+  sysRoles: (params: { schoolId?: number; q?: string } = {}) =>
+    get<any[]>(`/school/system/roles?${new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null)) as any,
+    ).toString()}`),
+  sysRoleCreate: async (name: string, remark?: string, schoolId?: number) => {
+    const r = await fetch(`${BASE}/school/system/roles`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ name, remark, schoolId }),
+    });
+    if (!r.ok) {
+      console.log('Error response:', r);
+      try {
+        const data = r;
+        console.log('Error data:', data,data?.message);
+        throw new Error(data?.message || `HTTP ${r.status}`);
+      } catch {
+        throw new Error(`HTTP ${r.status}`);
+      }
+    }
+    return r.json();
+  },
+  sysRoleUpdate: async (id: number, patch: { name?: string; remark?: string }) => {
+    const r = await fetch(`${BASE}/school/system/roles`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ id, patch }),
+    });
+    if (!r.ok) {
+      try {
+        const data = await r.json();
+        throw new Error(data?.message || `HTTP ${r.status}`);
+      } catch {
+        throw new Error(`HTTP ${r.status}`);
+      }
+    }
+    return r.json();
+  },
+  sysRoleDelete: async (id: number) => {
+    const r = await fetch(`${BASE}/school/system/roles/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ id }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
   sysUserSetRoles: async (id: string, roles: string[]) => {
     const r = await fetch(`${BASE}/school/system/users/roles`, {
       method: 'POST',
@@ -1191,6 +1286,7 @@ export const api = {
     return r.json();
   },
   sysPermissions: () => get<any[]>(`/school/system/permissions`),
+  sysRolePermissions: (name: string) => get<{ name: string; permissions: string[] }>(`/school/system/roles/permissions?name=${encodeURIComponent(name)}`),
   sysRoleSetPermissions: async (name: string, permissions: string[]) => {
     const r = await fetch(`${BASE}/school/system/roles/permissions`, {
       method: 'POST',

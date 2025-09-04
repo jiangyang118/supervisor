@@ -1,18 +1,7 @@
 <template>
   <div>
     <el-card>
-      <template #header>
-        <div style="display: flex; align-items: center; gap: 12px">
-          <span>大数据统计看板</span>
-          <el-input
-            v-model="schoolId"
-            placeholder="学校ID（可选）"
-            style="width: 220px"
-            clearable
-          />
-          <el-button type="primary" :loading="loading" @click="load">刷新</el-button>
-        </div>
-      </template>
+     
 
       <!-- 顶部关键指标 -->
       <el-row :gutter="12">
@@ -105,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { api, API_BASE } from '../services/api';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -116,7 +105,8 @@ import VChart from 'vue-echarts';
 use([CanvasRenderer, PieChart, TooltipComponent, LegendComponent, TitleComponent]);
 
 const loading = ref(false);
-const schoolId = ref<string | undefined>();
+import { getCurrentSchoolId } from '../utils/school';
+const schoolId = ref<string | undefined>(getCurrentSchoolId());
 
 // state from API
 const cards = ref({
@@ -215,6 +205,9 @@ function initSSE() {
 onMounted(() => {
   load();
   initSSE();
+  const h = () => { schoolId.value = getCurrentSchoolId(); load(); };
+  window.addEventListener('school-changed', h as any);
+  onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
 });
 </script>
 

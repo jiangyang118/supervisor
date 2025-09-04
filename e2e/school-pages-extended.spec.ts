@@ -37,7 +37,7 @@ test.describe('学校端扩展页面可达性', () => {
 
   test('统计、设备与系统', async ({ page }) => {
     await go(page, '/devices', '已接入设备信息');
-    await go(page, '/analytics', '大数据统计看板');
+    await go(page, '/analytics', '数据看板');
     await go(page, '/food-index', '食安指数');
     await go(page, '/system/announcements', '公告公文');
     await go(page, '/system/canteen', '学校食堂信息维护');

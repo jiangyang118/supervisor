@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { StaffRepository } from './repositories/staff.repository';
+import { UsersRepository } from './repositories/users.repository';
 
 export type Attachment = { id: string; name: string; url: string };
 export type Announcement = {
@@ -62,7 +63,7 @@ export type RegulatorInfo = {
 
 @Injectable()
 export class SystemService {
-  constructor(private readonly staffRepo: StaffRepository) {}
+  constructor(private readonly staffRepo: StaffRepository, private readonly usersRepo: UsersRepository) {}
   private seq = 1;
   private id(p: string) {
     return `${p}-${String(this.seq++).padStart(4, '0')}`;
@@ -223,8 +224,13 @@ export class SystemService {
   }
 
   // Users & roles
-  listUsers() {
-    return this.users;
+  async listUsers() {
+    try {
+      const rows = await this.usersRepo.listUsers();
+      return rows.map(r => ({ ...r, enabled: !!r.enabled }));
+    } catch {
+      return [];
+    }
   }
   listRoles() {
     return this.roles;
@@ -232,11 +238,36 @@ export class SystemService {
   listPermissions() {
     return this.permissionsTree;
   }
-  setUserRoles(id: string, roles: string[]) {
-    const i = this.users.findIndex((u) => u.id === id);
-    if (i === -1) throw new BadRequestException('not found');
-    this.users[i].roles = roles || [];
-    return this.users[i];
+  async setUserRoles(id: string, roles: string[]) {
+    const uid = Number(id);
+    if (!Number.isFinite(uid) || uid <= 0) throw new BadRequestException('invalid user id');
+    await this.usersRepo.setUserRoles(uid, roles || []);
+    return { ok: true } as any;
+  }
+  async createUser(b: { name: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean }) {
+    if (!b?.name) throw new BadRequestException('name required');
+    const displayName = b.name.trim();
+    const username = (b.phone && String(b.phone).trim()) || `u${Date.now()}`;
+    const insertId = await this.usersRepo.insertOne({ username, displayName, enabled: b.enabled ?? true, phone: b.phone?.trim(), remark: b.remark?.trim(), createdBy: '系统' });
+    if ((b.roles || []).length) await this.usersRepo.setUserRoles(insertId, b.roles || []);
+    return { id: insertId } as any;
+  }
+
+  async updateUser(id: number, patch: { name?: string; phone?: string; remark?: string; enabled?: boolean }) {
+    if (!id || !Number.isFinite(Number(id))) throw new BadRequestException('id required');
+    const p: any = {};
+    if (patch.name !== undefined) p.displayName = patch.name;
+    if (patch.phone !== undefined) p.phone = patch.phone;
+    if (patch.remark !== undefined) p.remark = patch.remark;
+    if (patch.enabled !== undefined) p.enabled = !!patch.enabled;
+    await this.usersRepo.updateOne(Number(id), p);
+    return { ok: true } as any;
+  }
+
+  async deleteUser(id: number) {
+    if (!id || !Number.isFinite(Number(id))) throw new BadRequestException('id required');
+    await this.usersRepo.removeOne(Number(id));
+    return { ok: true } as any;
   }
   setRolePermissions(name: string, perms: string[]) {
     const i = this.roles.findIndex((r) => r.name === name);

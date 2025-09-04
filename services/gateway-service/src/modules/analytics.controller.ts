@@ -14,6 +14,10 @@ export class AnalyticsController {
     return this.svc.foodIndex({ schoolId });
   }
 
+  @Get('alerts') alerts(@Query('schoolId') schoolId?: string) {
+    return this.svc.alertsOverview({ schoolId });
+  }
+
   @Sse('stream') stream(): Observable<MessageEvent> {
     return this.svc.stream();
   }

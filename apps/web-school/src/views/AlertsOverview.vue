@@ -5,10 +5,14 @@
       <el-col :span="12">
         <el-card>
           <template #header>预警汇总</template>
+          <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+            <el-input v-model="schoolId" placeholder="学校ID（可选）" style="width: 220px" clearable />
+            <el-button type="primary" :loading="loading" @click="load">刷新</el-button>
+          </div>
           <el-row :gutter="8" style="margin-bottom:8px">
-            <el-col :span="8"><el-statistic title="证件" :value="2" /></el-col>
-            <el-col :span="8"><el-statistic title="食材" :value="1" /></el-col>
-            <el-col :span="8"><el-statistic title="行为" :value="3" /></el-col>
+            <el-col v-for="s in summary" :key="s.name" :span="8">
+              <el-statistic :title="s.name" :value="s.count" />
+            </el-col>
           </el-row>
           <el-table :data="warnRows" size="small" border>
             <el-table-column prop="id" label="ID" width="120" />
@@ -44,25 +48,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../services/api';
-const warnRows = ref([
-  { id: 'AL-100', type: 'AI-未戴帽', level: '中', status: '未处理', at: new Date().toLocaleString() },
-]);
+import { getCurrentSchoolId } from '../utils/school';
+const warnRows = ref<Array<{ id: string; type: string; level: string; status: string; at: string }>>([]);
+const summary = ref<Array<{ name: string; count: number }>>([]);
 const loading = ref(false);
-const schoolId = ref<string | undefined>();
+const schoolId = ref<string | undefined>(getCurrentSchoolId());
 const score = ref(0);
 const submetrics = ref<Array<{ metric: string; value: number }>>([]);
 async function load() {
   loading.value = true;
   try {
-    const data = await api.analyticsFoodIndex(schoolId.value);
-    score.value = data.score;
-    submetrics.value = data.submetrics;
+    const [alerts, idx] = await Promise.all([
+      api.analyticsAlerts(schoolId.value),
+      api.analyticsFoodIndex(schoolId.value),
+    ]);
+    warnRows.value = alerts.items || [];
+    summary.value = alerts.summary || [];
+    score.value = idx.score;
+    submetrics.value = idx.submetrics;
   } finally {
     loading.value = false;
   }
 }
-onMounted(load);
+onMounted(() => {
+  load();
+  const h = () => { schoolId.value = getCurrentSchoolId(); load(); };
+  window.addEventListener('school-changed', h as any);
+  onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
+});
 </script>
-

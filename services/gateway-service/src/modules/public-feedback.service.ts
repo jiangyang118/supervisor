@@ -5,8 +5,8 @@ export type FeedbackType = '投诉' | '建议' | '表扬' | '评论';
 export type FeedbackStatus = '待处理' | '已回复';
 
 export type Feedback = {
-  id: string;
-  schoolId: string;
+  id: number;
+  schoolId: number | string;
   type: FeedbackType;
   content: string;
   user?: string;
@@ -22,10 +22,6 @@ export type Feedback = {
 
 @Injectable()
 export class PublicFeedbackService {
-  private seq = 1;
-  private id() {
-    return `FB-${String(this.seq++).padStart(4, '0')}`;
-  }
   private now() {
     return new Date().toISOString();
   }
@@ -53,26 +49,26 @@ export class PublicFeedbackService {
   }
 
   async create(b: {
-    schoolId?: string;
+    schoolId?: string | number;
     type: FeedbackType;
     content: string;
     user?: string;
     contact?: string;
   }) {
     if (!b?.type || !b?.content) throw new BadRequestException('type/content required');
-    const it: Feedback = {
-      id: this.id(),
-      schoolId: b.schoolId || 'sch-001',
+    const sid = Number(b.schoolId ?? 1) || 1;
+    const rec = {
+      schoolId: sid,
       type: b.type,
       content: b.content,
       user: b.user,
       contact: b.contact,
-      status: '待处理',
+      status: '待处理' as FeedbackStatus,
       at: this.now(),
       read: false,
     };
-    await this.repo!.insertFeedback(it);
-    return it;
+    const insertId = await this.repo!.insertFeedback(rec as any);
+    return { id: insertId, ...rec } as any;
   }
 
   async reply(id: string, replyContent: string, replyBy?: string) {

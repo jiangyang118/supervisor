@@ -6,15 +6,16 @@ export class PublicFeedbackRepository {
   constructor(private readonly db: DbService) {}
 
   async insertFeedback(rec: {
-    id: string; schoolId: string; type: string; content: string; user?: string; contact?: string;
+    schoolId: number; type: string; content: string; user?: string; contact?: string;
     status: string; at: string; read?: boolean;
   }) {
-    await this.db.query(
-      `insert ignore into public_feedback(
-        id, school_id, type, content, user, contact, status, at, is_read
-      ) values (?,?,?,?,?,?,?,?,?)`,
-      [rec.id, rec.schoolId, rec.type, rec.content, rec.user || null, rec.contact || null, rec.status, new Date(rec.at), rec.read ? 1 : 0]
+    const res = await this.db.query(
+      `insert into public_feedback(
+        school_id, type, content, user, contact, status, at, is_read
+      ) values (?,?,?,?,?,?,?,?)`,
+      [rec.schoolId, rec.type, rec.content, rec.user || null, rec.contact || null, rec.status, new Date(rec.at), rec.read ? 1 : 0]
     );
+    return res.insertId || 0;
   }
 
   async reply(id: string, replyContent: string, replyBy: string, replyAtISO: string, processingMs?: number) {
@@ -50,7 +51,7 @@ export class PublicFeedbackRepository {
     const totalRows = await this.db.query<any>(`select count(1) as c ${base}`, values);
     const total = Number(totalRows.rows[0]?.c || 0);
     const rows = await this.db.query<any>(
-      `select id, school_id as schoolId, type, content, user, contact, status, at, reply_by as replyBy, reply_at as replyAt, reply_content as replyContent, is_read as read, processing_ms as processingMs ${base} order by at desc limit ? offset ?`,
+      `select id, school_id as schoolId, type, content, user, contact, status, at, reply_by as replyBy, reply_at as replyAt, reply_content as replyContent, is_read as \`read\`, processing_ms as processingMs ${base} order by at desc limit ? offset ?`,
       [...values, pageSize, (page - 1) * pageSize],
     );
     return { items: rows.rows, total, page, pageSize };

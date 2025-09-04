@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { PublicConfigRepository } from './repositories/public-config.repository';
 
 export type PublicConfig = {
   schoolId: string;
@@ -14,41 +15,29 @@ export type PublicConfig = {
 
 @Injectable()
 export class PublicConfigService {
-  private cfg: PublicConfig = {
-    schoolId: 'sch-001',
-    live: true,
-    rating: true,
-    orgCert: true,
-    staffCert: true,
-    level: true,
-    trace: true,
-    menu: true,
-    updatedAt: new Date().toISOString(),
-  };
-  private audit: Array<{
-    id: string;
-    by: string;
-    at: string;
-    changes: Partial<PublicConfig>;
-  }> = [];
+  constructor(private readonly repo: PublicConfigRepository) {}
 
-  get(schoolId?: string) {
-    return { ...this.cfg, schoolId: schoolId || this.cfg.schoolId };
+  async get(schoolId?: string) {
+    const sid = Number(schoolId ?? 1) || 1;
+    await this.repo.ensureDefault(sid);
+    const row = await this.repo.get(sid);
+    return row || { schoolId: sid, live: true, rating: true, orgCert: true, staffCert: true, level: true, trace: true, menu: true, updatedAt: new Date().toISOString() };
   }
 
-  update(partial: Partial<Omit<PublicConfig, 'updatedAt' | 'schoolId'>>, updatedBy?: string) {
-    const before = { ...this.cfg };
-    this.cfg = { ...this.cfg, ...partial, updatedAt: new Date().toISOString() };
-    this.audit.unshift({
-      id: `CFG-${this.audit.length + 1}`,
-      by: updatedBy || 'unknown',
-      at: this.cfg.updatedAt,
-      changes: partial,
-    });
-    return this.cfg;
+  async update(
+    schoolId: string | number | undefined,
+    partial: Partial<Omit<PublicConfig, 'updatedAt' | 'schoolId'>>,
+    updatedBy?: string,
+  ) {
+    const sid = Number(schoolId ?? 1) || 1;
+    await this.repo.ensureDefault(sid);
+    await this.repo.update(sid, partial as any);
+    await this.repo.insertAudit(sid, updatedBy, partial);
+    return this.get(String(sid));
   }
 
-  listAudit() {
-    return this.audit;
+  async listAudit(schoolId?: string) {
+    const sid = Number(schoolId ?? 1) || 1;
+    return this.repo.listAudit(sid);
   }
 }

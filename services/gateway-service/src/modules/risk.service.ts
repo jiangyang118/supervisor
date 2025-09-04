@@ -12,7 +12,7 @@ export type RiskItem = {
 export type ReportStatus = '待处理' | '整改中' | '已整改';
 export type RiskReport = {
   id: string;
-  schoolId: string;
+  schoolId: number;
   at: string;
   location: string;
   object: string;
@@ -27,7 +27,7 @@ export type RiskReport = {
 export type TaskStatus = '待处理' | '进行中' | '已完成';
 export type RiskTask = {
   id: string;
-  schoolId: string;
+  schoolId: number;
   createdAt: string;
   assignee: string;
   location: string;
@@ -55,7 +55,7 @@ export class RiskService {
   tasks: RiskTask[] = [];
 
   constructor() {
-    this.seed();
+
   }
 
   // Catalog
@@ -95,7 +95,7 @@ export class RiskService {
     page?: number | string;
     pageSize?: number | string;
   }) {
-    let arr = this.reports.slice();
+    let arr = this.reports.slice().map((r) => ({ ...r, schoolId: Number((r as any).schoolId ?? 1) || 1 }));
     if (params?.status) arr = arr.filter((r) => r.status === params.status);
     if (params?.location) arr = arr.filter((r) => r.location.includes(params.location!));
     if (params?.object) arr = arr.filter((r) => r.object.includes(params.object!));
@@ -109,7 +109,7 @@ export class RiskService {
     return { items, total, page, pageSize };
   }
   createReport(b: {
-    schoolId?: string;
+    schoolId?: string | number;
     location: string;
     object: string;
     desc: string;
@@ -120,7 +120,7 @@ export class RiskService {
       throw new BadRequestException('location/object/desc required');
     const it: RiskReport = {
       id: this.id('RPT'),
-      schoolId: b.schoolId || 'sch-001',
+      schoolId: Number(b.schoolId ?? 1) || 1,
       at: this.now(),
       location: b.location,
       object: b.object,
@@ -154,8 +154,12 @@ export class RiskService {
     if (!t) throw new BadRequestException('not found');
     return t;
   }
-  listTasks(params?: { assignee?: string; status?: TaskStatus; start?: string; end?: string }) {
-    let arr = this.tasks.slice();
+  listTasks(params?: { schoolId?: string | number; assignee?: string; status?: TaskStatus; start?: string; end?: string }) {
+    let arr = this.tasks.slice().map((t) => ({ ...t, schoolId: Number((t as any).schoolId ?? 1) || 1 }));
+    if (params?.schoolId !== undefined && params?.schoolId !== null && String(params.schoolId).trim() !== '') {
+      const sid = Number(params.schoolId);
+      if (Number.isFinite(sid)) arr = arr.filter((t) => t.schoolId === sid);
+    }
     if (params?.assignee) arr = arr.filter((t) => t.assignee === params.assignee);
     if (params?.status) arr = arr.filter((t) => t.status === params.status);
     if (params?.start)
@@ -164,6 +168,7 @@ export class RiskService {
     return arr.sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   }
   createTask(b: {
+    schoolId?: string | number;
     assignee: string;
     location: string;
     object: string;
@@ -175,7 +180,7 @@ export class RiskService {
       throw new BadRequestException('assignee/location/object required');
     const t: RiskTask = {
       id: this.id('TSK'),
-      schoolId: 'sch-001',
+      schoolId: Number(b.schoolId ?? 1) || 1,
       createdAt: this.now(),
       assignee: b.assignee,
       location: b.location,
@@ -203,27 +208,4 @@ export class RiskService {
     return this.tasks[i];
   }
 
-  private seed() {
-    this.createCatalog({
-      category: '冷链',
-      title: '冷藏区温度异常',
-      level: '高',
-      desc: '温度高于8℃',
-    });
-    this.createCatalog({ category: '加工', title: '操作台不洁', level: '中' });
-    this.createReport({
-      location: '冷藏间',
-      object: '冷柜1号',
-      desc: '温度计显示12℃，凝露严重',
-      riskId: this.catalog[0].id,
-    });
-    this.createTask({
-      assignee: '检查员A',
-      location: '冷藏间',
-      object: '冷柜1号',
-      riskId: this.catalog[0].id,
-      dueAt: new Date(Date.now() + 86400000).toISOString(),
-      note: '尽快整改',
-    });
-  }
 }

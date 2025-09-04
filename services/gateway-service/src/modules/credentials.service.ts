@@ -1,4 +1,6 @@
 import { Injectable, MessageEvent, BadRequestException } from '@nestjs/common';
+import { DbService } from './db.service';
+import { CanteensRepository } from './repositories/canteens.repository';
 import { Observable, Subject } from 'rxjs';
 
 export type EntityType = 'canteen' | 'worker' | 'supplier';
@@ -47,9 +49,7 @@ export class CredentialsService {
   suppliers: CredSupplier[] = [];
   exceptions: ExceptionRecord[] = [];
 
-  constructor() {
-    this.seed();
-  }
+  constructor(private readonly db: DbService, private readonly canteensRepo: CanteensRepository) {}
 
   private id(prefix: string) {
     return `${prefix}-${String(this.seq++).padStart(4, '0')}`;
@@ -124,14 +124,50 @@ export class CredentialsService {
     }
   }
 
-  listCanteens(params?: { schoolId?: string }) {
-    this.recomputeExceptions();
+  async listCanteens(params?: { schoolId?: string }) {
     const sid = params?.schoolId;
+    if (this.db.isReady) {
+      const schoolId = sid ? Number(sid) : undefined;
+      const rows = await this.canteensRepo.list(schoolId);
+      const items: Canteen[] = rows.map((r) => ({
+        id: String(r.id),
+        schoolId: String(r.schoolId),
+        name: r.name,
+        address: r.address || undefined,
+        licenseExpireAt: r.licenseExpireAt || new Date().toISOString(),
+      }));
+      // compute exceptions from DB
+      this.canteens = items;
+      this.recomputeExceptions();
+      return sid ? items.filter((c) => c.schoolId === sid) : items;
+    }
+    this.recomputeExceptions();
     return sid ? this.canteens.filter((c) => c.schoolId === sid) : this.canteens;
   }
-  createCanteen(b: { schoolId?: string; name: string; address?: string; licenseExpireAt: string }) {
+  async createCanteen(b: { schoolId?: string; name: string; address?: string; licenseExpireAt: string }) {
     if (!b?.name) throw new BadRequestException('name required');
     if (!b?.licenseExpireAt) throw new BadRequestException('licenseExpireAt required');
+    const schoolId = b.schoolId && Number.isFinite(Number(b.schoolId)) ? Number(b.schoolId) : 1;
+    if (this.db.isReady) {
+      const newId = await this.canteensRepo.create({
+        schoolId,
+        name: b.name,
+        address: b.address,
+        licenseExpireAt: b.licenseExpireAt,
+      });
+      const rec: Canteen = {
+        id: String(newId),
+        schoolId: String(schoolId),
+        name: b.name,
+        address: b.address,
+        licenseExpireAt: b.licenseExpireAt,
+      };
+      this.canteens.unshift(rec);
+      this.recomputeExceptions();
+      this.emit('canteen-created', rec);
+      return rec;
+    }
+    // fallback in-memory
     const rec: Canteen = {
       id: this.id('CT'),
       schoolId: b.schoolId || 'sch-001',
@@ -209,43 +245,5 @@ export class CredentialsService {
     return this.events$.asObservable();
   }
 
-  private seed() {
-    const days = (n: number) => new Date(Date.now() + n * 86400000).toISOString().slice(0, 10);
-    this.createCanteen({
-      schoolId: 'sch-001',
-      name: '示例一中食堂',
-      address: '教学楼东侧',
-      licenseExpireAt: days(-5),
-    });
-    this.createCanteen({
-      schoolId: 'sch-002',
-      name: '示例二小食堂',
-      address: '操场北侧',
-      licenseExpireAt: days(30),
-    });
-    this.createWorker({
-      schoolId: 'sch-001',
-      name: '张三',
-      role: '后厨',
-      healthCertExpireAt: days(-2),
-    });
-    this.createWorker({
-      schoolId: 'sch-002',
-      name: '李四',
-      role: '配菜',
-      healthCertExpireAt: days(60),
-    });
-    this.createSupplier({
-      schoolId: 'sch-001',
-      name: '示例供应商A',
-      phone: '13800000000',
-      licenseExpireAt: days(-1),
-    });
-    this.createSupplier({
-      schoolId: 'sch-002',
-      name: '示例供应商B',
-      phone: '13800000001',
-      licenseExpireAt: days(90),
-    });
-  }
+
 }

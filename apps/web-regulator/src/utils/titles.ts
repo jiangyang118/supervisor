@@ -25,7 +25,7 @@ const map: Record<string, string> = {
   '/public': '公示监管',
   '/inspections': '监督检查',
   '/warnings': '预警汇总',
-  '/analytics': '大数据统计',
+  '/analytics': '数据看板',
   '/food-index': '食安指数',
   '/system/info': '监管单位信息',
   '/system/users': '用户与角色',

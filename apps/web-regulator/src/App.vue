@@ -44,7 +44,7 @@
             <el-menu-item index="/inspections/config">检查配置</el-menu-item>
           </el-sub-menu>
           <el-menu-item index="/warnings">预警汇总</el-menu-item>
-          <el-menu-item index="/analytics">大数据统计</el-menu-item>
+          <el-menu-item index="/analytics">数据看版</el-menu-item>
           <el-menu-item index="/food-index">食安指数</el-menu-item>
           <el-sub-menu index="system">
             <template #title>系统配置</template>

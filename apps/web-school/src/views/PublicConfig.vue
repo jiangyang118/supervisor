@@ -36,8 +36,9 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 const cfg = reactive<any>({
   live: true,
   rating: true,
@@ -51,15 +52,15 @@ const cfg = reactive<any>({
 const auditDlg = ref(false);
 const auditRows = ref<any[]>([]);
 async function load() {
-  const c = await api.publicConfigGet();
+  const c = await api.publicConfigGet(getCurrentSchoolId());
   Object.assign(cfg, c);
 }
 async function save() {
-  await api.publicConfigUpdate({ ...cfg, updatedBy: '管理员' });
+  await api.publicConfigUpdate({ ...cfg, schoolId: getCurrentSchoolId(), updatedBy: '管理员' });
   await load();
 }
 async function openAudit() {
-  auditRows.value = await api.publicConfigAudit();
+  auditRows.value = await api.publicConfigAudit(getCurrentSchoolId());
   auditDlg.value = true;
 }
 function formatTime(iso: string) {
@@ -69,5 +70,10 @@ function formatTime(iso: string) {
     return iso;
   }
 }
-load();
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
+});
 </script>

@@ -1,5 +1,11 @@
 <template>
-  <el-container style="height: 100vh">
+  <!-- Standalone layout for auth pages (e.g., /login) -->
+  <div v-if="isAuthPage" class="auth-only">
+    <router-view />
+  </div>
+
+  <!-- Default application shell -->
+  <el-container v-else style="height: 100vh">
     <el-header
       class="app-header"
       style="display: flex; align-items: center; justify-content: space-between"
@@ -79,8 +85,8 @@
             <el-menu-item index="/system/canteen">食堂信息维护+食堂资质</el-menu-item>
             <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item>
             <el-menu-item index="/system/app-download">移动端扫码</el-menu-item>
-            <el-menu-item index="/system/users">用户与角色权限</el-menu-item>
-            <el-menu-item index="/system/trustivs-test">TrustIVS 接口测试</el-menu-item>
+            <el-menu-item index="/system/users">用户管理</el-menu-item>
+            <el-menu-item index="/system/roles">角色管理</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>
@@ -121,6 +127,7 @@ import { computed, ref } from 'vue';
 import PageHeader from './components/PageHeader.vue';
 const route = useRoute();
 const router = useRouter();
+const isAuthPage = computed(() => route.path === '/login');
 const active = computed(() => route.path);
 const openeds = computed(() => {
   const p = route.path;
@@ -195,5 +202,6 @@ function openConfig() {
 body {
   margin: 0;
 }
+.auth-only { min-height: 100vh; }
 .integration-banner { margin-bottom: 8px; }
 </style>

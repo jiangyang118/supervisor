@@ -1,9 +1,10 @@
 import { Body, Controller, Get, Patch, Post, Query } from '@nestjs/common';
 import { SystemService } from './system.service';
+import { RolesRepository } from './repositories/roles.repository';
 
 @Controller('school/system')
 export class SystemController {
-  constructor(private readonly svc: SystemService) {}
+  constructor(private readonly svc: SystemService, private readonly rolesRepo: RolesRepository) {}
 
   // Announcements
   @Get('announcements') listAnnouncements(
@@ -63,17 +64,59 @@ export class SystemController {
   @Get('users') users() {
     return this.svc.listUsers();
   }
-  @Get('roles') roles() {
-    return this.svc.listRoles();
+  @Post('users') createUser(@Body() b: { name: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean }) {
+    return this.svc.createUser(b);
+  }
+  @Get('roles') roles(@Query('schoolId') schoolId?: string, @Query('q') q?: string) {
+    return this.rolesRepo.search({ schoolId: schoolId ? Number(schoolId) : undefined, q });
+  }
+  @Post('roles') createRole(@Body() b: { schoolId?: number; name: string; remark?: string }) {
+    if (!b?.name) return { ok: false, message: 'name required' } as any;
+    const sid = b.schoolId && Number.isFinite(Number(b.schoolId)) ? Number(b.schoolId) : 1;
+    return this.rolesRepo.create(sid, b.name, b.remark);
+  }
+  @Patch('roles') updateRole(@Body() b: { id: number; patch: { name?: string; remark?: string } }) {
+    if (!b?.id) return { ok: false, message: 'id required' } as any;
+    return this.rolesRepo.update(Number(b.id), b.patch || {});
+  }
+  @Post('roles/delete') deleteRole(@Body() b: { id: number }) {
+    if (!b?.id) return { ok: false, message: 'id required' } as any;
+    return this.rolesRepo.remove(Number(b.id));
   }
   @Post('users/roles') setUserRoles(@Body() b: { id: string; roles: string[] }) {
     return this.svc.setUserRoles(b.id, b.roles);
   }
+  @Patch('users') updateUser(
+    @Body()
+    b:
+      | { id: number; patch?: { name?: string; phone?: string; remark?: string; enabled?: boolean } }
+      | { id: number; name?: string; phone?: string; remark?: string; enabled?: boolean },
+  ) {
+    if (!b?.id) return { ok: false, message: 'id required' } as any;
+    const patch = (b as any).patch ?? {
+      name: (b as any).name,
+      phone: (b as any).phone,
+      remark: (b as any).remark,
+      enabled: (b as any).enabled,
+    };
+    return this.svc.updateUser((b as any).id, patch || {});
+  }
+  @Post('users/enabled') setUserEnabled(@Body() b: { id: number; enabled: boolean }) {
+    if (!b?.id) return { ok: false, message: 'id required' } as any;
+    return this.svc.updateUser(b.id, { enabled: b.enabled });
+  }
+  @Post('users/delete') removeUser(@Body() b: { id: number }) {
+    if (!b?.id) return { ok: false, message: 'id required' } as any;
+    return this.svc.deleteUser(b.id);
+  }
   @Get('permissions') permissions() {
     return this.svc.listPermissions();
   }
+  @Get('roles/permissions') rolePermissions(@Query('name') name: string) {
+    return this.rolesRepo.listRoles().then((arr) => arr.find((r) => r.name === name) || { name, permissions: [] });
+  }
   @Post('roles/permissions') setRolePerms(@Body() b: { name: string; permissions: string[] }) {
-    return this.svc.setRolePermissions(b.name, b.permissions);
+    return this.rolesRepo.setPermissions(b.name, b.permissions);
   }
 
   // Staff (personnel)

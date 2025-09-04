@@ -38,6 +38,26 @@
   - 仅前端：在 `apps/web-school`、`apps/web-regulator` 分别 `npm run dev`
 - 构建：`pnpm build`（或 `npm run build --workspaces --if-present`）
 
+## 重要更新（数据库与功能）
+- ID 整型化与外键规范：新增多条迁移使主键/外键与学校维度对齐。
+  - 公众反馈表：`028_public_feedback_ids_int.sql`（`id`→`INT AUTO_INCREMENT`，`school_id INT` + 外键 `schools(id)`）。
+  - 人员健康证专表：`027_staff_health_certs.sql`（`school_staff_certs`，外键 `school_id`、`staff_id`）。
+  - 隐患排查表：`029_risk_tables.sql`（`risk_catalog`、`risk_reports`、`risk_tasks`，均含 `INT` 主键与 `school_id INT`）。
+  - 部分主数据整型化：参考 `026_master_ids_int.sql`。
+- 前端“学校切换”联动：学校切换后自动将 `schoolId` 透传到接口，并在下列页面自动刷新：
+  - 公示与反馈（公示配置/公众反馈）、总览（预警概览/食安指数）、明厨亮灶（实时/回放/快照）、智能检查管理（晨检/留样/消毒/农残/卫生检查/资产维护/隐患）、人员健康证、人员管理等。
+- 公众反馈（数据库化）：
+  - 列表：`GET /school/public/feedback/list?schoolId=...`
+  - 新增：`POST /school/public/feedback/create`（返回 DB 自增 `id`）。
+  - 导出/批量回复/已读标记均支持 `schoolId` 过滤。
+- 证件与人员健康证：
+  - 证件：`/school/certificates` 支持 `schoolId` 查询/创建/导出。
+  - 人员健康证专表接口：`/school/staff-certs`（列表/新增/更新/删除，需 `staffId` 与 `schoolId`）。
+- 隐患排查：
+  - 新增 DB 表（见上），当前默认仍为内存实现（返回空集）；如需落库请开启后续仓储实现或告知我们接入。
+
+> 运行迁移：`make migrate` 或在 `services/gateway-service` 内执行 `npm run db:migrate`。
+
 ## 启动方式
 
 ### 方式一：Docker 启动（推荐）
@@ -72,6 +92,12 @@
   - 自动执行：非生产环境默认自动执行（`DB_AUTO_MIGRATE` 未设置或为 `1/true`）
   - 手动执行：`make migrate ENV=local`
 
+### Mock/演示数据开关
+- 通过环境变量 `DEMO_SEED` 控制是否注入演示数据（默认为关闭）。
+  - 关闭（推荐用于联调/测试/生产）：不设置或 `DEMO_SEED=false`。
+  - 开启（仅演示）：`DEMO_SEED=true` 会为部分模块注入演示数据。
+- 已支持 `DEMO_SEED` 的模块：设备清单、培训与考试、资质（内存版）、隐患排查、食品浪费（仅样例）、应急管理、首页概览 `DataStore` 等。
+
 ### 停止与清理
 - Docker 停止：
   - 停止但保留容器：`docker compose -f infra/docker-compose.yml stop`
@@ -86,6 +112,8 @@
 - 复制 `.env.example` 为 `.env` 并按需配置。
 - 数据库可通过 `DATABASE_URL` 或 `MYSQL_*`（`MYSQL_HOST/PORT/USER/PASSWORD/DATABASE`）配置。
  - 多环境文件：可另存 `.env.local`、`.env.test`、`.env.prod`，通过 `ENV=...` 自动加载。
+ - `DB_AUTO_MIGRATE=1` 启动时自动迁移（默认非生产开启）。
+ - `DEMO_SEED=false|true` 关闭/开启演示数据。
 
 ## 运行（后端与接口）
 - 运行网关：`cd services/gateway-service && npm i && npm run dev`（默认 `http://localhost:3300`）
@@ -93,6 +121,21 @@
 - 学校侧：`GET/POST /school/morning-checks`、`PATCH /school/morning-checks/:id/measure`
 - 鉴权（可选）：设置 `INGEST_API_KEY` 后，监管侧接口需带 `x-api-key: <同值>`
 - 兼容路径：同时支持以 `/api/` 前缀访问相同路由。
+
+### 学校侧常用接口（片段）
+- 公众反馈：
+  - `GET /school/public/feedback/list?schoolId=1&type=&status=&start=&end=&page=&pageSize=`
+  - `POST /school/public/feedback/create { schoolId, type, content, user?, contact? }`
+  - `GET /school/public/feedback/export.csv?schoolId=1...`
+- 证件：
+  - `GET /school/certificates?schoolId=1&owner=&type=&status=`
+  - `POST /school/certificates { schoolId, owner, type, number, expireAt }`
+- 人员健康证（专表）：
+  - `GET /school/staff-certs?schoolId=1&staffId=&q=&page=&pageSize=`
+  - `POST /school/staff-certs { schoolId, staffId, certNo?, startAt?, endAt?, imageUrl? }`
+- 隐患排查：
+  - `GET /school/risk/reports?schoolId=1&...`、`POST /school/risk/reports { schoolId, ... }`
+  - `GET /school/risk/tasks?schoolId=1&...`、`POST /school/risk/tasks { schoolId, ... }`
 
 ## 晨检对接（MEGO）
 - 设备心跳：`POST /device/morningChecker/heartBeatInfo`（`application/x-www-form-urlencoded`，参数 `equipmentCode`/`machineCode`）
@@ -117,6 +160,8 @@ curl -X POST http://localhost:3300/school/morning-checks \
 - AI 事件：学校端“AI 汇总/事件”查看/处置；监管端可联动巡查任务与远程提醒。
 - 明厨亮灶：配置 `WVP_BASE` 后可播放（当前为占位）。
 - 终端用户手册：见 `docs/USER_GUIDE_ENDUSER.md`、`docs/USER_MANUAL.md`。
+
+> 前端学校切换：页头学校下拉会触发 `school-changed` 事件，页面监听后自动重载并携带 `schoolId` 调用接口。
 
 ## 测试与质量
 - Lint（Prettier）：`npm run lint`

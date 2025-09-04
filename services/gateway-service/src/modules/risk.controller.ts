@@ -114,16 +114,18 @@ export class RiskController {
 
   // Tasks
   @Get('tasks') tasks(
+    @Query('schoolId') schoolId?: string,
     @Query('assignee') assignee?: string,
     @Query('status') status?: TaskStatus,
     @Query('start') start?: string,
     @Query('end') end?: string,
   ) {
-    return this.svc.listTasks({ assignee, status, start, end });
+    return this.svc.listTasks({ schoolId, assignee, status, start, end });
   }
   @Post('tasks') createTask(
     @Body()
     b: {
+      schoolId?: string | number;
       assignee: string;
       location: string;
       object: string;
@@ -145,14 +147,16 @@ export class RiskController {
   }
 
   @Get('tasks/export.csv') tasksExport(
+    @Query('schoolId') schoolId?: string,
     @Query('assignee') assignee?: string,
     @Query('status') status?: TaskStatus,
     @Query('start') start?: string,
     @Query('end') end?: string,
   ) {
-    const items = this.svc.listTasks({ assignee, status, start, end });
+    const items = this.svc.listTasks({ schoolId, assignee, status, start, end });
     const headers = [
       'id',
+      'schoolId',
       'assignee',
       'location',
       'object',
@@ -165,6 +169,7 @@ export class RiskController {
     ];
     const rows = items.map((t: any) => [
       t.id,
+      t.schoolId || '',
       t.assignee,
       t.location,
       t.object,

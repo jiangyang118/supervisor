@@ -1,9 +1,11 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
+import { useAuthStore } from '../stores/auth';
 
 const Home = () => import('../views/Home.vue');
 const Reports = () => import('../views/Reports.vue');
 
 const routes: RouteRecordRaw[] = [
+  { path: '/login', component: () => import('../views/Login.vue'), meta: { public: true } },
   { path: '/', redirect: '/overview' },
   { path: '/overview', name: 'overview', component: Home },
   {
@@ -81,11 +83,26 @@ const routes: RouteRecordRaw[] = [
   { path: '/system/canteen', component: () => import('../views/SystemCanteen.vue') },
   { path: '/system/linkage', component: () => import('../views/SystemLinkage.vue') },
   { path: '/system/app-download', component: () => import('../views/SystemApp.vue') },
-  { path: '/system/users', component: () => import('../views/SystemUsers.vue') },
+  { path: '/system/users', component: () => import('../views/SystemUsers.vue'), meta: { perms: ['users.view'] } },
+  { path: '/system/roles', component: () => import('../views/SystemRoles.vue'), meta: { perms: ['roles.view'] } },
   { path: '/hr/staff', component: () => import('../views/StaffManagement.vue') },
 ];
 
-export default createRouter({
-  history: createWebHistory(),
-  routes,
+const router = createRouter({ history: createWebHistory(), routes });
+
+router.beforeEach((to, _from, next) => {
+  const auth = useAuthStore();
+  if (to.meta.public) return next();
+  if (!auth.isAuthed) {
+    auth.setReturnTo(to.fullPath || '/overview');
+    return next({ path: '/login' });
+  }
+  const required = (to.meta?.perms as string[] | undefined) || [];
+  if (required.length && !required.some((p) => auth.hasPerm(p))) {
+    // no permission → fallback to overview
+    return next({ path: '/overview' });
+  }
+  next();
 });
+
+export default router;

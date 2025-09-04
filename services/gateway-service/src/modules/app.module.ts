@@ -66,6 +66,7 @@ import { RegulatorOverviewModule } from '../areas/regulator/overview.module';
 import { RegulatorLedgersModule } from '../areas/regulator/ledgers.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { TrustivsModule } from './trustivs/trustivs.module';
+import { AuthController } from './auth.controller';
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { TrustivsModule } from './trustivs/trustivs.module';
     PublicConfigController,
     EmergencyController,
     RiskController,
+    AuthController,
     SystemController,
     AnalyticsController,
     DevicesController,

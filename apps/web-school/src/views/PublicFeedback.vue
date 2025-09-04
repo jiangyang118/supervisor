@@ -12,7 +12,7 @@
         <el-option label="待处理" value="待处理" />
         <el-option label="已回复" value="已回复" />
       </el-select>
-      <el-date-picker v-model="filters.range" type="daterange" unlink-panels />
+      <el-date-picker v-model="filters.range" type="daterange" unlink-panels   start-placeholder="开始日期" end-placeholder="结束日期"  format="yyyy-MM-dd" />
       <el-button @click="load">查询</el-button>
       <el-button @click="exportCsv">导出 CSV</el-button>
       <el-divider direction="vertical" />
@@ -81,8 +81,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 const rows = ref<any[]>([]);
 const filters = ref<{ type?: any; status?: any; range: [Date, Date] | null }>({
   type: '',
@@ -94,7 +95,7 @@ function onSelChange(sel: any[]) {
   selected.value = sel;
 }
 async function load() {
-  const p: any = {};
+  const p: any = { schoolId: getCurrentSchoolId() };
   if (filters.value.type) p.type = filters.value.type;
   if (filters.value.status) p.status = filters.value.status;
   if (filters.value.range && filters.value.range.length === 2) {
@@ -136,14 +137,19 @@ function openCreate() {
   createDlg.value = true;
 }
 async function save() {
-  await api.publicFeedbackCreate(form.value);
+  await api.publicFeedbackCreate({ ...form.value, schoolId: getCurrentSchoolId() });
   createDlg.value = false;
   await load();
 }
-load();
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
+});
 
 async function exportCsv() {
-  const p: any = {};
+  const p: any = { schoolId: getCurrentSchoolId() };
   if (filters.value.type) p.type = filters.value.type;
   if (filters.value.status) p.status = filters.value.status;
   if (filters.value.range && filters.value.range.length === 2) {

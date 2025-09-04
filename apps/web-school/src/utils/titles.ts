@@ -44,14 +44,14 @@ const map: Record<string, string> = {
   '/risks': '隐患排查管理',
   '/devices': '智能终端设备管理',
   '/environment/status': '环境状态',
-  '/analytics': '大数据统计',
+  '/analytics': '数据看板',
   '/overview/alerts': '预警概览',
   '/system/announcements': '公告公文管理',
   '/system/news': '食安资讯发布',
   '/system/canteen': '食堂信息维护+食堂资质',
   '/system/linkage': '关联监管端审核',
   '/system/app-download': '移动端扫码',
-  '/system/users': '用户与角色权限',
+  '/system/users': '用户管理',
 };
 
 export function titleForRoute(route: RouteLocationNormalizedLoaded): string {

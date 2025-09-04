@@ -72,7 +72,7 @@ export class EmergencyService {
   resources: Resource[] = [];
 
   constructor() {
-    this.seed();
+    if (process?.env?.DEMO_SEED === 'true') this.seed();
   }
 
   // Overview

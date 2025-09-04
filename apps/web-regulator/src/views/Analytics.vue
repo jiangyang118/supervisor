@@ -2,7 +2,7 @@
   <el-card>
     <template #header>
       <div style="display: flex; align-items: center; justify-content: space-between">
-        <span>大数据统计</span>
+        <span>数据看版</span>
         <div>
           <el-button @click="exportPdf">导出 PDF（占位）</el-button>
         </div>

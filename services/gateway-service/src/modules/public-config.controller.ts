@@ -21,14 +21,14 @@ export class PublicConfigController {
       level: boolean;
       trace: boolean;
       menu: boolean;
-    }> & { updatedBy?: string },
+    }> & { updatedBy?: string; schoolId?: string | number },
   ) {
-    const { updatedBy, ...partial } = b as any;
-    return this.svc.update(partial, updatedBy);
+    const { updatedBy, schoolId, ...partial } = b as any;
+    return this.svc.update(schoolId, partial, updatedBy);
   }
 
   @Get('audit')
-  audit() {
-    return this.svc.listAudit();
+  audit(@Query('schoolId') schoolId?: string) {
+    return this.svc.listAudit(schoolId);
   }
 }

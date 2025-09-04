@@ -37,7 +37,7 @@ export class DevicesService {
   private items: DeviceInfo[] = [];
 
   constructor() {
-    this.seed();
+    if (process?.env?.DEMO_SEED === 'true') this.seed();
   }
 
   seed() {

@@ -163,60 +163,7 @@ export class FoodWasteService {
     };
   }
 
-  seed() {
-    const today = new Date();
-    const iso = (d: Date) => new Date(d).toISOString();
-    const daysAgo = (n: number) => iso(new Date(today.getTime() - n * 86400000));
-    const samples: Array<Omit<FoodWasteRecord, 'id'>> = [
-      {
-        schoolId: 'sch-001',
-        date: daysAgo(0),
-        source: '库存损耗',
-        itemType: '食材',
-        itemName: '黄瓜',
-        weightKg: 3,
-        amountYuan: 18,
-        reason: '存储不当变质',
-        meal: '午餐',
-      },
-      {
-        schoolId: 'sch-001',
-        date: daysAgo(1),
-        source: '加工制作损耗',
-        itemType: '菜品',
-        itemName: '红烧肉',
-        weightKg: 2.5,
-        amountYuan: 45,
-        reason: '切配与烹饪损耗',
-        meal: '午餐',
-      },
-      {
-        schoolId: 'sch-001',
-        date: daysAgo(1),
-        source: '剩菜剩饭损耗',
-        itemType: '菜品',
-        itemName: '青椒肉丝',
-        weightKg: 4.2,
-        amountYuan: 30,
-        reason: '学生剩饭',
-        meal: '晚餐',
-      },
-      {
-        schoolId: 'sch-001',
-        date: daysAgo(2),
-        source: '剩菜剩饭损耗',
-        itemType: '菜品',
-        itemName: '米饭',
-        weightKg: 3.6,
-        amountYuan: 14,
-        reason: '供餐过量',
-        meal: '午餐',
-      },
-    ];
-    for (const s of samples) this.records.unshift({ id: this.id('FW'), ...s });
-  }
-
   constructor(private readonly repo?: FoodWasteRepository) {
-    this.seed();
+   
   }
 }

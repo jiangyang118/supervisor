@@ -217,8 +217,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 const tab = ref('reports');
 // Reports
 const reports = ref<{ items: any[]; total: number; page: number; pageSize: number }>({
@@ -231,6 +232,7 @@ const reportStatus = ref('');
 const range = ref<[Date, Date] | null>(null);
 async function loadReports() {
   const p: any = { page: reports.value.page, pageSize: reports.value.pageSize };
+  const sid = getCurrentSchoolId(); if (sid) p.schoolId = sid;
   if (reportStatus.value) p.status = reportStatus.value;
   if (range.value && range.value.length === 2) {
     p.start = range.value[0].toISOString();
@@ -245,7 +247,7 @@ function openReportCreate() {
   dlgReport.value = true;
 }
 async function saveReport() {
-  await api.riskReportCreate(reportForm.value);
+  await api.riskReportCreate({ ...reportForm.value, schoolId: getCurrentSchoolId() } as any);
   dlgReport.value = false;
   await loadReports();
 }
@@ -274,6 +276,7 @@ const taskStatus = ref('');
 const assignee = ref('');
 async function loadTasks() {
   tasks.value = await api.riskTasks({
+    schoolId: getCurrentSchoolId(),
     status: taskStatus.value || undefined,
     assignee: assignee.value || undefined,
   });
@@ -315,12 +318,17 @@ async function saveSubmit() {
   await loadTasks();
 }
 
-loadReports();
-loadTasks();
+onMounted(() => {
+  loadReports();
+  loadTasks();
+  const h = () => { loadReports(); loadTasks(); };
+  window.addEventListener('school-changed', h as any);
+  onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
+});
 
 // Export helpers
 async function exportReportsCsv() {
-  const p: any = {};
+  const p: any = { schoolId: getCurrentSchoolId() };
   if (reportStatus.value) p.status = reportStatus.value;
   if (range.value && range.value.length === 2) {
     p.start = range.value[0].toISOString();
@@ -336,7 +344,7 @@ async function exportReportsCsv() {
   URL.revokeObjectURL(url);
 }
 async function exportTasksCsv() {
-  const p: any = {};
+  const p: any = { schoolId: getCurrentSchoolId() };
   if (taskStatus.value) p.status = taskStatus.value;
   if (assignee.value) p.assignee = assignee.value;
   const csv = await api.riskTasksExportCsv(p);
@@ -385,5 +393,7 @@ async function delCatalog(row: any) {
   await api.riskCatalogDelete(row.id);
   await loadCatalog();
 }
-loadCatalog();
+onMounted(() => {
+  loadCatalog();
+});
 </script>

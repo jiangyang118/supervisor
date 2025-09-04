@@ -17,12 +17,12 @@ export class WasteController {
   }
 
   @Patch('categories/:id/enable')
-  setEnabled(@Param('id') id: string, @Body() body: { enabled: boolean }) {
+  setEnabled(@Param('id', ParseIntPipe) id: number, @Body() body: { enabled: boolean }) {
     return this.svc.setCategoryEnabled(id, !!body.enabled);
   }
 
   @Delete('categories/:id')
-  delete(@Param('id') id: string) {
+  delete(@Param('id', ParseIntPipe) id: number) {
     return this.svc.deleteCategory(id);
   }
 

@@ -1021,6 +1021,7 @@ export const api = {
   },
   riskReports: (
     params: {
+      schoolId?: string;
       status?: '待处理' | '整改中' | '已整改';
       start?: string;
       end?: string;
@@ -1034,6 +1035,7 @@ export const api = {
       `/school/risk/reports?${new URLSearchParams(Object.fromEntries(Object.entries({ ...params }).filter(([, v]) => v !== undefined && v !== '' && v !== null)) as any).toString()}`,
     ),
   riskReportCreate: async (body: {
+    schoolId?: string;
     location: string;
     object: string;
     desc: string;
@@ -1069,6 +1071,7 @@ export const api = {
   },
   riskTasks: (
     params: {
+      schoolId?: string;
       assignee?: string;
       status?: '待处理' | '进行中' | '已完成';
       start?: string;
@@ -1314,5 +1317,5 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  // Devices (defined earlier: devicesList/deviceTypes/deviceStatuses)
+
 };

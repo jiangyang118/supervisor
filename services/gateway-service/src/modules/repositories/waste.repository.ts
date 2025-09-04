@@ -1,7 +1,7 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { DbService } from '../db.service';
 
-export type WasteCategory = string;
+export type WasteCategory = number;
 
 @Injectable()
 export class WasteRepository {
@@ -13,15 +13,16 @@ export class WasteRepository {
     const { rows } = await this.db.query<any>(
       `select id, name, enabled from waste_categories ${where} order by name asc`,
     );
-    return rows.map((r) => ({ id: r.id as string, name: r.name as string, enabled: !!r.enabled }));
+    return rows.map((r) => ({ id: Number(r.id), name: r.name as string, enabled: !!r.enabled }));
   }
 
-  async createCategory(id: string, name: string) {
+  async createCategory(name: string) {
     try {
-      await this.db.query(
-        'insert into waste_categories(id, name, enabled) values(?,?,1)',
-        [id, name],
+      const res = await this.db.query(
+        'insert into waste_categories(name, enabled) values(?,1)',
+        [name],
       );
+      const id = res.insertId || 0;
       return { id, name, enabled: true };
     } catch (e: any) {
       if (e?.code === 'ER_DUP_ENTRY' || e?.errno === 1062) {
@@ -31,17 +32,17 @@ export class WasteRepository {
     }
   }
 
-  async setCategoryEnabled(id: string, enabled: boolean) {
+  async setCategoryEnabled(id: number, enabled: boolean) {
     const { rows } = await this.db.query<any>('update waste_categories set enabled = ? where id = ?', [enabled ? 1 : 0, id]);
     return rows;
   }
 
-  async deleteCategory(id: string) {
+  async deleteCategory(id: number) {
     await this.db.query('delete from waste_categories where id = ?', [id]);
   }
 
   // Records
-  async countRecords(filters: { schoolId?: number; category?: string; start?: string; end?: string }) {
+  async countRecords(filters: { schoolId?: number; category?: number; start?: string; end?: string }) {
     const where: string[] = [];
     const params: any[] = [];
     if (filters.schoolId !== undefined && filters.schoolId !== null) { where.push('school_id = ?'); params.push(filters.schoolId); }
@@ -55,7 +56,7 @@ export class WasteRepository {
 
   async listRecords(filters: {
     schoolId?: number;
-    category?: string;
+    category?: number;
     start?: string;
     end?: string;
     page: number;

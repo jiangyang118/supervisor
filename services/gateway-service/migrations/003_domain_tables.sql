@@ -1,19 +1,19 @@
 -- Inventory tables
 create table if not exists inv_categories (
-  id varchar(64) primary key,
+  id int(20) primary key auto_increment,
   name varchar(255) not null
 );
 
 create table if not exists inv_products (
-  id varchar(64) primary key,
+  id int(20) primary key auto_increment,
   name varchar(255) not null,
   unit varchar(64) not null,
-  category_id varchar(64) null,
+  category_id int(20) null,
   key idx_inv_products_category (category_id)
 );
 
 create table if not exists inv_suppliers (
-  id varchar(64) primary key,
+  id int(20) primary key auto_increment,
   name varchar(255) not null,
   phone varchar(64) null,
   license varchar(128) null,
@@ -31,7 +31,7 @@ create table if not exists inv_suppliers (
 );
 
 create table if not exists inv_warehouses (
-  id varchar(64) primary key,
+  id int(20) primary key auto_increment,
   name varchar(255) not null,
   location varchar(255) null,
   capacity int null,
@@ -39,12 +39,11 @@ create table if not exists inv_warehouses (
 );
 
 create table if not exists inv_inbound (
-  id int primary key auto_increment,
-  school_id int not null,
-  product_id varchar(64) not null,
+  id int(20) primary key auto_increment,
+  product_id int(20) not null,
   qty decimal(18,3) not null,
-  supplier_id varchar(64) null,
-  warehouse_id varchar(64) null,
+  supplier_id int(20) null,
+  warehouse_id int(20) null,
   image_url varchar(255) null,
   at datetime not null,
   source varchar(32) not null,
@@ -53,13 +52,12 @@ create table if not exists inv_inbound (
 );
 
 create table if not exists inv_outbound (
-  id int primary key auto_increment,
-  school_id int not null,
-  product_id varchar(64) not null,
+  id int(20) primary key auto_increment,
+  product_id int(20) not null,
   qty decimal(18,3) not null,
   purpose varchar(255) null,
   by_who varchar(128) null,
-  warehouse_id varchar(64) null,
+  warehouse_id int(20) null,
   at datetime not null,
   source varchar(32) not null,
   key idx_inv_out_school_at (school_id, at),
@@ -67,9 +65,8 @@ create table if not exists inv_outbound (
 );
 
 create table if not exists inv_tickets (
-  id int primary key auto_increment,
-  school_id int not null,
-  product_id varchar(64) not null,
+  id int(20) primary key auto_increment,
+  product_id int(20) not null,
   type varchar(128) not null,
   image_url varchar(255) null,
   at datetime not null,
@@ -77,8 +74,7 @@ create table if not exists inv_tickets (
 );
 
 create table if not exists inv_additives (
-  id int primary key auto_increment,
-  school_id int not null,
+  id int(20) primary key auto_increment,
   name varchar(128) not null,
   amount decimal(18,3) not null,
   dish varchar(128) null,
@@ -89,8 +85,8 @@ create table if not exists inv_additives (
 
 -- Public feedback
 create table if not exists public_feedback (
-  id varchar(64) primary key,
-  school_id varchar(64) not null,
+  id int(20) primary key auto_increment,
+  school_id int(20) not null,
   type varchar(32) not null,
   content text not null,
   user varchar(128) null,
@@ -107,7 +103,7 @@ create table if not exists public_feedback (
 
 -- Certificates
 create table if not exists certificates (
-  id varchar(64) primary key,
+  id int(20) primary key auto_increment,
   owner varchar(255) not null,
   type varchar(128) not null,
   number varchar(128) not null,
@@ -118,8 +114,8 @@ create table if not exists certificates (
 
 -- Food waste
 create table if not exists food_waste_records (
-  id varchar(64) primary key,
-  school_id varchar(64) not null,
+  id int(20) primary key auto_increment,
+  school_id int(20) not null,
   date datetime not null,
   source varchar(32) not null,
   item_type varchar(32) not null,
@@ -132,7 +128,7 @@ create table if not exists food_waste_records (
 );
 
 create table if not exists food_waste_reasons (
-  id varchar(64) primary key,
+  id int(20) primary key auto_increment,
   name varchar(255) not null,
   enabled tinyint not null default 1
 );

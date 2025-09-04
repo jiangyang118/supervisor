@@ -56,6 +56,7 @@ import { RegulatorMorningChecksService } from './regulator-morning-checks.servic
 import { RateLimitGuard } from './rate-limit.guard';
 import { DeviceMockController } from './device-mock.controller';
 import { DbService } from './db.service';
+import { DbBootstrapService } from './db.bootstrap';
 import { PersistenceModule } from './persistence.module';
 import { DbHealthController } from './db.controller';
 import { Module as NestModule } from '@nestjs/common';
@@ -138,6 +139,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     InspectionsService,
     RegulatorMorningChecksService,
     RateLimitGuard,
+    DbBootstrapService,
   ],
 })
 export class AppModule {}

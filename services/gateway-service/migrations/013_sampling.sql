@@ -23,7 +23,7 @@ create table if not exists sampling_records (
 create table if not exists sampling_cleanups (
   id int primary key auto_increment,
   school_id int not null,
-  sample_id bigint null,
+  sample_id int null,
   sample varchar(255) not null,
   weight decimal(10,2) not null,
   image_url varchar(255) null,

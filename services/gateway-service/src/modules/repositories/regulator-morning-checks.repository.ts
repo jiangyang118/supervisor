@@ -22,9 +22,8 @@ export class RegulatorMorningChecksRepository {
 
   async insert(rec: RegulatedCheckRow): Promise<void> {
     await this.db.query(
-      'insert ignore into regulator_morning_checks(id, school_id, school_name, payload, received_at) values(?,?,?,?,?)',
-      [rec.id, rec.schoolId || null, rec.schoolName || null, JSON.stringify(rec.payload), rec.receivedAt]
+      'insert into regulator_morning_checks(school_id, school_name, payload, received_at) values(?,?,?,?)',
+      [rec.schoolId || null, rec.schoolName || null, JSON.stringify(rec.payload), rec.receivedAt]
     );
   }
 }
-

@@ -1,7 +1,7 @@
 -- Waste domain tables
 
 create table if not exists waste_categories (
-  id varchar(64) not null primary key,
+  id int(20) not null primary key auto_increment,
   name varchar(255) not null,
   enabled tinyint(1) not null default 1,
   created_at datetime not null default current_timestamp,
@@ -20,6 +20,6 @@ create table if not exists waste_records (
 );
 
 -- seed default categories (idempotent)
-insert ignore into waste_categories (id, name, enabled) values
-  ('wc-001', '餐厨垃圾', 1),
-  ('wc-002', '过期食材', 1);
+insert ignore into waste_categories (name, enabled) values
+  ('餐厨垃圾', 1),
+  ('过期食材', 1);

@@ -33,6 +33,7 @@ export class AuthController {
 
     // 2) 校验密码：优先使用数据库 user_credentials（salt+sha256），否则回退到演示口令
     let ok = false;
+    let usedDemo = false;
     try {
       const cred = await this.usersRepo.getCredentialByUsername(b.username);
       if (cred) {
@@ -48,18 +49,22 @@ export class AuthController {
     }
     // 回退演示账户（仅当不存在或未配置 user_credentials 时）
     if (!ok) {
-      ok =
+      usedDemo =
         (b.username === 'admin' && b.password === 'admin') ||
         (b.username === 'user' && b.password === 'user');
+      ok = usedDemo;
     }
 
     // 3) 优先使用数据库结果，其次回退到内存数据，确保兼容未配置数据库的场景
-    const memoryUser = (this.sys.listUsers() || []).find((x) => x.username === b.username);
-    const userId = dbUser?.id ?? (memoryUser ? Number(String(memoryUser.id).replace(/\D/g, '')) || 1 : 0);
-    const roles = dbUser?.roles ?? memoryUser?.roles ?? [];
-    const displayName = dbUser?.displayName ?? memoryUser?.displayName ?? b.username;
-
-    if (!dbUser && !memoryUser) return { ok: false, message: 'user not found' };
+    let userId = dbUser?.id ?? 0;
+    let roles: string[] = dbUser?.roles ?? [];
+    let displayName = dbUser?.displayName ?? b.username;
+    if (!dbUser && usedDemo) {
+      userId = b.username === 'admin' ? 1 : 2;
+      roles = b.username === 'admin' ? ['ADMIN'] : ['SCHOOL'];
+      displayName = b.username;
+    }
+    if (!dbUser && !usedDemo) return { ok: false, message: 'user not found' };
     if (!ok) return { ok: false, message: 'invalid credentials' };
 
     // 4) 计算权限：若数据库可用则从角色-权限表汇总，否则回退内存角色定义
@@ -70,7 +75,11 @@ export class AuthController {
       for (const r of roleDefs) if (roleSet.has(r.name)) permissions.push(...(r.permissions || []));
       permissions = Array.from(new Set(permissions));
     } catch {
-      permissions = (this.sys.listRoles().find((r) => r.name === roles[0])?.permissions || []);
+      try {
+        permissions = (this.sys.listRoles().find((r) => r.name === roles[0])?.permissions || []);
+      } catch {
+        permissions = [];
+      }
     }
 
     const secret = process.env.JWT_SECRET || 'dev-secret';

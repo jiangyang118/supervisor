@@ -1,6 +1,6 @@
 <template>
   <el-card>
-    <template #header>公告公文</template>
+    <template #header>公告公文管理</template>
     <el-form :model="form" label-width="96px" style="max-width: 720px">
       <el-form-item label="标题"><el-input v-model="form.title" /></el-form-item>
       <el-form-item label="内容"><el-input v-model="form.content" type="textarea" /></el-form-item>

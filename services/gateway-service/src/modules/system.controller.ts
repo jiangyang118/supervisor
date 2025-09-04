@@ -76,6 +76,44 @@ export class SystemController {
     return this.svc.setRolePermissions(b.name, b.permissions);
   }
 
+  // Staff (personnel)
+  @Get('staff')
+  staffList(
+    @Query('schoolId') schoolId?: string,
+    @Query('q') q?: string,
+    @Query('page') page: string = '1',
+    @Query('pageSize') pageSize: string = '20',
+  ) {
+    return this.svc.staffSearch({
+      schoolId: schoolId ? Number(schoolId) : 1,
+      q,
+      page,
+      pageSize,
+    });
+  }
+  @Post('staff')
+  staffCreate(
+    @Body()
+    b: { schoolId?: number; name: string; jobTitle?: string; phone?: string; healthCertNo?: string; enabled?: boolean },
+  ) {
+    return this.svc.staffCreate(b);
+  }
+  @Post('staff/import')
+  staffImport(
+    @Body()
+    b: { schoolId?: number; items: Array<{ name: string; jobTitle?: string; phone?: string; healthCertNo?: string; enabled?: boolean }> },
+  ) {
+    return this.svc.staffImport(b.schoolId, b.items || []);
+  }
+  @Post('staff/update')
+  staffUpdate(@Body() b: { id: number; patch: any }) {
+    return this.svc.staffUpdate(b.id, b.patch || {});
+  }
+  @Post('staff/delete')
+  staffDelete(@Body() b: { id: number }) {
+    return this.svc.staffDelete(b.id);
+  }
+
   // Platform news (for schools to read regulator-pushed infos)
   @Get('news') schoolNews(
     @Query('page') page = '1',

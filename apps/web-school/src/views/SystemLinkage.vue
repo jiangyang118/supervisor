@@ -1,6 +1,6 @@
 <template>
   <el-card>
-    <template #header>与监管端关联申请</template>
+    <template #header>关联监管端审核</template>
     <el-form :model="form" label-width="120px" style="max-width: 640px">
       <el-form-item label="监管单位"><el-input v-model="form.org" /></el-form-item>
       <el-form-item label="联系人"><el-input v-model="form.contact" /></el-form-item>

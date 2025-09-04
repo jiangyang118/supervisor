@@ -257,33 +257,6 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  samplingCleanupList: (params: { schoolId?: number; page?: number; pageSize?: number } = {}) =>
-    get<{ items: any[]; total: number; page: number; pageSize: number }>(
-      `/school/sampling/cleanup?${new URLSearchParams(
-        Object.fromEntries(
-          Object.entries({ ...params })
-            .filter(([, v]) => v !== undefined && v !== '' && v !== null)
-            .map(([k, v]) => [k, String(v)]),
-        ) as any,
-      ).toString()}`,
-    ),
-  samplingCleanupCreate: async (body: {
-    sampleId?: number;
-    sample: string;
-    weight: number;
-    imageUrl?: string;
-    method: string;
-    by: string;
-    schoolId?: number;
-  }) => {
-    const res = await fetch(`${BASE}/school/sampling/cleanup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
   // Pesticide test APIs
   pesticideList: (
     params: {
@@ -990,145 +963,6 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  // Emergency
-  emergOverview: () => get<any>(`/school/emergency/overview`),
-  emergEvents: (params: { type?: '事件' | '演练'; status?: string } = {}) =>
-    get<any[]>(
-      `/school/emergency/events?${new URLSearchParams(
-        Object.fromEntries(
-          Object.entries({ ...params })
-            .filter(([, v]) => v !== undefined && v !== '' && v !== null)
-            .map(([k, v]) => [k, String(v)]),
-        ) as any,
-      ).toString()}`,
-    ),
-  emergAccept: async (id: string) => {
-    const res = await fetch(`${BASE}/school/emergency/events/accept`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  emergClear: async (id: string) => {
-    const res = await fetch(`${BASE}/school/emergency/events/clear`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  emergStartPlan: async (id: string, planId: string) => {
-    const res = await fetch(`${BASE}/school/emergency/events/start-plan`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, planId }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  emergPlans: () => get<any[]>(`/school/emergency/plans`),
-  emergPlanCreate: async (body: {
-    title: string;
-    flow: string;
-    law?: string;
-    actions?: string[];
-  }) => {
-    const res = await fetch(`${BASE}/school/emergency/plans`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  emergDuty: () => get<any[]>(`/school/emergency/duty`),
-  emergDutySave: async (body: { id?: string; name: string; members: string[]; oncall: string }) => {
-    const res = await fetch(`${BASE}/school/emergency/duty`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  emergMeetings: () => get<any[]>(`/school/emergency/meetings`),
-  emergMeetingCreate: async (body: {
-    scene: '事件' | '演练';
-    title: string;
-    micOn?: boolean;
-    camOn?: boolean;
-  }) => {
-    const res = await fetch(`${BASE}/school/emergency/meetings`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  emergMeetingState: async (
-    id: string,
-    patch: { micOn?: boolean; camOn?: boolean; sharing?: boolean },
-  ) => {
-    const res = await fetch(
-      `${BASE}/school/emergency/meetings/state?id=${encodeURIComponent(id)}`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(patch),
-      },
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  emergMeetingInvite: async (id: string, who: string) => {
-    const res = await fetch(`${BASE}/school/emergency/meetings/invite`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, who }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  emergTasks: (scene?: '事件' | '演练') =>
-    get<any[]>(`/school/emergency/tasks${scene ? `?scene=${encodeURIComponent(scene)}` : ''}`),
-  emergTaskCreate: async (body: { scene: '事件' | '演练'; title: string; assignees: string[] }) => {
-    const res = await fetch(`${BASE}/school/emergency/tasks`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  emergTaskSetStatus: async (id: string, status: '待办' | '进行中' | '已完成') => {
-    const res = await fetch(`${BASE}/school/emergency/tasks/status?id=${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  emergCameras: () => get<any[]>(`/school/emergency/cameras`),
-  emergResources: () => get<any[]>(`/school/emergency/resources`),
-  emergNotify: async (body: {
-    scene: '事件' | '演练';
-    to: string;
-    via: 'sms' | 'voice' | 'app';
-    content: string;
-  }) => {
-    const res = await fetch(`${BASE}/school/emergency/notify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
   // Analytics
   analyticsDashboard: (params: { schoolId?: string } = {}) =>
     get<any>(
@@ -1149,33 +983,6 @@ export const api = {
         ) as any,
       ).toString()}`,
     ),
-  emergEventsExportCsv: async (params: { type?: '事件' | '演练'; status?: string } = {}) => {
-    const url = `/school/emergency/events/export.csv?${new URLSearchParams(Object.fromEntries(Object.entries({ ...params }).filter(([, v]) => v !== undefined && v !== '')) as any).toString()}`;
-    const res = await fetch(`${BASE}${url}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { csv } = await res.json();
-    return csv as string;
-  },
-  emergPlansExportCsv: async () => {
-    const r = await fetch(`${BASE}/school/emergency/plans/export.csv`);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const { csv } = await r.json();
-    return csv as string;
-  },
-  emergDutyExportCsv: async () => {
-    const r = await fetch(`${BASE}/school/emergency/duty/export.csv`);
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const { csv } = await r.json();
-    return csv as string;
-  },
-  emergTasksExportCsv: async (scene?: '事件' | '演练') => {
-    const r = await fetch(
-      `${BASE}/school/emergency/tasks/export.csv${scene ? `?scene=${encodeURIComponent(scene)}` : ''}`,
-    );
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    const { csv } = await r.json();
-    return csv as string;
-  },
   // Risk (hazard)
   riskCatalog: () => get<any[]>(`/school/risk/catalog`),
   riskCatalogCreate: async (body: {
@@ -1367,16 +1174,6 @@ export const api = {
     return r.json();
   },
   sysApps: () => get<any[]>(`/school/system/apps`),
-  sysMeals: () => get<any[]>(`/school/system/meals`),
-  sysMealsSave: async (items: any[]) => {
-    const r = await fetch(`${BASE}/school/system/meals`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items }),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
-  },
   sysUsers: () => get<any[]>(`/school/system/users`),
   sysRoles: () => get<any[]>(`/school/system/roles`),
   sysUserSetRoles: async (id: string, roles: string[]) => {
@@ -1484,4 +1281,50 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
+  // Staff (personnel)
+  staffList: (params: { schoolId?: number; q?: string; page?: number; pageSize?: number } = {}) =>
+    get<{ items: any[]; total: number; page: number; pageSize: number }>(
+      `/school/system/staff?${new URLSearchParams(
+        Object.fromEntries(
+          Object.entries({ ...params })
+            .filter(([, v]) => v !== undefined && v !== '' && v !== null)
+            .map(([k, v]) => [k, String(v)]),
+        ) as any,
+      ).toString()}`,
+    ),
+  staffCreate: async (body: { schoolId?: number; name: string; jobTitle?: string; phone?: string; healthCertNo?: string; enabled?: boolean }) => {
+    const res = await fetch(`${BASE}/school/system/staff`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  staffImport: async (body: { schoolId?: number; items: Array<{ name: string; jobTitle?: string; phone?: string; healthCertNo?: string; enabled?: boolean }> }) => {
+    const res = await fetch(`${BASE}/school/system/staff/import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  staffUpdate: async (id: number, patch: any) => {
+    const res = await fetch(`${BASE}/school/system/staff/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, patch }) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  staffDelete: async (id: number) => {
+    const res = await fetch(`${BASE}/school/system/staff/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  // Devices
+  devicesList: (
+    params: { schoolId?: string; type?: string; status?: string; q?: string } = {},
+  ) =>
+    get<any[]>(
+      `/school/devices?${new URLSearchParams(
+        Object.fromEntries(
+          Object.entries(params)
+            .filter(([, v]) => v !== undefined && v !== '' && v !== null)
+            .map(([k, v]) => [k, String(v)]),
+        ) as any,
+      ).toString()}`,
+    ),
+  deviceTypes: () => get<string[]>(`/school/devices/types`),
+  deviceStatuses: () => get<string[]>(`/school/devices/statuses`),
 };

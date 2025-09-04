@@ -2,7 +2,7 @@
   <el-card class="sn-card">
     <template #header
       ><div style="display: flex; align-items: center; justify-content: space-between">
-        <span>食安资讯</span>
+        <span>食安资讯发布</span>
       </div></template
     >
     <el-table :data="rows" size="small" border height="calc(100vh - 260px)">

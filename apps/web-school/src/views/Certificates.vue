@@ -7,13 +7,11 @@
           <el-input
             v-model="filters.owner"
             placeholder="主体"
-            size="small"
             style="width: 180px; margin-right: 8px"
           />
           <el-select
             v-model="filters.type"
             placeholder="请选择"
-            size="small"
             style="width: 160px; margin-right: 8px"
           >
             <el-option label="全部" value="" />
@@ -24,21 +22,20 @@
           <el-select
             v-model="filters.status"
             placeholder="请选择"
-            size="small"
             style="width: 120px; margin-right: 8px"
           >
             <el-option label="全部" value="" />
             <el-option label="有效" value="有效" />
             <el-option label="过期" value="过期" />
           </el-select>
-          <el-button size="small" @click="load">查询</el-button>
+          <el-button   @click="load">查询</el-button>
           <el-divider direction="vertical" />
           <el-button type="primary" @click="openCreate">新增证件</el-button>
           <el-button @click="onExportCsv">导出 CSV</el-button>
         </div>
       </div>
     </template>
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"   border>
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="owner" label="主体" />
       <el-table-column prop="type" label="类型" />
@@ -53,8 +50,8 @@
       </el-table-column>
       <el-table-column label="操作" width="200">
         <template #default="{ row }">
-          <el-button size="small" @click="openEdit(row)">编辑</el-button>
-          <el-button size="small" type="danger" @click="del(row)">删除</el-button>
+          <el-button   @click="openEdit(row)">编辑</el-button>
+          <el-button   type="danger" @click="del(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

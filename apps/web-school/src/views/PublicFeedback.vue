@@ -1,6 +1,6 @@
 <template>
   <el-card>
-    <template #header>公众投诉/建议/表扬/评论处理</template>
+    <template #header>公众反馈处理</template>
     <div style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center">
       <el-select v-model="filters.type" placeholder="类型" clearable style="width: 140px">
         <el-option label="投诉" value="投诉" />

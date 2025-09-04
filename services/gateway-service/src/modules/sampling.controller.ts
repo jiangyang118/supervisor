@@ -78,46 +78,7 @@ export class SamplingController {
     return this.svc.setSampleMeasure(id, body.measure);
   }
 
-  // Cleanup
-  @Get('cleanup')
-  listCleanup(
-    @Query('schoolId') schoolId?: string,
-    @Query('page') page = '1',
-    @Query('pageSize') pageSize = '20',
-  ) {
-    return this.svc.listCleanups({ schoolId: schoolId ? Number(schoolId) : undefined, page, pageSize });
-  }
-
-  @Post('cleanup')
-  createCleanup(
-    @Body()
-    body: {
-      schoolId?: number;
-      sampleId?: number;
-      sample: string;
-      weight: number;
-      imageUrl?: string;
-      method: string;
-      by: string;
-    },
-  ) {
-    return this.svc.createCleanup(body);
-  }
-
-  @Post('cabinet/callback')
-  cabinetCleanup(
-    @Body()
-    body: {
-      schoolId?: number;
-      sampleId?: number;
-      sample: string;
-      weight: number;
-      imageUrl?: string;
-      by: string;
-    },
-  ) {
-    return this.svc.cabinetCleanupCallback(body);
-  }
+  // Cleanup endpoints removed as per requirement
 
   // Stream for realtime events
   @Sse('stream')

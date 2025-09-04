@@ -1,6 +1,6 @@
 <template>
   <el-card>
-    <template #header>APP 下载</template>
+    <template #header>移动端扫码</template>
     <el-table :data="apps" size="small" border>
       <el-table-column prop="platform" label="平台" width="140" />
       <el-table-column prop="version" label="版本" width="120" />

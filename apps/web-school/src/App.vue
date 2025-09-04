@@ -12,83 +12,74 @@
     </el-header>
     <el-container>
       <el-aside width="240px" class="app-aside">
-        <el-menu :default-active="active" router unique-opened>
-          <el-menu-item index="/overview">概览</el-menu-item>
+        <el-menu :key="openeds.join(',')" :default-active="active" :default-openeds="openeds" router unique-opened>
+          <el-menu-item index="/overview">首页</el-menu-item>
+          <el-sub-menu index="overview">
+            <template #title>总览</template>
+            <el-menu-item index="/analytics">数据看板</el-menu-item>
+            <el-menu-item index="/overview/alerts">预警概览</el-menu-item>
+          </el-sub-menu>
+
           <el-sub-menu index="ai">
-            <template #title>智能检查/AI 预警</template>
-            <el-menu-item index="/ai/events">违规抓拍明细</el-menu-item>
-            <el-menu-item index="/ai/summary">统计与导出</el-menu-item>
+            <template #title>智能检查管理</template>
+            <el-menu-item index="/ai/events">AI 违规抓拍明细</el-menu-item>
+            <el-menu-item index="/ai/summary">行为统计与导出</el-menu-item>
           </el-sub-menu>
+
           <el-sub-menu index="bright">
-            <template #title>明厨亮灶</template>
+            <template #title>明厨亮灶管理</template>
             <el-menu-item index="/bright-kitchen/live">实时视频</el-menu-item>
-            <el-menu-item index="/bright-kitchen/playback">回放</el-menu-item>
+            <el-menu-item index="/bright-kitchen/playback">视频回放</el-menu-item>
             <el-menu-item index="/bright-kitchen/snapshots">快照留存</el-menu-item>
-            <el-menu-item index="/bright-kitchen/channels">通道配置</el-menu-item>
+            <el-menu-item index="/bright-kitchen/channels">摄像头/NVR管理</el-menu-item>
           </el-sub-menu>
-          <el-menu-item index="/morning-check">晨检管理</el-menu-item>
-          <el-sub-menu index="sampling">
-            <template #title>留样管理</template>
-            <el-menu-item index="/sampling/records">留样记录</el-menu-item>
-            <el-menu-item index="/sampling/cleanup">样品清理</el-menu-item>
-          </el-sub-menu>
-          <el-menu-item index="/dine-with">陪餐管理</el-menu-item>
-          <el-menu-item index="/pesticide-tests">农残快检</el-menu-item>
-          <el-menu-item index="/disinfection">消毒管理</el-menu-item>
-          <el-menu-item index="/waste">废弃物管理</el-menu-item>
-          <el-sub-menu index="hygiene">
-            <template #title>卫生检查</template>
-            <el-menu-item index="/hygiene/inspections">卫生检查台账</el-menu-item>
-            <el-menu-item index="/hygiene/assets">固定资产维护</el-menu-item>
+          <el-sub-menu index="daily">
+            <template #title>日常运营管理</template>
+            <el-menu-item index="/morning-check">晨检管理</el-menu-item>
+            <el-menu-item index="/sampling/records">留样管理</el-menu-item>
+            <el-menu-item index="/pesticide-tests">农残快检管理</el-menu-item>
+            <el-menu-item index="/disinfection">消毒管理</el-menu-item>
+            <el-menu-item index="/waste">废弃物管理</el-menu-item>
+            <el-menu-item index="/hygiene/inspections">卫生管理</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="inventory">
-            <template #title>出入库/食材</template>
+            <template #title>出入库管理</template>
             <el-menu-item index="/inventory/items">商品管理</el-menu-item>
             <el-menu-item index="/inventory/inbound">入库登记</el-menu-item>
             <el-menu-item index="/inventory/outbound">出库登记</el-menu-item>
             <el-menu-item index="/inventory/stock">库存与盘点</el-menu-item>
-            <el-menu-item index="/inventory/tickets">索票索证</el-menu-item>
-            <el-menu-item index="/inventory/additives">添加剂使用</el-menu-item>
+            <el-menu-item index="/inventory/tickets">索票索证管理</el-menu-item>
+            <el-menu-item index="/suppliers">供应商管理</el-menu-item>
+            <el-menu-item index="/warehouses">仓库信息管理</el-menu-item>
           </el-sub-menu>
-          <el-menu-item index="/suppliers">供应商管理</el-menu-item>
-          <el-menu-item index="/warehouses">仓库信息</el-menu-item>
-          <el-menu-item index="/certificates">资质证件</el-menu-item>
-          <el-sub-menu index="training">
-            <template #title>培训考试</template>
-            <el-menu-item index="/training/courses">培训课程</el-menu-item>
-            <el-menu-item index="/training/exams">考试管理</el-menu-item>
+          <el-sub-menu index="hr">
+            <template #title>人事管理</template>
+            <el-menu-item index="/certificates">人员健康证</el-menu-item>
+            <el-menu-item index="/training">培训与考试</el-menu-item>
+            <el-menu-item index="/hr/staff">人员管理</el-menu-item>
           </el-sub-menu>
-          <el-menu-item index="/food-waste">食品浪费</el-menu-item>
-          <el-sub-menu index="public">
-            <template #title>公示管理</template>
-            <el-menu-item index="/public-feedback">公众反馈</el-menu-item>
-            <el-menu-item index="/public-config">公示项配置</el-menu-item>
+          <el-sub-menu index="env-dev">
+            <template #title>环境及设备管理</template>
+            <el-menu-item index="/risks">隐患排查管理</el-menu-item>
+            <el-menu-item index="/hygiene/assets">固定资产维护记录</el-menu-item>
+            <el-menu-item index="/environment/status">环境状态</el-menu-item>
+            <el-menu-item index="/devices">智能终端设备管理</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu index="emergency">
-            <template #title>应急管理</template>
-            <el-menu-item index="/emergency/overview">概览</el-menu-item>
-            <el-menu-item index="/emergency/plans">预案管理</el-menu-item>
-            <el-menu-item index="/emergency/duty">值守管理</el-menu-item>
-            <el-menu-item index="/emergency/events">事件/演练</el-menu-item>
-            <el-menu-item index="/emergency/command">指挥调度</el-menu-item>
-            <el-menu-item index="/emergency/video">视频监控</el-menu-item>
-            <el-menu-item index="/emergency/resources">资源库</el-menu-item>
+          <el-sub-menu index="pub-feed">
+            <template #title>公示与反馈</template>
+            <el-menu-item index="/public-feedback">公众反馈处理</el-menu-item>
+            <el-menu-item index="/public-config">公示内容配置</el-menu-item>
+            <el-menu-item index="/system/news">食安资讯发布</el-menu-item>
+            <el-menu-item index="/system/announcements">公告公文管理</el-menu-item>
+            <el-menu-item index="/food-waste">食品浪费分析</el-menu-item>
           </el-sub-menu>
-          <el-menu-item index="/risks">隐患排查</el-menu-item>
-          <el-menu-item index="/warnings">预警汇总</el-menu-item>
-          <el-menu-item index="/devices">设备信息</el-menu-item>
-          <el-menu-item index="/analytics">数据看板</el-menu-item>
-          <el-menu-item index="/food-index">食安指数</el-menu-item>
+          
           <el-sub-menu index="system">
             <template #title>系统配置</template>
-            <el-menu-item index="/system/news">食安资讯</el-menu-item>
-            <el-menu-item index="/system/info-center">资讯中心</el-menu-item>
-            <el-menu-item index="/system/announcements">公告公文</el-menu-item>
-            <el-menu-item index="/system/canteen">食堂信息</el-menu-item>
-            <el-menu-item index="/system/linkage">关联监管端</el-menu-item>
-            <el-menu-item index="/system/app-download">APP 下载</el-menu-item>
-            <el-menu-item index="/system/meals">餐次设置</el-menu-item>
-            <el-menu-item index="/system/users">用户与角色</el-menu-item>
+            <el-menu-item index="/system/canteen">食堂信息维护+食堂资质</el-menu-item>
+            <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item>
+            <el-menu-item index="/system/app-download">移动端扫码</el-menu-item>
+            <el-menu-item index="/system/users">用户与角色权限</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>
@@ -130,6 +121,41 @@ import PageHeader from './components/PageHeader.vue';
 const route = useRoute();
 const router = useRouter();
 const active = computed(() => route.path);
+const openeds = computed(() => {
+  const p = route.path;
+  if (p.startsWith('/ai/')) return ['ai'];
+  if (p.startsWith('/bright-kitchen/')) return ['bright'];
+  if (
+    p.startsWith('/analytics') || p.startsWith('/overview/alerts')
+  )
+    return ['overview'];
+  if (
+    p.startsWith('/morning-check') ||
+    p.startsWith('/sampling/') ||
+    p.startsWith('/pesticide-tests') ||
+    p.startsWith('/disinfection') ||
+    p.startsWith('/waste') ||
+    p.startsWith('/hygiene/')
+  )
+    return ['daily'];
+  if (
+    p.startsWith('/inventory/') ||
+    p === '/suppliers' ||
+    p === '/warehouses'
+  )
+    return ['inventory'];
+  if (p.startsWith('/certificates') || p.startsWith('/training') || p.startsWith('/hr/')) return ['hr'];
+  if (
+    p.startsWith('/public-') ||
+    p.startsWith('/system/news') ||
+    p.startsWith('/system/announcements') ||
+    p === '/food-waste'
+  )
+    return ['pub-feed'];
+  if (p.startsWith('/environment/') || p === '/devices' || p.startsWith('/risks')) return ['env-dev'];
+  if (p.startsWith('/system/')) return ['system'];
+  return [] as string[];
+});
 const go = (p: string) => router.push(p);
 
 const integration = computed(() => ({

@@ -1,6 +1,6 @@
 <template>
   <el-card>
-    <template #header>公示项配置</template>
+    <template #header>公示内容配置</template>
     <el-form label-width="200px" :model="cfg" style="max-width: 720px">
       <el-form-item label="是否公开直播画面"><el-switch v-model="cfg.live" /></el-form-item>
       <el-form-item label="是否公开用户评价"><el-switch v-model="cfg.rating" /></el-form-item>

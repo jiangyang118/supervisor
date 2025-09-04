@@ -210,11 +210,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { exportCsv } from '../utils/export';
 import { API_BASE } from '../services/api';
 import { getCurrentSchoolId } from '../utils/school';
-const tab = ref('courses');
+import { useRoute, useRouter } from 'vue-router';
+const route = useRoute();
+const router = useRouter();
+const initialTab = ((): 'courses' | 'exams' | 'results' => {
+  const t = String(route.query.tab || '').toLowerCase();
+  if (t === 'exams') return 'exams';
+  if (t === 'results') return 'results';
+  return 'courses';
+})();
+const tab = ref<'courses' | 'exams' | 'results'>(initialTab);
 const courses = ref<any[]>([]);
 const exams = ref<any[]>([]);
 const results = ref<any[]>([]);
@@ -492,5 +501,22 @@ onMounted(() => {
 });
 onUnmounted(() => {
   window.removeEventListener('school-changed', onSchoolChanged as any);
+});
+
+// If navigated directly to /training/exams, reflect tab
+watch(
+  () => route.query.tab,
+  (t) => {
+    const v = String(t || '').toLowerCase();
+    if (v === 'exams') tab.value = 'exams';
+    else if (v === 'results') tab.value = 'results';
+    else tab.value = 'courses';
+  },
+);
+
+// Optional: update URL query when switching tabs (keeps deep-linking)
+watch(tab, (v) => {
+  const q = { ...route.query, tab: v } as any;
+  router.replace({ path: route.path, query: q });
 });
 </script>

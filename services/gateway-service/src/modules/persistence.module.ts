@@ -13,6 +13,7 @@ import { SchoolsRepository } from './repositories/schools.repository';
 import { SamplingRepository } from './repositories/sampling.repository';
 import { DineRepository } from './repositories/dine.repository';
 import { DisinfectionRepository } from './repositories/disinfection.repository';
+import { StaffRepository } from './repositories/staff.repository';
 
 @Global()
 @Module({
@@ -31,6 +32,7 @@ import { DisinfectionRepository } from './repositories/disinfection.repository';
     SamplingRepository,
     DineRepository,
     DisinfectionRepository,
+    StaffRepository,
   ],
   exports: [
     DbService,
@@ -47,6 +49,7 @@ import { DisinfectionRepository } from './repositories/disinfection.repository';
     SamplingRepository,
     DineRepository,
     DisinfectionRepository,
+    StaffRepository,
   ],
 })
 export class PersistenceModule {}

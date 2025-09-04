@@ -1,6 +1,6 @@
 <template>
   <div class="system-users">
-    <h1>系统用户管理</h1>
+    <h1>用户与角色权限</h1>
     <div class="users-container">
       <!-- 用户列表将在这里显示 -->
     </div>

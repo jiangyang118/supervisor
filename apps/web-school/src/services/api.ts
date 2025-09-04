@@ -777,7 +777,7 @@ export const api = {
     return res.json();
   },
   // Certificates (资质证件)
-  certList: (params: { owner?: string; type?: string; status?: '有效' | '过期' } = {}) =>
+  certList: (params: { owner?: string; type?: string; status?: '有效' | '过期'; schoolId?: string | number } = {}) =>
     get<any[]>(
       `/school/certificates?${new URLSearchParams(
         Object.fromEntries(
@@ -787,7 +787,7 @@ export const api = {
         ) as any,
       ).toString()}`,
     ),
-  certCreate: async (body: { owner: string; type: string; number: string; expireAt: string }) => {
+  certCreate: async (body: { owner: string; type: string; number: string; expireAt: string; schoolId?: string | number }) => {
     const res = await fetch(`${BASE}/school/certificates`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -818,7 +818,7 @@ export const api = {
     return res.json();
   },
   certExportCsv: async (
-    params: { owner?: string; type?: string; status?: '有效' | '过期' } = {},
+    params: { owner?: string; type?: string; status?: '有效' | '过期'; schoolId?: string | number } = {},
   ) => {
     const url = `/school/certificates/export.csv?${new URLSearchParams(
       Object.fromEntries(

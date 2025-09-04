@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { ElMessage } from 'element-plus';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
@@ -111,9 +111,13 @@ async function onImport(opts: any) {
 function onExport() {
   exportCsv('人员清单', rows.value, { id: 'ID', name: '姓名', jobTitle: '岗位', phone: '电话', healthCertNo: '健康证编号', enabled: '在岗', createdAt: '时间' });
 }
-onMounted(load);
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
+});
 </script>
 
 <style scoped>
 </style>
-

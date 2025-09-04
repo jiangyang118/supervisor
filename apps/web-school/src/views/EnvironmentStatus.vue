@@ -54,7 +54,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { getCurrentSchoolId } from '../utils/school';
 
 type Device = { id: string; name: string; type: string; status: string; location?: string; lastSeen: string; metrics?: Record<string, any> };
 const sensors = ref<Device[]>([]);
@@ -69,6 +70,8 @@ async function load() {
   loading.value = true;
   try {
     const qs = new URLSearchParams();
+    const sid = getCurrentSchoolId();
+    if (sid) qs.set('schoolId', String(sid));
     if (q.value) qs.set('q', q.value);
     const [sensorList, smokeList] = await Promise.all([
       fetch(`/api/school/devices?type=SENSOR&${qs.toString()}`).then((r)=>r.json()),
@@ -80,7 +83,10 @@ async function load() {
     loading.value = false;
   }
 }
-
-onMounted(load);
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
+});
 </script>
-

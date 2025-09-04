@@ -101,9 +101,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../services/api';
 import { ElMessage } from 'element-plus';
+import { getCurrentSchoolId } from '../utils/school';
 
 type Device = {
   id: string;
@@ -137,7 +138,7 @@ const statusLabel = (s?: string) =>
 async function load() {
   loading.value = true;
   try {
-    rows.value = await api.devicesList({ type: type.value, status: status.value, q: q.value });
+    rows.value = await api.devicesList({ schoolId: getCurrentSchoolId(), type: type.value, status: status.value, q: q.value });
   } finally {
     loading.value = false;
   }
@@ -149,7 +150,12 @@ async function init() {
   await load();
 }
 
-onMounted(init);
+onMounted(() => {
+  init();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
+});
 
 // MEGO 新增接入
 const drawerVisible = ref(false);

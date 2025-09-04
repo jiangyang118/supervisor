@@ -84,10 +84,11 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { getCurrentSchoolId } from '../utils/school';
 type Row = {
   id: string;
   owner: string;
@@ -107,6 +108,7 @@ const editId = ref<string | null>(null);
 const form = reactive<any>({ owner: '', type: '人员健康证', number: '', expireAt: new Date() });
 async function load() {
   rows.value = await api.certList({
+    schoolId: getCurrentSchoolId(),
     owner: filters.owner || undefined,
     type: filters.type || undefined,
     status: (filters.status as any) || undefined,
@@ -140,6 +142,7 @@ const save = async () => {
       });
     else
       await api.certCreate({
+        schoolId: getCurrentSchoolId(),
         owner: form.owner,
         type: form.type,
         number: form.number,
@@ -160,6 +163,7 @@ const del = async (row: Row) => {
 };
 async function onExportCsv() {
   const csv = await api.certExportCsv({
+    schoolId: getCurrentSchoolId(),
     owner: filters.owner || undefined,
     type: filters.type || undefined,
     status: (filters.status as any) || undefined,
@@ -172,5 +176,10 @@ async function onExportCsv() {
   a.click();
   URL.revokeObjectURL(url);
 }
-onMounted(load);
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
+});
 </script>

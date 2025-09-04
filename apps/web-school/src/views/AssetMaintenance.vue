@@ -54,14 +54,15 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted } from 'vue';
+import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
 import { ElMessage } from 'element-plus';
+import { getCurrentSchoolIdNum } from '../utils/school';
 const rows = ref<any[]>([]);
 const filters = reactive<{ asset: string; range: [Date, Date] | null }>({ asset: '', range: null });
 async function load() {
-  const params: any = {};
+  const params: any = { schoolId: getCurrentSchoolIdNum() };
   if (filters.asset) params.asset = filters.asset;
   if (filters.range && filters.range.length === 2) {
     params.start = filters.range[0].toISOString();
@@ -98,6 +99,7 @@ async function save() {
   }
   try {
     await api.assetsCreate({
+      schoolId: getCurrentSchoolIdNum(),
       asset: form.asset,
       action: form.action,
       by: form.by,
@@ -125,5 +127,10 @@ function formatTime(iso: string) {
     return iso;
   }
 }
-onMounted(() => load());
+onMounted(() => {
+  load();
+  const h = () => load();
+  window.addEventListener('school-changed', h as any);
+  onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
+});
 </script>

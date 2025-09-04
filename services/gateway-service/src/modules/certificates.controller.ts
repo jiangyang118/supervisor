@@ -7,15 +7,16 @@ export class CertificatesController {
 
   @Get()
   list(
+    @Query('schoolId') schoolId?: string,
     @Query('owner') owner?: string,
     @Query('type') type?: string,
     @Query('status') status?: '有效' | '过期',
   ) {
-    return this.svc.list({ owner, type, status });
+    return this.svc.list({ schoolId, owner, type, status });
   }
 
   @Post()
-  create(@Body() b: { owner: string; type: string; number: string; expireAt: string }) {
+  create(@Body() b: { schoolId?: number | string; owner: string; type: string; number: string; expireAt: string }) {
     return this.svc.create(b);
   }
 
@@ -34,11 +35,12 @@ export class CertificatesController {
 
   @Get('export.csv')
   async exportCsv(
+    @Query('schoolId') schoolId?: string,
     @Query('owner') owner?: string,
     @Query('type') type?: string,
     @Query('status') status?: '有效' | '过期',
   ) {
-    const items = await this.svc.list({ owner, type, status });
+    const items = await this.svc.list({ schoolId, owner, type, status });
     const headers = ['id', 'owner', 'type', 'number', 'expireAt', 'status'];
     const rows = (items as any[]).map((r: any) => [r.id, r.owner, r.type, r.number, r.expireAt, r.status]);
     const csv = [

@@ -21,6 +21,8 @@ import { WasteController } from './waste.controller';
 import { WasteService } from './waste.service';
 import { CertificatesController } from './certificates.controller';
 import { CertificatesService } from './certificates.service';
+import { StaffCertsController } from './staff-certs.controller';
+import { StaffCertsService } from './staff-certs.service';
 import { FoodWasteController } from './food-waste.controller';
 import { FoodWasteService } from './food-waste.service';
 import { PublicFeedbackController } from './public-feedback.controller';
@@ -89,6 +91,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     HygieneController,
     WasteController,
     CertificatesController,
+    StaffCertsController,
     TrainingController,
     FoodWasteController,
     PublicFeedbackController,
@@ -122,6 +125,7 @@ import { InventoryModule } from '../inventory/inventory.module';
     
     WasteService,
     CertificatesService,
+    StaffCertsService,
     TrainingService,
     FoodWasteService,
     PublicFeedbackService,

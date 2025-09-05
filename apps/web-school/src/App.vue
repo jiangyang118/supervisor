@@ -26,18 +26,15 @@
             <el-menu-item index="/overview/alerts">预警概览</el-menu-item>
           </el-sub-menu>
 
-          <el-sub-menu index="ai">
-            <template #title>智能检查管理</template>
-            <el-menu-item index="/ai/events">AI 违规抓拍明细</el-menu-item>
-            <el-menu-item index="/ai/summary">行为统计与导出</el-menu-item>
-          </el-sub-menu>
-
           <el-sub-menu index="bright">
             <template #title>明厨亮灶管理</template>
             <el-menu-item index="/bright-kitchen/live">实时视频</el-menu-item>
             <el-menu-item index="/bright-kitchen/playback">视频回放</el-menu-item>
             <el-menu-item index="/bright-kitchen/snapshots">快照留存</el-menu-item>
             <el-menu-item index="/bright-kitchen/channels">摄像头/NVR管理</el-menu-item>
+            <el-divider />
+            <el-menu-item index="/ai/events">AI 违规抓拍明细</el-menu-item>
+            <el-menu-item index="/ai/summary">AI 行为统计与导出</el-menu-item>
           </el-sub-menu>
           <el-sub-menu index="daily">
             <template #title>日常运营管理</template>
@@ -85,6 +82,7 @@
             <el-menu-item index="/system/canteen">食堂信息维护+食堂资质</el-menu-item>
             <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item>
             <el-menu-item index="/system/app-download">移动端扫码</el-menu-item>
+            <el-menu-item index="/system/trustivs-test">TrustIVS 测试</el-menu-item>
             <el-menu-item index="/system/users">用户管理</el-menu-item>
             <el-menu-item index="/system/roles">角色管理</el-menu-item>
           </el-sub-menu>
@@ -131,8 +129,8 @@ const isAuthPage = computed(() => route.path === '/login');
 const active = computed(() => route.path);
 const openeds = computed(() => {
   const p = route.path;
-  if (p.startsWith('/ai/')) return ['ai'];
-  if (p.startsWith('/bright-kitchen/')) return ['bright'];
+  // 合并：AI 路由归入「明厨亮灶」分组展开
+  if (p.startsWith('/ai/') || p.startsWith('/bright-kitchen/')) return ['bright'];
   if (
     p.startsWith('/analytics') || p.startsWith('/overview/alerts')
   )

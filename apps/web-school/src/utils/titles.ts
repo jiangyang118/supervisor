@@ -4,7 +4,8 @@ const map: Record<string, string> = {
   '/overview': '首页',
   '/reports': '每日报表',
   // 父级分组（用于面包屑中文化）
-  '/ai': '智能检查/AI 预警',
+  // 合并到明厨亮灶：AI 相关页面归属该分组
+  '/ai': '明厨亮灶',
   '/bright-kitchen': '明厨亮灶',
   '/sampling': '留样管理',
   '/hygiene': '卫生检查',

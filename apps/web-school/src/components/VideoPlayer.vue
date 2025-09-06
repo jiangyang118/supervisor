@@ -23,6 +23,7 @@
 import { onMounted, onUnmounted, ref, watch, computed } from 'vue';
 
 const props = defineProps<{ hlsUrl?: string; flvUrl?: string; title?: string }>();
+const emit = defineEmits<{ (e: 'net', d: { rxMbps: number; txMbps: number }): void }>();
 const videoEl = ref<HTMLVideoElement | null>(null);
 let hls: any = null;
 let flv: any = null;
@@ -59,6 +60,12 @@ async function play() {
       const Hls = (mod as any).default || (mod as any);
       if (Hls?.isSupported?.()) {
         hls = new Hls({ liveDurationInfinity: true });
+        // collect network stats from hls
+        let rxBytes = 0;
+        hls.on(Hls.Events.FRAG_LOADED, (_e: any, data: any) => {
+          const b = (data?.stats?.total ?? data?.stats?.loaded ?? 0) as number;
+          if (b > 0) rxBytes += b;
+        });
         hls.loadSource(props.hlsUrl);
         hls.attachMedia(el);
         hls.on(Hls.Events.MANIFEST_PARSED, async () => {
@@ -66,6 +73,13 @@ async function play() {
           isReady.value = true;
           isPlaying.value = true;
         });
+        // emit Mbps every second
+        const t = setInterval(() => {
+          const mbps = (rxBytes * 8) / 1_000_000;
+          emit('net', { rxMbps: mbps, txMbps: 0 });
+          rxBytes = 0;
+        }, 1000);
+        (t as any).unref?.();
         return true;
       }
     } catch {}
@@ -86,6 +100,20 @@ async function play() {
       if (flvjs?.isSupported?.()) {
         flv = flvjs.createPlayer({ type: 'flv', url: props.flvUrl, isLive: true, cors: true });
         flv.attachMediaElement(el);
+        // stats from flv.js
+        let latestKbps = 0;
+        try {
+          flv.on('statistics_info', (info: any) => {
+            // info.speed in KB/s (approx); convert to Mbps
+            if (info && typeof info.speed === 'number') {
+              latestKbps = info.speed * 8 / 1000; // KB/s -> Mb/s approx
+            }
+          });
+          const t = setInterval(() => {
+            emit('net', { rxMbps: latestKbps, txMbps: 0 });
+          }, 1000);
+          (t as any).unref?.();
+        } catch {}
         flv.load();
         await el.play().catch(() => {});
         isReady.value = true;

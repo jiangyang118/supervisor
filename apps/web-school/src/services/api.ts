@@ -55,6 +55,10 @@ export const api = {
     get<any[]>(
       `/bright/school/playback?schoolId=${encodeURIComponent(schoolId)}&cameraId=${encodeURIComponent(cameraId)}${start ? `&start=${encodeURIComponent(start)}` : ''}${end ? `&end=${encodeURIComponent(end)}` : ''}`,
     ),
+  brightDownload: async (schoolId: string, cameraId: string, start?: string, end?: string) =>
+    get<string[]>(
+      `/bright/school/download?schoolId=${encodeURIComponent(schoolId)}&cameraId=${encodeURIComponent(cameraId)}${start ? `&start=${encodeURIComponent(start)}` : ''}${end ? `&end=${encodeURIComponent(end)}` : ''}`,
+    ),
   brightSnapshots: (
     params: { schoolId?: string; cameraId?: string; start?: string; end?: string } = {},
   ) =>

@@ -19,7 +19,7 @@ export const useStreamsStore = defineStore('streams', () => {
     cameras.value = await streamsApi.cameras(company);
   }
 
-  async function loadSource(cameraId: string) {
+  async function loadSource(cameraId: string, opts?: { autoSelect?: boolean }) {
     const cam = cameras.value.find((c) => c.id === cameraId);
     if (cam && (cam.hls || cam.flv)) {
       const src: PlaySourceDTO = { cameraId, hlsUrl: cam.hls, flvUrl: cam.flv } as any;
@@ -28,9 +28,11 @@ export const useStreamsStore = defineStore('streams', () => {
       const src = await streamsApi.play(cameraId);
       sources.value[cameraId] = src;
     }
+    if (opts?.autoSelect === false) return;
     if (!selected.value.includes(cameraId)) {
-      // Keep at most 4 selected
-      selected.value = [...selected.value, cameraId].slice(-4);
+      // Keep at most grid size (fallback 4) — caller may override
+      const max = Math.max(1, selected.value.length || 4);
+      selected.value = [...selected.value, cameraId].slice(-max);
     }
   }
 

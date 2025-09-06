@@ -34,14 +34,15 @@
       </div>
     </aside>
     <main class="right">
-      <div class="grid">
-        <div v-for="(slotId, idx) in 4" :key="idx" class="tile">
-          <div v-if="store.selected[idx]" class="player-wrap">
-            <VideoPlayer :hls-url="store.sources[store.selected[idx]]?.hlsUrl" :flv-url="store.sources[store.selected[idx]]?.flvUrl" :title="titleFor(store.selected[idx])" />
+      <div class="grid" :style="gridStyle">
+        <div v-for="i in gridIndexList" :key="i" class="tile" :class="{ selected: selectedSlot === i }" @click.stop="selectSlot(i)">
+          <div v-if="store.selected[i]" class="player-wrap">
+            <VideoPlayer :hls-url="store.sources[store.selected[i]]?.hlsUrl" :flv-url="store.sources[store.selected[i]]?.flvUrl" :title="titleFor(store.selected[i])" @net="(d:any) => onNet(i, d)" />
             <div class="tools">
-              <span>{{ titleFor(store.selected[idx]) }}</span>
-              <el-button size="small" text @click="remove(store.selected[idx])">移除</el-button>
+              <span>{{ titleFor(store.selected[i]) }}</span>
+              <el-button size="small" text @click="remove(store.selected[i])">移除</el-button>
             </div>
+            <div v-if="showInfo" class="overlay-br">{{ titleFor(store.selected[i]) }} · {{ nowStr }}</div>
           </div>
           <div v-else class="empty">暂无视频</div>
         </div>
@@ -50,6 +51,23 @@
         通道总数：{{ store.cameras.length }}
         <span style="margin-left: 16px">在线：{{ onlineCount }}</span>
         <span style="margin-left: 16px">离线：{{ offlineCount }}</span>
+        <div class="spacer"></div>
+        <span>接收: {{ rxMbps.toFixed(3) }} Mbps</span>
+        <span style="margin-left:12px">发送: {{ txMbps.toFixed(3) }} Mbps</span>
+        <el-dropdown>
+          <el-button size="small" type="primary" text>布局/叠加选项</el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="setGrid(1)">单屏</el-dropdown-item>
+              <el-dropdown-item @click="setGrid(4)">四分屏</el-dropdown-item>
+              <el-dropdown-item @click="setGrid(9)">九分屏</el-dropdown-item>
+              <el-dropdown-item @click="setGrid(16)">16分屏</el-dropdown-item>
+              <el-dropdown-item @click="setGrid(25)">25分屏</el-dropdown-item>
+              <el-dropdown-item @click="setGrid(36)">36分屏</el-dropdown-item>
+              <el-dropdown-item divided @click="toggleInfo()">{{ showInfo ? '隐藏通道/时间' : '开启显示通道/时间' }}</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </main>
   </div>
@@ -70,7 +88,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useStreamsStore } from '../../stores/streams';
 import VideoPlayer from '../../components/VideoPlayer.vue';
 
@@ -100,7 +118,24 @@ function onClickNode(node: any) {
   if (node?.id && node.id !== 'root') {
     if (node.id.startsWith('dev:')) return; // device folder
     if (node.id === 'favorites' || node.id === 'company') return;
-    store.loadSource(node.id);
+    // If a slot is selected, assign into that slot; otherwise auto-append to first empty slot
+    const assign = async (slot: number) => {
+      await store.loadSource(node.id, { autoSelect: false });
+      // remove duplicates
+      for (let k = 0; k < gridCount.value; k++) {
+        if (store.selected[k] === node.id) store.selected[k] = undefined as any;
+      }
+      ensureSelectedLength(gridCount.value);
+      store.selected[slot] = node.id as any;
+    };
+    if (selectedSlot.value !== null) {
+      assign(selectedSlot.value);
+      return;
+    }
+    // find first empty slot
+    let empty = -1;
+    for (let k = 0; k < gridCount.value; k++) { if (!store.selected[k]) { empty = k; break; } }
+    assign(empty >= 0 ? empty : 0);
   }
 }
 
@@ -164,18 +199,52 @@ async function actDownload() {
   if (url) window.open(url, '_blank');
   hideMenu();
 }
+
+// Layout and overlays
+const gridCount = ref(4);
+function setGrid(n: number) { gridCount.value = n; }
+const gridCols = computed(() => {
+  const n = gridCount.value;
+  if (n <= 1) return 1; if (n <= 4) return 2; if (n <= 9) return 3; if (n <= 16) return 4; if (n <= 25) return 5; return 6;
+});
+const gridStyle = computed(() => ({ gridTemplateColumns: `repeat(${gridCols.value}, 1fr)` }));
+const gridIndexList = computed(() => Array.from({ length: gridCount.value }, (_, i) => i));
+const showInfo = ref(false);
+function toggleInfo() { showInfo.value = !showInfo.value; }
+const nowStr = ref('');
+setInterval(() => { const d = new Date(); const p = (n:number)=>String(n).padStart(2,'0'); nowStr.value = `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }, 1000);
+
+// Net stats aggregate (simple latest sample)
+const rxMbps = ref(0);
+const txMbps = ref(0);
+const rxMap = reactive<Record<number, number>>({});
+const txMap = reactive<Record<number, number>>({});
+function onNet(i: number, d: { rxMbps: number; txMbps: number }) {
+  rxMap[i] = d.rxMbps || 0;
+  txMap[i] = d.txMbps || 0;
+  rxMbps.value = Object.values(rxMap).reduce((a, b) => a + (b || 0), 0);
+  txMbps.value = Object.values(txMap).reduce((a, b) => a + (b || 0), 0);
+}
+
+// selected slot logic
+const selectedSlot = ref<number | null>(null);
+function selectSlot(i: number) { selectedSlot.value = i; }
+function ensureSelectedLength(n: number) { for (let k = 0; k < n; k++) { if (store.selected[k] === undefined) store.selected[k] = undefined as any; } }
 </script>
 
 <style scoped>
 .live-layout { display: grid; grid-template-columns: 280px 1fr; gap: 8px; height: calc(100vh - 160px); }
 .left { background: #fff; border: 1px solid var(--el-border-color); padding: 8px; overflow: hidden; }
 .right { display: flex; flex-direction: column; gap: 8px; }
-.grid { flex: 1; display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: minmax(200px, 1fr); gap: 8px; }
+.grid { flex: 1; display: grid; grid-auto-rows: minmax(200px, 1fr); gap: 8px; }
 .tile { position: relative; border: 1px solid var(--el-border-color); background: #000; display: flex; align-items: center; justify-content: center; }
+.tile.selected { border-color: var(--el-color-danger); box-shadow: 0 0 0 1px var(--el-color-danger) inset; }
 .player-wrap { position: relative; width: 100%; height: 100%; }
 .tools { position: absolute; left: 0; right: 0; top: 0; bottom: auto; background: rgba(0,0,0,.5); color: #fff; display: flex; align-items: center; justify-content: space-between; padding: 4px 8px; font-size: 12px; z-index: 2; }
+.overlay-br { position: absolute; right: 6px; bottom: 6px; color: #fff; background: rgba(0,0,0,.35); padding: 2px 6px; font-size: 12px; border-radius: 2px; }
 .empty { color: #999; background: #111; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
 .statusbar { height: 32px; background: #fff; border: 1px solid var(--el-border-color); display: flex; align-items: center; padding: 0 8px; }
+.statusbar .spacer { flex: 1; }
 
 .ctx-menu { position: fixed; z-index: 9999; background: #fff; border: 1px solid var(--el-border-color); box-shadow: 0 2px 8px rgba(0,0,0,.12); min-width: 120px; }
 .ctx-menu .item { padding: 6px 12px; cursor: pointer; }

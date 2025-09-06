@@ -1,5 +1,6 @@
 import fetch from 'node-fetch';
 import { StdResponse } from './std-response';
+import { logInfo, logWarn, logError } from '../../common/file-logger';
 
 export class TrustivsUpstreamService {
   private base: string;
@@ -44,8 +45,22 @@ export class TrustivsUpstreamService {
     const hdr = await this.headers(opts?.headers, autoAuth);
     let body: any = undefined;
     if (opts?.body && method.toUpperCase() !== 'GET') { hdr['Content-Type'] = hdr['Content-Type'] || 'application/json'; body = JSON.stringify(opts.body); }
-    const res = await fetch(url, { method: method.toUpperCase(), headers: hdr as any, body });
-    const text = await res.text();
-    try { return JSON.parse(text); } catch { return { code: res.ok ? '1':'0', message: text } as any; }
+
+    const started = Date.now();
+    // Log full request
+    logInfo('trustivs.request', { method: method.toUpperCase(), url, headers: hdr, body: body ? JSON.parse(body) : undefined });
+    try {
+      const res = await fetch(url, { method: method.toUpperCase(), headers: hdr as any, body });
+      const text = await res.text();
+      const tookMs = Date.now() - started;
+      const resHeaders = (() => { try { return Object.fromEntries((res.headers as any).entries()); } catch { return {}; } })();
+      // Log full response
+      logInfo('trustivs.response', { url, status: res.status, tookMs, headers: resHeaders, body: text });
+      try { return JSON.parse(text); } catch { return { code: res.ok ? '1':'0', message: text } as any; }
+    } catch (e: any) {
+      const tookMs = Date.now() - started;
+      logError('trustivs.error', { url, method: method.toUpperCase(), tookMs, error: e?.message || String(e) });
+      throw e;
+    }
   }
 }

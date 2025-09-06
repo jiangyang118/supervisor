@@ -67,6 +67,8 @@ import { RegulatorLedgersModule } from '../areas/regulator/ledgers.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { TrustivsModule } from './trustivs/trustivs.module';
 import { AuthController } from './auth.controller';
+import { IotController } from './iot.controller';
+import { IotService } from './iot.service';
 
 @Module({
   imports: [
@@ -120,6 +122,7 @@ import { AuthController } from './auth.controller';
     RegulatorMorningChecksController,
     DeviceMockController,
     DbHealthController,
+    IotController,
   ],
   providers: [
     CredentialsService,
@@ -144,6 +147,7 @@ import { AuthController } from './auth.controller';
     RegulatorMorningChecksService,
     RateLimitGuard,
     DbBootstrapService,
+    IotService,
   ],
 })
 export class AppModule {}

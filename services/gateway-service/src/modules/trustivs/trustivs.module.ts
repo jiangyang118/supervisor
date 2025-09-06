@@ -30,5 +30,6 @@ import { APP_FILTER } from '@nestjs/core';
     TrustivsAIController,
     TrustivsProxyController,
   ],
+  exports: [TrustivsUpstreamService, TrustivsCacheService, TrustivsStreamService, TrustivsListService, TrustivsPlaybackService],
 })
 export class TrustivsModule {}

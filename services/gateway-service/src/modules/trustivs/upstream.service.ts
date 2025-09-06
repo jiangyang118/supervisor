@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import { StdResponse } from './std-response';
 import { logInfo, logWarn, logError } from '../../common/file-logger';
+import crypto from 'crypto';
 
 export class TrustivsUpstreamService {
   private base: string;
@@ -14,15 +15,24 @@ export class TrustivsUpstreamService {
   private getEnvToken() { return process.env.TRUSTIVS_TOKEN; }
 
   private async ensureToken(): Promise<string | undefined> {
+    // Prefer cached
+    if (TrustivsUpstreamService.tokenCache && (TrustivsUpstreamService.tokenCache.expiresAt || 0) > this.now()) {
+      return TrustivsUpstreamService.tokenCache.token;
+    }
     const envToken = this.getEnvToken();
     if (envToken) return envToken;
-    const path = process.env.TRUSTIVS_AUTH_PATH;
-    const raw = process.env.TRUSTIVS_AUTH_BODY;
-    if (!path || !raw) return undefined;
-    const body = JSON.parse(raw);
-    const res = await this.request<any>('POST', path, { body }, false);
+    // Build from ylt_* or TRUSTIVS_* env
+    const acc = process.env.ylt_account || process.env.TRUSTIVS_ACCOUNT || 'STANDTRUST';
+    const pwdMd5Env = process.env.ylt_password_md5 || process.env.TRUSTIVS_PASSWORD_MD5 || '';
+    let fpwd = pwdMd5Env;
+    if (!fpwd) {
+      const raw = process.env.ylt_password || process.env.TRUSTIVS_PASSWORD || '12345678';
+      fpwd = crypto.createHash('md5').update(raw).digest('hex');
+    }
+    const body = { fnumber: acc, fpwd };
+    const res = await this.request<any>('POST', '/gatewayGBS/openApi/token/getOpenApiToken', { body }, false);
     const token = (res?.data as any) || undefined;
-    const ttlMin = Number(process.env.TRUSTIVS_TOKEN_TTL_MINUTES || '10');
+    const ttlMin = Number(process.env.ylt_token_ttl_minutes || process.env.TRUSTIVS_TOKEN_TTL_MINUTES || '10');
     TrustivsUpstreamService.tokenCache = { token: String(token || ''), expiresAt: this.now() + ttlMin * 60_000 };
     return TrustivsUpstreamService.tokenCache.token;
   }

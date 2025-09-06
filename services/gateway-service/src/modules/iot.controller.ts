@@ -1,26 +1,5 @@
-import { Controller, Get, Headers, Query, Logger } from '@nestjs/common';
+import { Controller, Get, Headers, Query, Logger, NotFoundException } from '@nestjs/common';
 import { IotService, type CameraDTO, type PlaySourceDTO } from './iot.service';
-
-type CameraDTO = {
-  id: string;
-  name: string;
-  deviceSn: string;
-  channelId: string;
-  vendor: 'hik' | 'dahua' | 'gb28181' | 'unknown';
-  online: boolean;
-  lastSeen?: string;
-};
-
-type PlaySourceDTO = {
-  cameraId: string;
-  hlsUrl?: string;
-  flvUrl?: string;
-  webrtcUrl?: string;
-  rtspUrl?: string;
-  token?: string;
-  expiresAt?: string;
-  mock?: boolean;
-};
 
 @Controller('iot')
 export class IotController {
@@ -33,40 +12,18 @@ export class IotController {
     this.logger.log(`GET /api/iot/cameras company=${company || ''}`);
     const cams = await this.iot.cameras({ company }, headers);
     this.logger.log(`/api/iot/cameras result length=${cams?.length || 0}`);
-    if (cams && cams.length) return cams;
-    // fallback demo list
-    const baseName = company || '演示单位';
-    const demo: CameraDTO[] = Array.from({ length: 8 }).map((_, i) => ({
-      id: `demo-${i + 1}`,
-      name: `${baseName} · 摄像头 ${i + 1}`,
-      deviceSn: `dev-${Math.floor(i / 2) + 1}`,
-      channelId: `ch-${i + 1}`,
-      vendor: 'unknown',
-      online: true,
-      lastSeen: new Date().toISOString(),
-    }));
-    return demo;
+    return Array.isArray(cams) ? cams : [];
   }
 
   @Get('streams/play')
   async play(@Query('cameraId') cameraId: string, @Headers() headers: Record<string, string>) {
-    if (cameraId?.startsWith('demo-')) {
-      this.logger.warn(`/api/iot/streams/play using demo stream cameraId=${cameraId}`);
-      const out: PlaySourceDTO = {
-        cameraId,
-        hlsUrl: this.demoHls,
-        mock: true,
-        expiresAt: new Date(Date.now() + 5 * 60_000).toISOString(),
-      };
-      return out;
-    }
     const src = await this.iot.play(cameraId, headers);
     if (src?.hlsUrl || src?.flvUrl || src?.rtspUrl || src?.webrtcUrl) {
       this.logger.log(`/api/iot/streams/play success cameraId=${cameraId}`);
       return src;
     }
-    this.logger.warn(`/api/iot/streams/play fallback demo cameraId=${cameraId}`);
-    return { ...src, hlsUrl: this.demoHls, mock: true };
+    this.logger.warn(`/api/iot/streams/play no playable source cameraId=${cameraId}`);
+    throw new NotFoundException('No playable source for camera');
   }
 
   @Get('streams/snapshot')

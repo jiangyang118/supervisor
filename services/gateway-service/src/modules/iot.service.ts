@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { TrustivsListService } from './trustivs/service/list.service';
 import { TrustivsStreamService } from './trustivs/service/stream.service';
 import { TrustivsPlaybackService } from './trustivs/service/playback.service';
+import { CameraService } from './trustivs/camera.service';
 
 export type CameraDTO = {
   id: string;
@@ -36,6 +37,7 @@ export class IotService {
     private readonly listSvc: TrustivsListService,
     private readonly streamSvc: TrustivsStreamService,
     private readonly playbackSvc: TrustivsPlaybackService,
+    private readonly cameraSvc: CameraService,
   ) {}
 
   private pick<T = any>(o: any, keys: string[], def?: any): T | any {
@@ -73,15 +75,14 @@ export class IotService {
   }
 
   async cameras(params: { company?: string; force?: boolean }, headers?: Record<string, string>): Promise<CameraDTO[]> {
-    const body: any = {};
-    // Prefer env hint if provided by upstream business rules
-    const companyCode = process.env.YLT_THIRDCOM || process.env.TRUSTIVS_COMPANY_CODE || '';
-    if (companyCode) { body.fsocialcreditcode = companyCode; body.fthirdcomnum = companyCode; }
-    // Some upstream variants require company name; attach if present
-    if (params.company) body.company = params.company;
     try {
-      const data = await this.listSvc.getCameraByCompany(body, headers);
-      const arr = Array.isArray(data?.records || data?.list) ? (data.records || data.list) : (Array.isArray(data) ? data : []);
+      const payload: any = await this.cameraSvc.getCameraByCompany({ pageNum: 1, pageSize: 50 });
+      const data = payload?.data ?? payload;
+      const arr = Array.isArray(data?.list)
+        ? data.list
+        : Array.isArray(data)
+          ? data
+          : [];
       const out: CameraDTO[] = [];
       for (const it of arr) {
         const dto = this.toCameraDTO(it);

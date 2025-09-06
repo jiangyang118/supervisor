@@ -3,7 +3,7 @@ import { TrustivsUpstreamService } from '../upstream.service';
 import { TrustivsCacheService } from '../cache.service';
 import { resolvePolicies } from '../cache.config';
 import { normalizePage } from '../pagination';
-import { logInfo, logWarn, logError } from '../../../common/file-logger';
+import { logInfo, logWarn } from '../../../common/file-logger';
 
 @Injectable()
 export class TrustivsListService {
@@ -15,8 +15,12 @@ export class TrustivsListService {
     const { pageNum, pageSize } = normalizePage(body || {});
     const key = `company:${pageNum}:${pageSize}:${JSON.stringify(body)}`;
     return this.cache.getOrRefresh(key, this.policies.lists, async () => {
-      const res = await this.up.request<any>('POST', '/gatewayGBS/openApi/getCompanyList', { body: { ...body, pageNum, pageSize }, headers });
-      if (res.code !== '1') throw new Error(res.message || 'upstream error');
+      const req = { ...body, pageNum, pageSize };
+      this.logger.log(`Calling getCompanyList body=${JSON.stringify(req)}`);
+      logInfo('trustivs.getCompanyList.request', { body: req });
+      const res = await this.up.request<any>('POST', '/gatewayGBS/openApi/getCompanyList', { body: req, headers });
+      logInfo('trustivs.getCompanyList.response', res);
+      if (res.code !== '1') { logWarn('trustivs.getCompanyList.non_success', res); throw new Error(res.message || 'upstream error'); }
       return res.data;
     }, 'company');
   }
@@ -25,34 +29,26 @@ export class TrustivsListService {
     const { pageNum, pageSize } = normalizePage(body || {});
     const key = `devlist:${pageNum}:${pageSize}:${JSON.stringify(body)}`;
     return this.cache.getOrRefresh(key, this.policies.lists, async () => {
-      const res = await this.up.request<any>('POST', '/gatewayGBS/openApi/getDeviceListByCompany', { body: { ...body, pageNum, pageSize }, headers });
-      if (res.code !== '1') throw new Error(res.message || 'upstream error');
+      const req = { ...body, pageNum, pageSize };
+      this.logger.log(`Calling getDeviceListByCompany body=${JSON.stringify(req)}`);
+      logInfo('trustivs.getDeviceListByCompany.request', { body: req });
+      const res = await this.up.request<any>('POST', '/gatewayGBS/openApi/getDeviceListByCompany', { body: req, headers });
+      logInfo('trustivs.getDeviceListByCompany.response', res);
+      if (res.code !== '1') { logWarn('trustivs.getDeviceListByCompany.non_success', res); throw new Error(res.message || 'upstream error'); }
       return res.data;
     }, 'device');
   }
 
-  async getCameraByCompany(body: any, headers?: Record<string, string>) {
-    const key = `camera:${JSON.stringify(body)}`;
-    return this.cache.getOrRefresh(key, this.policies.lists, async () => {
-      this.logger.log(`Calling getCameraByCompany with body=${JSON.stringify(body)}`);
-      logInfo('trustivs.getCameraByCompany.request', { body });
-      const res = await this.up.request<any>('POST', '/gatewayGBS/openApi/getCameraByCompany', { body, headers });
-      // Log full upstream response for debugging (as requested)
-      logInfo('trustivs.getCameraByCompany.response', res);
-      this.logger.log(`getCameraByCompany code=${res?.code} size=${Array.isArray(res?.data?.list)? res.data.list.length : 'n/a'}`);
-      if (res.code !== '1') {
-        logWarn('trustivs.getCameraByCompany.non_success', res);
-        throw new Error(res.message || 'upstream error');
-      }
-      return res.data;
-    }, 'camera');
-  }
+  // getCameraByCompany removed: unified into CameraService
 
   async getChannelByDevice(body: any, headers?: Record<string, string>) {
     const key = `channel:${JSON.stringify(body)}`;
     return this.cache.getOrRefresh(key, this.policies.lists, async () => {
+      this.logger.log(`Calling getChannelByDevice body=${JSON.stringify(body)}`);
+      logInfo('trustivs.getChannelByDevice.request', { body });
       const res = await this.up.request<any>('POST', '/gatewayGBS/openApi/getChannelByDevice', { body, headers });
-      if (res.code !== '1') throw new Error(res.message || 'upstream error');
+      logInfo('trustivs.getChannelByDevice.response', res);
+      if (res.code !== '1') { logWarn('trustivs.getChannelByDevice.non_success', res); throw new Error(res.message || 'upstream error'); }
       return res.data;
     }, 'channel');
   }

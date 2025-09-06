@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { TrustivsConfigService } from './trustivs.config.service';
+import { CameraService } from './camera.service';
+import { CameraController } from './camera.controller';
 import { TrustivsUpstreamService } from './upstream.service';
 import { TrustivsCacheService } from './cache.service';
 import { TrustivsStreamService } from './service/stream.service';
@@ -21,6 +24,8 @@ import { APP_FILTER } from '@nestjs/core';
     TrustivsPlaybackService,
     TrustivsListService,
     TrustivsAIService,
+    TrustivsConfigService,
+    CameraService,
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
   controllers: [
@@ -29,7 +34,15 @@ import { APP_FILTER } from '@nestjs/core';
     TrustivsListController,
     TrustivsAIController,
     TrustivsProxyController,
+    CameraController,
   ],
-  exports: [TrustivsUpstreamService, TrustivsCacheService, TrustivsStreamService, TrustivsListService, TrustivsPlaybackService],
+  exports: [
+    TrustivsUpstreamService,
+    TrustivsCacheService,
+    TrustivsStreamService,
+    TrustivsListService,
+    TrustivsPlaybackService,
+    CameraService,
+  ],
 })
 export class TrustivsModule {}

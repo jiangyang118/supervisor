@@ -138,7 +138,8 @@ async function onGetDeviceList() {
 async function onGetCameraByCompany() {
   listResult.value = 'loading...';
   try {
-    const data = await trustivsApi.post<any>('/gatewayGBS/openApi/getCameraByCompany', { fsocialcreditcode: fsocialcreditcode.value });
+    const qs = new URLSearchParams({ pageNum: '1', pageSize: '10' }).toString();
+    const data = await trustivsApi.get<any>(`/gatewayGBS/openApi/getCameraByCompany?${qs}`);
     listResult.value = JSON.stringify(data, null, 2);
   } catch (e: any) {
     listResult.value = String(e?.message || e);

@@ -17,9 +17,26 @@ export class TrustivsConfigService {
   readonly baseURL: string;
   readonly timeoutMs = 15_000;
   private static tokenCache: { token: string; expiresAt: number } | null = null;
+  private refreshTimer: NodeJS.Timeout | null = null;
 
   constructor() {
     this.baseURL = process.env.ylt_baseurl || process.env.TRUSTIVS_BASE || 'http://127.0.0.1:9086';
+    // Warm up token in background and schedule refresh to avoid per-request fetching
+    this.ensureToken().catch(() => {});
+    this.scheduleTokenRefresh();
+  }
+
+  private scheduleTokenRefresh() {
+    try { if (this.refreshTimer) clearInterval(this.refreshTimer as any); } catch {}
+    const minutes = Number(process.env.YLT_TOKEN_REFRESH_MINUTES || process.env.ylt_token_refresh_minutes || 1440); // default 1 day
+    const intervalMs = Math.max(1, minutes) * 60_000;
+    this.refreshTimer = setInterval(() => {
+      this.ensureToken(true).then((t) => {
+        if (t) this.logger.log('Token refreshed by scheduler');
+      }).catch((e) => this.logger.warn(`Token scheduler refresh failed: ${e?.message || e}`));
+    }, intervalMs);
+    // Don't keep process alive due to timer
+    (this.refreshTimer as any).unref?.();
   }
 
   private async rawFetch(method: string, path: string, body?: any) {

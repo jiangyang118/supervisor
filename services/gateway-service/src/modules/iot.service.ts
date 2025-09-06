@@ -74,9 +74,20 @@ export class IotService {
     };
   }
 
-  async cameras(params: { company?: string; force?: boolean }, headers?: Record<string, string>): Promise<CameraDTO[]> {
+  private resolveSchoolMap(): Record<string, { thirdcom?: string; deviceSn?: string }> {
     try {
-      const payload: any = await this.cameraSvc.getCameraByCompany({ pageNum: 1, pageSize: 50 });
+      const raw = process.env.YLT_SCHOOL_MAP || process.env.ylt_school_map;
+      if (!raw) return {};
+      const obj = JSON.parse(raw);
+      return typeof obj === 'object' && obj ? obj : {};
+    } catch { return {}; }
+  }
+
+  async cameras(params: { company?: string; force?: boolean; schoolId?: string }, headers?: Record<string, string>): Promise<CameraDTO[]> {
+    try {
+      const map = this.resolveSchoolMap();
+      const m = params.schoolId ? map[params.schoolId] : undefined;
+      const payload: any = await this.cameraSvc.getCameraByCompany({ pageNum: 1, pageSize: 50, thirdCom: m?.thirdcom, deviceSn: m?.deviceSn });
       const data = payload?.data ?? payload;
       const arr = Array.isArray(data?.list)
         ? data.list

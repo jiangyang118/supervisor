@@ -2,11 +2,13 @@ import 'dotenv/config';
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './modules/app.module';
+import { AppLogger } from './modules/app.logger';
 import { json, urlencoded } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
+  app.useLogger(new AppLogger());
 
   // Increase body size limits to support base64 image uploads
   const limitMb = Number(process.env.BODY_LIMIT_MB || process.env.UPLOAD_LIMIT_MB || 10);

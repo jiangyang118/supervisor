@@ -1,7 +1,9 @@
-import { Controller, Get, Param, Query, Post, Body } from '@nestjs/common';
+import { Controller, Get, Param, Query, Post, Body, Headers } from '@nestjs/common';
+import { IotService } from './iot.service';
 
 @Controller('bright')
 export class BrightController {
+  constructor(private readonly iot: IotService) {}
   private snaps: Array<{
     id: string;
     schoolId: string;
@@ -66,50 +68,67 @@ export class BrightController {
 
   // Regulator APIs
   @Get('reg/cameras')
-  regCameras(@Query('schoolId') schoolId?: string) {
-    let cams = this.makeCameras();
-    if (schoolId) cams = cams.filter((c) => c.schoolId === schoolId);
-    return cams;
+  async regCameras(@Query('schoolId') schoolId?: string) {
+    const sid = schoolId || '1';
+    const cams = await this.iot.cameras({ company: undefined, schoolId: sid });
+    return cams.map((c) => ({
+      schoolId: sid,
+      school: sid,
+      id: c.id,
+      name: c.name,
+      online: !!c.online,
+      flvUrl: c.flv || c.wsFlv,
+      hlsUrl: c.hls,
+    }));
   }
 
   // School APIs: same data, filtered by caller's school
   @Get('school/cameras')
-  schoolCameras(@Query('schoolId') schoolId?: string) {
-    const sid = schoolId || 'sch-001';
-    return this.makeCameras().filter((c) => c.schoolId === sid);
+  async schoolCameras(@Query('schoolId') schoolId?: string) {
+    // Use TrustIVS-backed IoT cameras; map to previous schema expected by frontend
+    const sid = schoolId || '1';
+    const cams = await this.iot.cameras({ company: undefined, schoolId: sid });
+    return cams.map((c) => ({
+      schoolId: sid,
+      school: sid,
+      id: c.id,
+      name: c.name,
+      online: !!c.online,
+      flvUrl: c.flv || c.wsFlv,
+      hlsUrl: c.hls,
+    }));
   }
 
   @Get('reg/playback')
-  playback(
+  async playback(
     @Query('cameraId') cameraId: string,
     @Query('schoolId') schoolId: string,
     @Query('start') start?: string,
     @Query('end') end?: string,
+    @Headers() headers?: Record<string, string>,
   ) {
-    // Demo: split the requested window into 2 segments with the same URLs
-    const base = process.env.WVP_BASE || 'http://localhost:18080';
-    const key = encodeURIComponent(`${schoolId}-${cameraId}`);
-    const hlsUrl = `${base}/record/${key}.m3u8`;
-    const flvUrl = `${base}/record/${key}.flv`;
-    const now = Date.now();
-    const s1 = start ? new Date(start).toISOString() : new Date(now - 3600e3).toISOString();
-    const e1 = end ? new Date(end).toISOString() : new Date(now - 1800e3).toISOString();
-    const s2 = e1;
-    const e2 = new Date(now).toISOString();
-    return [
-      { start: s1, end: e1, hlsUrl, flvUrl },
-      { start: s2, end: e2, hlsUrl, flvUrl },
-    ];
+    const list = await this.iot.back(cameraId, start || '', end || '', headers);
+    // Map to legacy shape if needed
+    return (Array.isArray(list) ? list : []).map((it: any) => {
+      if (typeof it === 'string') return { start, end, hlsUrl: it };
+      return {
+        start: it.start || start,
+        end: it.end || end,
+        hlsUrl: it.hlsUrl || it.hls || it.url,
+        flvUrl: it.flvUrl || it.flv,
+      };
+    });
   }
 
   @Get('school/playback')
-  schoolPlayback(
+  async schoolPlayback(
     @Query('cameraId') cameraId: string,
     @Query('schoolId') schoolId?: string,
     @Query('start') start?: string,
     @Query('end') end?: string,
+    @Headers() headers?: Record<string, string>,
   ) {
-    return this.playback(cameraId, schoolId || 'sch-001', start, end);
+    return this.playback(cameraId, schoolId || '1', start, end, headers);
   }
 
   @Get('reg/snapshots')
@@ -153,4 +172,28 @@ export class BrightController {
   createSchoolSnap(@Body() b: { schoolId?: string; cameraId: string; at?: string; url?: string }) {
     return this.createSnap({ ...b, schoolId: b.schoolId || 'sch-001' } as any);
   }
+
+  @Get('reg/download')
+  async regDownload(
+    @Query('cameraId') cameraId: string,
+    @Query('schoolId') schoolId: string,
+    @Query('start') start?: string,
+    @Query('end') end?: string,
+    @Headers() headers?: Record<string, string>,
+  ) {
+    const list = await this.iot.download(cameraId, start || '', end || '', headers);
+    return (Array.isArray(list) ? list : []).map((it: any) => (typeof it === 'string' ? it : (it.url || it.hlsUrl || it.flvUrl))).filter(Boolean);
+  }
+
+  @Get('school/download')
+  async schoolDownload(
+    @Query('cameraId') cameraId: string,
+    @Query('schoolId') schoolId?: string,
+    @Query('start') start?: string,
+    @Query('end') end?: string,
+    @Headers() headers?: Record<string, string>,
+  ) {
+    return this.regDownload(cameraId, schoolId || '1', start, end, headers);
+  }
+
 }

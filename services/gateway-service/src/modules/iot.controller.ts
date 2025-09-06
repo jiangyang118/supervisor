@@ -1,5 +1,6 @@
 import { Controller, Get, Headers, Query, Logger, NotFoundException } from '@nestjs/common';
 import { IotService, type CameraDTO, type PlaySourceDTO } from './iot.service';
+import { logInfo, logWarn } from '../common/file-logger';
 
 @Controller('iot')
 export class IotController {
@@ -10,19 +11,24 @@ export class IotController {
   @Get('cameras')
   async cameras(@Query('company') company: string | undefined, @Headers() headers: Record<string, string>) {
     this.logger.log(`GET /api/iot/cameras company=${company || ''}`);
+    logInfo('iot.cameras.request', { company });
     const cams = await this.iot.cameras({ company }, headers);
     this.logger.log(`/api/iot/cameras result length=${cams?.length || 0}`);
+    logInfo('iot.cameras.response', { length: Array.isArray(cams) ? cams.length : 0 });
     return Array.isArray(cams) ? cams : [];
   }
 
   @Get('streams/play')
   async play(@Query('cameraId') cameraId: string, @Headers() headers: Record<string, string>) {
+    logInfo('iot.play.request', { cameraId });
     const src = await this.iot.play(cameraId, headers);
     if (src?.hlsUrl || src?.flvUrl || src?.rtspUrl || src?.webrtcUrl) {
       this.logger.log(`/api/iot/streams/play success cameraId=${cameraId}`);
+      logInfo('iot.play.response', { ok: true, cameraId, hls: !!src.hlsUrl, flv: !!src.flvUrl, rtsp: !!src.rtspUrl, webrtc: !!src.webrtcUrl });
       return src;
     }
     this.logger.warn(`/api/iot/streams/play no playable source cameraId=${cameraId}`);
+    logWarn('iot.play.response', { ok: false, cameraId });
     throw new NotFoundException('No playable source for camera');
   }
 

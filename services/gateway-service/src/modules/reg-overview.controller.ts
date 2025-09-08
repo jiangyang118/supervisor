@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Query, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Query, ParseIntPipe, Param } from '@nestjs/common';
 import { MorningCheckService } from './morning-check.service';
 import { SamplingService } from './sampling.service';
 import { DisinfectionService } from './disinfection.service';
@@ -184,6 +184,22 @@ export class RegOverviewController {
   cams4() { return this._cameras('示例四小'); }
   @Get('schools/5/cameras')
   cams5() { return this._cameras('示例五中'); }
+
+  // Generic fallback for any school id: use DB name if available, else map common ids to demo names
+  @Get('schools/:id/cameras')
+  async camsAny(@Param('id') id: string) {
+    // Try DB
+    try {
+      const list = await this.localSchools();
+      const sid = this.numId(id);
+      const name = list.find((s) => this.numId(s.id) === sid)?.name;
+      if (name) return this._cameras(name);
+    } catch {}
+    // Fallback mapping
+    const map: Record<string, string> = { '1': '示例一中', '2': '示例二小', '3': '示例三幼', '4': '示例四小', '5': '示例五中' };
+    const school = map[String(this.numId(id))] || '示例一中';
+    return this._cameras(school);
+  }
 
   private _cameras(school: string) {
     const base = process.env.WVP_BASE || 'http://localhost:18080';

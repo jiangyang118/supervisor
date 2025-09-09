@@ -162,7 +162,7 @@ onMounted(async () => {
 const cfgPesticide = computed(() => ({
   header: ['样品', '结果', '时间'],
   data: store.pesticides.map((r) => [r.sample, r.result, r.at]),
-  rowNum: 6,
+  rowNum: 5,
   carousel: 'single',
   waitTime: 2000,
   headerBGC: 'rgba(17,197,255,.08)',
@@ -174,7 +174,7 @@ const cfgPesticide = computed(() => ({
 const cfgDisinfections = computed(() => ({
   header: ['类型', '负责人', '时间'],
   data: store.disinfections.map((r) => [r.type, r.by, r.at]),
-  rowNum: 6,
+  rowNum: 5,
   carousel: 'single',
   waitTime: 2000,
   headerBGC: 'rgba(17,197,255,.08)',
@@ -186,7 +186,7 @@ const cfgDisinfections = computed(() => ({
 const cfgSamples = computed(() => ({
   header: ['菜品', '状态', '时间'],
   data: store.samples.map((r) => [r.dish, r.status, r.at]),
-  rowNum: 6,
+  rowNum: 5,
   carousel: 'single',
   waitTime: 2000,
   headerBGC: 'rgba(17,197,255,.08)',
@@ -198,7 +198,7 @@ const cfgSamples = computed(() => ({
 const cfgFeedbacks = computed(() => ({
   header: ['姓名', '角色', '电话'],
   data: store.feedbacks.map((f) => [f.name, f.role, f.phone]),
-  rowNum: 6,
+  rowNum: 5,
   carousel: 'single',
   waitTime: 2000,
   headerBGC: 'rgba(17,197,255,.08)',
@@ -209,12 +209,14 @@ const cfgFeedbacks = computed(() => ({
 }));
 </script>
 <style scoped lang="less">
-// .scale-root { width: 1920px; height: 1080px; transform-origin: 0 0; transform: scale(var(--scale, 1)); }
 .screen {
   background: #061423;
   color: #cde7ff;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   padding: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 .banner {
   display: flex;

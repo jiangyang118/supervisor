@@ -17,7 +17,6 @@ const routes: RouteRecordRaw[] = [
   { path: '/reports', component: () => import('../views/Reports.vue'), meta: { perms: ['report:EX', 'report:R', 'reports.view'] } },
   // Restrict system config routes based on permissions for display/guard
   { path: '/system/users', component: () => import('../views/SystemUsers.vue'), meta: { perms: ['users.manage'] } },
-  { path: '/system/roles', component: () => import('../views/SystemRoles.vue'), meta: { perms: ['users.manage'] } },
   { path: '/ai/inspections', component: () => import('../views/AiInspections.vue') },
   { path: '/ai/tasks', component: () => import('../views/AiTasks.vue') },
   { path: '/ai/broadcast', component: () => import('../views/AiBroadcast.vue') },

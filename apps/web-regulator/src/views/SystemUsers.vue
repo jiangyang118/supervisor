@@ -129,11 +129,8 @@ async function toggleEnabled(row: any, enabled: boolean) {
 async function saveRoles(row: any, roles: string[]) {
   await api.sysSetUserRoles(String(row.id), roles);
 }
-function goPerms(row: any) {
-  // Navigate to roles page, optionally preselect first role
-  const role = (row.roles || [])[0];
-  if (role) router.push({ path: '/system/roles', query: { role } });
-  else router.push({ path: '/system/roles' });
+function goPerms(_row: any) {
+  // 监管端角色权限页面已移除
 }
 onMounted(async () => { await Promise.all([loadRoles(), load()]); });
 </script>

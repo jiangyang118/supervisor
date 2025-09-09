@@ -39,7 +39,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../views/bright/BrightChannels.vue'),
     meta: { perms: ['bright.*'] },
   },
-  { path: '/system/trustivs-test', component: () => import('../views/TrustivsTest.vue') },
+  { path: '/system/trustivs-test', component: () => import('../views/TrustivsTest.vue'), meta: { perms: ['system.*'] } },
 
   // Operational ledgers
   { path: '/morning-check', component: () => import('../views/MorningCheck.vue'), meta: { perms: ['daily.*'] } },
@@ -49,8 +49,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/disinfection', component: () => import('../views/Disinfection.vue'), meta: { perms: ['daily.*'] } },
   { path: '/waste', component: () => import('../views/Waste.vue'), meta: { perms: ['daily.*'] } },
   { path: '/hygiene/inspections', component: () => import('../views/HygieneInspections.vue'), meta: { perms: ['daily.*'] } },
-  { path: '/system/news', component: () => import('../views/SystemNews.vue') },
-  { path: '/hygiene/assets', component: () => import('../views/AssetMaintenance.vue') },
+  { path: '/system/news', component: () => import('../views/SystemNews.vue'), meta: { perms: ['public.*'] } },
+  { path: '/hygiene/assets', component: () => import('../views/AssetMaintenance.vue'), meta: { perms: ['env.*'] } },
 
   // Inventory & suppliers
   { path: '/inventory/items', component: () => import('../views/InventoryItems.vue'), meta: { perms: ['inventory.*'] } },
@@ -93,7 +93,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/system/app-download', component: () => import('../views/SystemApp.vue'), meta: { perms: ['system.*'] } },
   { path: '/system/users', component: () => import('../views/SystemUsers.vue'), meta: { perms: ['users.manage'] } },
   { path: '/system/roles', component: () => import('../views/SystemRoles.vue'), meta: { perms: ['users.manage'] } },
-  { path: '/hr/staff', component: () => import('../views/StaffManagement.vue') },
+  { path: '/hr/staff', component: () => import('../views/StaffManagement.vue'), meta: { perms: ['hr.*'] } },
 ];
 
 const router = createRouter({ history: createWebHistory(), routes });

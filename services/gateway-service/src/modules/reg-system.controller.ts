@@ -185,6 +185,7 @@ export class RegSystemController {
     return this.svc.setRolePermissions(b.name, b.permissions);
   }
 
+
   // Regulator info
   @Get('info') info() {
     return this.svc.getRegulator();

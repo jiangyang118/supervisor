@@ -1,19 +1,25 @@
 -- Inventory tables
 create table if not exists inv_categories (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   name varchar(255) not null
 );
+-- ensure column exists for older schemas
+alter table inv_categories add column if not exists school_id int(20) not null default 1;
 
 create table if not exists inv_products (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   name varchar(255) not null,
   unit varchar(64) not null,
   category_id int(20) null,
   key idx_inv_products_category (category_id)
 );
+alter table inv_products add column if not exists school_id int(20) not null default 1;
 
 create table if not exists inv_suppliers (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   name varchar(255) not null,
   phone varchar(64) null,
   license varchar(128) null,
@@ -29,17 +35,21 @@ create table if not exists inv_suppliers (
   unique key uk_inv_suppliers_phone (phone),
   unique key uk_inv_suppliers_license (license)
 );
+alter table inv_suppliers add column if not exists school_id int(20) not null default 1;
 
 create table if not exists inv_warehouses (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   name varchar(255) not null,
   location varchar(255) null,
   capacity int null,
   deleted tinyint not null default 0
 );
+alter table inv_warehouses add column if not exists school_id int(20) not null default 1;
 
 create table if not exists inv_inbound (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   product_id int(20) not null,
   qty decimal(18,3) not null,
   supplier_id int(20) null,
@@ -50,9 +60,11 @@ create table if not exists inv_inbound (
   key idx_inv_in_school_at (school_id, at),
   key idx_inv_in_product (product_id)
 );
+alter table inv_inbound add column if not exists school_id int(20) not null default 1;
 
 create table if not exists inv_outbound (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   product_id int(20) not null,
   qty decimal(18,3) not null,
   purpose varchar(255) null,
@@ -63,18 +75,22 @@ create table if not exists inv_outbound (
   key idx_inv_out_school_at (school_id, at),
   key idx_inv_out_product (product_id)
 );
+alter table inv_outbound add column if not exists school_id int(20) not null default 1;
 
 create table if not exists inv_tickets (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   product_id int(20) not null,
   type varchar(128) not null,
   image_url varchar(255) null,
   at datetime not null,
   key idx_inv_tickets_school_at (school_id, at)
 );
+alter table inv_tickets add column if not exists school_id int(20) not null default 1;
 
 create table if not exists inv_additives (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   name varchar(128) not null,
   amount decimal(18,3) not null,
   dish varchar(128) null,
@@ -82,6 +98,7 @@ create table if not exists inv_additives (
   at datetime not null,
   key idx_inv_additives_school_at (school_id, at desc)
 );
+alter table inv_additives add column if not exists school_id int(20) not null default 1;
 
 -- Public feedback
 create table if not exists public_feedback (
@@ -132,3 +149,9 @@ create table if not exists food_waste_reasons (
   name varchar(255) not null,
   enabled tinyint not null default 1
 );
+
+-- Ensure indexes for school_id columns
+create index if not exists idx_inv_categories_school on inv_categories(school_id);
+create index if not exists idx_inv_products_school on inv_products(school_id);
+create index if not exists idx_inv_suppliers_school on inv_suppliers(school_id);
+create index if not exists idx_inv_warehouses_school on inv_warehouses(school_id);

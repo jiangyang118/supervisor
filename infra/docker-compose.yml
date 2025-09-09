@@ -67,10 +67,12 @@ services:
       # args:
       #   # Use a China mirror for the base Node image to speed up/passthrough Docker Hub
       #   NODE_IMAGE: ${NODE_IMAGE:-registry.cn-hangzhou.aliyuncs.com/dockerhub-mirror/node:20-alpine}
+    env_file:
+      - ../.env
     environment:
       PORT: 3000
       # Either provide DATABASE_URL or MYSQL_* to the app
-      DATABASE_URL: ${DATABASE_URL:-mysql://foodsafe:secret@mysql:3306/foodsafe}
+      DATABASE_URL: ${DATABASE_URL:-mysql://foodsafe:secret@mysql:3306/foodsafe_dev}
     ports: ['3300:3000']
     depends_on:
       mysql:

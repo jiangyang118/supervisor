@@ -16,13 +16,11 @@ async function bootstrap() {
   app.use(json({ limit }));
   app.use(urlencoded({ limit, extended: true }));
 
-  // Normalize legacy frontend prefixes: /api/school/* and /api/regulator/* → strip leading /api
+  // Normalize legacy frontend prefixes: strip leading /api for all routes to be backward-compatible
   const http = app.getHttpAdapter().getInstance();
   http.use((req: any, _res: any, next: any) => {
     const url: string = req.url || '';
-    if (url.startsWith('/api/school/') || url.startsWith('/api/regulator/')) {
-      req.url = url.replace(/^\/api\//, '/');
-    }
+    if (url.startsWith('/api/')) req.url = url.replace(/^\/api\//, '/');
     next();
   });
 

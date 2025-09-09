@@ -53,7 +53,7 @@
   - `docker compose -f infra/docker-compose.yml up -d mysql redis minio zookeeper kafka kafka-ui gateway-service nginx`
 - 首次需要执行数据库迁移：
   - `make migrate`
-  - 或手动：`DATABASE_URL="mysql://foodsafe:secret@127.0.0.1:3306/foodsafe_dev" pnpm -C services/gateway-service db:migrate`
+  - 或手动：`DATABASE_URL="mysql://foodsafe:secret@127.0.0.1:3307/foodsafe_dev" pnpm -C services/gateway-service db:migrate`
 - 查看日志：`docker compose -f infra/docker-compose.yml logs -f gateway-service`
 - 备注：`scripts/demo.sh` 正在适配 MySQL 版服务清单，优先使用上述 compose 命令。
 

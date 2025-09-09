@@ -20,6 +20,7 @@ import { RolesRepository } from './repositories/roles.repository';
 import { PermissionsRepository } from './repositories/permissions.repository';
 import { PublicConfigRepository } from './repositories/public-config.repository';
 import { CanteensRepository } from './repositories/canteens.repository';
+import { SchoolUsersRepository } from './repositories/school-users.repository';
 
 @Global()
 @Module({
@@ -45,6 +46,7 @@ import { CanteensRepository } from './repositories/canteens.repository';
     PermissionsRepository,
     PublicConfigRepository,
     CanteensRepository,
+    SchoolUsersRepository,
   ],
   exports: [
     DbService,
@@ -68,6 +70,7 @@ import { CanteensRepository } from './repositories/canteens.repository';
     PermissionsRepository,
     PublicConfigRepository,
     CanteensRepository,
+    SchoolUsersRepository,
   ],
 })
 export class PersistenceModule {}

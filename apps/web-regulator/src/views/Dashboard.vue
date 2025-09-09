@@ -315,109 +315,13 @@ function getExpireClass(expireAt: string) {
   return '';
 }
 
-// 从各个子模块获取数据并合并
-async function fetchFromSubModules() {
+// 后端汇总接口（DB 聚合）：/reg/overview
+async function fetchOverview() {
   try {
-    // 并行获取各个子模块的数据
-    const [schoolsStats, aiEvents, recentDailyReports, schoolCanteens, schoolLedgerStats] =
-      await Promise.all([
-        api.schools(),
-        api.aiEvents({ page: 1, pageSize: 100 }),
-        api.dailyReport({
-          start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          end: getTodayDate(),
-        }),
-        api.credCanteens(),
-        api.ledgerSampling({ page: 1, pageSize: 1 }),
-      ]);
-
-    // 统计学校数量
-    const schoolCount = schoolsStats?.length || 0;
-
-    // 统计食堂数量
-    const canteenCount = schoolCanteens?.length || 0;
-
-    // 统计今日上报数量
-    const today = getTodayDate();
-    const todayReportCount =
-      recentDailyReports?.rows?.find((row) => row.date === today)?.count || 0;
-
-    // 统计AI预警数量
-    const aiWarningCount = aiEvents?.items?.length || 0;
-
-    // 计算AI预警类型分布
-    const aiTypeMap = new Map<string, number>();
-    aiEvents?.items?.forEach((event) => {
-      const type = event.type || '其他';
-      aiTypeMap.set(type, (aiTypeMap.get(type) || 0) + 1);
-    });
-    const aiTypeStats = Array.from(aiTypeMap.entries()).map(([type, count]) => ({ type, count }));
-
-    // 生成近7日上报趋势
-    const sevenDayReports = [];
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      const count = recentDailyReports?.rows?.find((row) => row.date === date)?.count || 0;
-      sevenDayReports.push({ day: i === 0 ? 'D-0' : `D-${i}`, count });
-    }
-
-    // 计算预警学校排行
-    const schoolWarningMap = new Map<string, { id: string; name: string; count: number }>();
-    aiEvents?.items?.forEach((event) => {
-      if (event.schoolId && event.schoolName) {
-        if (!schoolWarningMap.has(event.schoolId)) {
-          schoolWarningMap.set(event.schoolId, {
-            id: event.schoolId,
-            name: event.schoolName,
-            count: 0,
-          });
-        }
-        schoolWarningMap.get(event.schoolId)!.count++;
-      }
-    });
-    const schoolWarningStats = Array.from(schoolWarningMap.values())
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
-      .map((school, index) => ({
-        rank: index + 1,
-        school: school.name,
-        schoolId: school.id,
-        warnings: school.count,
-      }));
-
-    return {
-      kpis: {
-        schools: schoolCount,
-        canteens: canteenCount,
-        todayReports: todayReportCount,
-        aiWarnings: aiWarningCount,
-        // 使用默认值或从其他API获取
-        hygienePassRate: 97,
-        devicesOnlineRate: 92,
-      },
-      aiByType:
-        aiTypeStats.length > 0
-          ? aiTypeStats
-          : [
-              { type: '未戴帽', count: 12 },
-              { type: '未戴口罩', count: 8 },
-              { type: '打电话', count: 5 },
-              { type: '吸烟', count: 2 },
-            ],
-      dailyReports: sevenDayReports,
-      topWarnings:
-        schoolWarningStats.length > 0
-          ? schoolWarningStats
-          : [
-              { rank: 1, school: '示例一中', schoolId: 'school1', warnings: 12 },
-              { rank: 2, school: '示例二小', schoolId: 'school2', warnings: 10 },
-              { rank: 3, school: '示例三幼', schoolId: 'school3', warnings: 8 },
-              { rank: 4, school: '示例四小', schoolId: 'school4', warnings: 6 },
-              { rank: 5, school: '示例五中', schoolId: 'school5', warnings: 5 },
-            ],
-    };
-  } catch (error) {
-    console.error('获取子模块数据失败:', error);
+    const data = await api.overview();
+    return data;
+  } catch (e) {
+    console.error('获取概览数据失败:', e);
     return null;
   }
 }
@@ -473,13 +377,7 @@ async function fetchExpiringCertificates() {
       .slice(0, 5);
   } catch (error) {
     console.error('获取证件数据失败:', error);
-    return [
-      { owner: '王某', type: '健康证', expireAt: '2025-09-30' },
-      { owner: '李某', type: '健康证', expireAt: '2025-10-02' },
-      { owner: '供应商A', type: '营业执照', expireAt: '2025-10-05' },
-      { owner: '示例一中', type: '食堂许可证', expireAt: '2025-10-07' },
-      { owner: '示例二小', type: '食堂许可证', expireAt: '2025-10-12' },
-    ];
+    return [];
   }
 }
 
@@ -505,111 +403,31 @@ async function fetchTodayLedgers() {
   } catch (error) {
     console.error('获取台账数据失败:', error);
     return [
-      { name: '晨检', count: 22 },
-      { name: '留样', count: 15 },
-      { name: '消毒', count: 24 },
-      { name: '陪餐', count: 9 },
-      { name: '废弃物', count: 26 },
+      { name: '晨检', count: 0 },
+      { name: '留样', count: 0 },
+      { name: '消毒', count: 0 },
+      { name: '陪餐', count: 0 },
+      { name: '废弃物', count: 0 },
     ];
   }
 }
 
 // 最近活动动态数据
-const recentActivities = ref([
-  { time: '10:30', content: 'AI系统发现3起未戴口罩行为', link: '/ai/inspections' },
-  { time: '09:15', content: '收到25家学校晨检上报', link: '/ledgers/morning' },
-  { time: '08:45', content: '示例一中完成食品安全检查', link: '/inspections' },
-  { time: '昨天', content: '2名工作人员健康证即将到期', link: '/certificates' },
-]);
+const recentActivities = ref<any[]>([]);
 
 onMounted(async () => {
-  try {
-    // 优先从各个子模块获取数据
-    const subModuleData = await fetchFromSubModules();
-    const certificates = await fetchExpiringCertificates();
-    const ledgers = await fetchTodayLedgers();
-
-    if (subModuleData) {
-      kpis.value = subModuleData.kpis;
-      aiByType.value = subModuleData.aiByType;
-      dailyReports.value = subModuleData.dailyReports;
-      topWarnings.value = subModuleData.topWarnings;
-    } else {
-      // 子模块数据获取失败时，尝试使用overview接口
-      const overviewData = await api.overview();
-      if (overviewData && overviewData.kpis) {
-        kpis.value = overviewData.kpis;
-        aiByType.value = overviewData.aiByType || [];
-        dailyReports.value = overviewData.dailyReports || [];
-        topWarnings.value = overviewData.topWarnings || [];
-      }
-    }
-
-    // 设置证件和台账数据
-    expiringCerts.value = certificates;
-    ledgerToday.value = ledgers;
-
-    // 设置检查进度数据
-    inspectionProgress.value = [
-      { type: '日常', doing: 6, done: 18 },
-      { type: '专项', doing: 3, done: 9 },
-      { type: '双随机', doing: 2, done: 7 },
-    ];
-
-    return;
-  } catch (e) {
-    console.error('数据获取失败:', e);
-    // 后端未启动时，使用本地填充数据，确保页面不为空
-    kpis.value = {
-      schools: 42,
-      canteens: 58,
-      todayReports: 96,
-      aiWarnings: 18,
-      hygienePassRate: 97,
-      devicesOnlineRate: 92,
-    };
-    aiByType.value = [
-      { type: '未戴帽', count: 12 },
-      { type: '未戴口罩', count: 8 },
-      { type: '打电话', count: 5 },
-      { type: '吸烟', count: 2 },
-    ];
-    dailyReports.value = [
-      { day: 'D-6', count: 60 },
-      { day: 'D-5', count: 72 },
-      { day: 'D-4', count: 80 },
-      { day: 'D-3', count: 66 },
-      { day: 'D-2', count: 74 },
-      { day: 'D-1', count: 88 },
-      { day: 'D-0', count: 96 },
-    ];
-    topWarnings.value = [
-      { rank: 1, school: '示例一中', schoolId: 'school1', warnings: 12 },
-      { rank: 2, school: '示例二小', schoolId: 'school2', warnings: 10 },
-      { rank: 3, school: '示例三幼', schoolId: 'school3', warnings: 8 },
-      { rank: 4, school: '示例四小', schoolId: 'school4', warnings: 6 },
-      { rank: 5, school: '示例五中', schoolId: 'school5', warnings: 5 },
-    ];
-    expiringCerts.value = [
-      { owner: '王某', type: '健康证', expireAt: '2025-09-30' },
-      { owner: '李某', type: '健康证', expireAt: '2025-10-02' },
-      { owner: '供应商A', type: '营业执照', expireAt: '2025-10-05' },
-      { owner: '示例一中', type: '食堂许可证', expireAt: '2025-10-07' },
-      { owner: '示例二小', type: '食堂许可证', expireAt: '2025-10-12' },
-    ];
-    ledgerToday.value = [
-      { name: '晨检', count: 22 },
-      { name: '留样', count: 15 },
-      { name: '消毒', count: 24 },
-      { name: '陪餐', count: 9 },
-      { name: '废弃物', count: 26 },
-    ];
-    inspectionProgress.value = [
-      { type: '日常', doing: 6, done: 18 },
-      { type: '专项', doing: 3, done: 9 },
-      { type: '双随机', doing: 2, done: 7 },
-    ];
+  const overviewData = await fetchOverview();
+  if (overviewData && overviewData.kpis) {
+    kpis.value = overviewData.kpis;
+    aiByType.value = overviewData.aiByType || [];
+    dailyReports.value = overviewData.dailyReports || [];
+    topWarnings.value = overviewData.topWarnings || [];
+    expiringCerts.value = overviewData.expiringCerts || [];
   }
+  // 台账进度可后续从专用接口接入，这里先置空
+  inspectionProgress.value = [];
+  // 今日台账简要
+  ledgerToday.value = await fetchTodayLedgers();
 });
 </script>
 

@@ -155,13 +155,9 @@ function toggleFull() {
   else document.exitFullscreen && document.exitFullscreen();
 }
 
-const progress = ref(76);
-const warn = ref({ high: 2, mid: 5, low: 9 });
-const aiTop = ref([
-  { type: '未戴帽', count: 12 },
-  { type: '未戴口罩', count: 8 },
-  { type: '打电话', count: 5 },
-]);
+const progress = ref(0);
+const warn = ref({ high: 0, mid: 0, low: 0 });
+const aiTop = ref<{ type: string; count: number }[]>([]);
 
 async function loadSchools() {
   try {
@@ -169,26 +165,14 @@ async function loadSchools() {
     if (schools.value.length) {
       onSelectSchool(schools.value[0].id);
     }
-  } catch {
-    schools.value = [
-     
-    ];
-    onSelectSchool(0);
-  }
+  } catch {}
 }
 async function loadCams(schoolId: string) {
   try {
     cams.value = await api.cameras(schoolId);
     idx.value = 0;
     startLoop();
-  } catch {
-    cams.value = [
-      { id: 'ch-01', name: '后厨-操作台', school: '示例一中' },
-      { id: 'ch-02', name: '后厨-清洗区', school: '示例一中' },
-    ] as any;
-    idx.value = 0;
-    startLoop();
-  }
+  } catch {}
 }
 function onSelectSchool(id: string) {
   activeSchoolId.value = id;

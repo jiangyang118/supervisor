@@ -28,7 +28,7 @@ const map: Record<string, string> = {
   '/analytics': '数据看板',
   '/food-index': '食安指数',
   '/system/info': '监管单位信息',
-  '/system/users': '用户与角色',
+  '/system/users': '监管端用户配置',
   '/system/app': 'APP 下载',
 };
 

@@ -39,7 +39,7 @@ export class DisinfectionService {
     page?: number | string;
     pageSize?: number | string;
   }) {
-    const sid = params.schoolId || '1';
+    const sid = params.schoolId && String(params.schoolId).trim() !== '' ? String(params.schoolId) : undefined as any;
     const p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
     const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
     const res = await this.repo.search({

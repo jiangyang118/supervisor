@@ -5,13 +5,28 @@ export const API_BASE = BASE;
 const SCHOOL_INTEGRATION_BASE = (window as any)?.SCHOOL_INTEGRATION_BASE || 'http://localhost:4001';
 
 function authHeaders() {
-  const token = localStorage.getItem('AUTH_TOKEN');
+  const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('AUTH_TOKEN') || sessionStorage.getItem('AUTH_TOKEN'))) || '';
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function handleUnauthorized(status: number) {
+  if (status === 401) {
+    try {
+      localStorage.removeItem('AUTH_TOKEN');
+      localStorage.removeItem('AUTH_USER');
+      sessionStorage.removeItem('AUTH_TOKEN');
+      sessionStorage.removeItem('AUTH_USER');
+    } catch {}
+    try { (window as any).ElMessage?.warning?.('登录已过期，请重新登录'); } catch {}
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.replace('/login');
+    }
+  }
 }
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
   return res.json() as Promise<T>;
 }
 
@@ -21,27 +36,15 @@ async function post<T>(path: string, body?: any): Promise<T> {
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
   return res.json() as Promise<T>;
 }
 
 export const api = {
   inbound: () => get<any[]>('/home/inbound'),
   outbound: () => get<any[]>('/home/outbound'),
-  // Deprecated home mocks kept for compatibility; avoid using in new code
   hygiene: () => get<any[]>('/home/hygiene'),
   devices: () => get<any[]>('/home/devices'),
-  // Real endpoints for homepage data
-  schoolHygieneInspections: (params: { schoolId?: string; page?: number; pageSize?: number } = {}) =>
-    get<{ items: any[]; total: number; page: number; pageSize: number }>(
-      `/school/hygiene/inspections?${new URLSearchParams(
-        Object.fromEntries(
-          Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null),
-        ) as any,
-      ).toString()}`,
-    ),
-  schoolDevices: (schoolId?: string) =>
-    get<any[]>(`/school/devices${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`),
   // Regulator meta for school options (shared list)
   regSchools: () => get<Array<{ id: number; name: string }>>('/reg/schools'),
   // Bright kitchen (school)
@@ -996,13 +999,8 @@ export const api = {
     get<any>(
       `/school/analytics/food-index${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
     ),
-  analyticsAlerts: (schoolId?: string) =>
-    get<any>(
-      `/school/analytics/alerts${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
-    ),
   // Devices
-  deviceTypes: () => get<any[]>(`/school/devices/types`),
-  deviceStatuses: () => get<any[]>(`/school/devices/statuses`),
+  // deviceTypes/deviceStatuses defined earlier; keep single source to avoid duplicates
   devicesList: (params: { schoolId?: string; type?: string; status?: string; q?: string } = {}) =>
     get<any[]>(
       `/school/devices?${new URLSearchParams(
@@ -1205,33 +1203,21 @@ export const api = {
     return r.json();
   },
   sysApps: () => get<any[]>(`/school/system/apps`),
-  sysUsers: () => get<any[]>(`/school/system/users`),
-  sysUserCreate: async (body: { name: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean }) => {
-    const r = await fetch(`${BASE}/school/system/users`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+  sysUsers: (schoolId?: string | number) => get<any[]>(`/school/system/users${schoolId!==undefined&&schoolId!==null&&String(schoolId) !== '' ? `?schoolId=${encodeURIComponent(String(schoolId))}` : ''}`),
+  sysUserCreate: async (body: { name: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean; password?: string }) => {
+    return post(`/school/system/users`, body);
   },
-  sysUserUpdate: async (id: number, patch: { name?: string; phone?: string; remark?: string; enabled?: boolean }) => {
+  sysUserUpdate: async (id: number | string, patch: { name?: string; phone?: string; remark?: string; enabled?: boolean }) => {
     const r = await fetch(`${BASE}/school/system/users`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ id, patch }),
     });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) { handleUnauthorized(r.status); throw new Error(`HTTP ${r.status}`); }
     return r.json();
   },
-  sysUserDelete: async (id: number) => {
-    const r = await fetch(`${BASE}/school/system/users/delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...authHeaders() },
-      body: JSON.stringify({ id }),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+  sysUserDelete: async (id: number | string) => {
+    return post(`/school/system/users/delete`, { id });
   },
   sysRoles: (params: { schoolId?: number; q?: string } = {}) =>
     get<any[]>(`/school/system/roles?${new URLSearchParams(
@@ -1246,7 +1232,7 @@ export const api = {
     if (!r.ok) {
       console.log('Error response:', r);
       try {
-        const data = r;
+        const data = await r.json();
         console.log('Error data:', data,data?.message);
         throw new Error(data?.message || `HTTP ${r.status}`);
       } catch {
@@ -1283,10 +1269,10 @@ export const api = {
   sysUserSetRoles: async (id: string, roles: string[]) => {
     const r = await fetch(`${BASE}/school/system/users/roles`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ id, roles }),
     });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) { handleUnauthorized(r.status); throw new Error(`HTTP ${r.status}`); }
     return r.json();
   },
   sysPermissions: () => get<any[]>(`/school/system/permissions`),
@@ -1294,10 +1280,10 @@ export const api = {
   sysRoleSetPermissions: async (name: string, permissions: string[]) => {
     const r = await fetch(`${BASE}/school/system/roles/permissions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ name, permissions }),
     });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) { handleUnauthorized(r.status); throw new Error(`HTTP ${r.status}`); }
     return r.json();
   },
   sysAnnouncementAttach: async (id: string, att: { name: string; url: string }) => {
@@ -1418,40 +1404,4 @@ export const api = {
     return res.json();
   },
 
-};
-
-
-// TrustIVS helpers (attach time/uuid/token headers)
-function nowMs() { return Date.now(); }
-function genUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0,
-      v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-function trustivsHeaders(extra?: Record<string, string>) {
-  const h: Record<string, string> = {
-    'Content-Type': 'application/json',
-    time: String(nowMs()),
-    uuid: genUUID(),
-  };
-  const token = localStorage.getItem('TRUSTIVS_TOKEN');
-  if (token) h['token'] = token;
-  if (extra) Object.assign(h, extra);
-  return h;
-}
-export const trustivsApi = {
-  setToken(token: string) { localStorage.setItem('TRUSTIVS_TOKEN', token || ''); },
-  async post<T>(path: string, body?: any, headers?: Record<string, string>): Promise<T> {
-    const res = await fetch(`${BASE}${path}`, { method: 'POST', headers: trustivsHeaders(headers), body: JSON.stringify(body || {}) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json() as Promise<T>;
-  },
-  async get<T>(path: string, query?: Record<string, any>, headers?: Record<string, string>): Promise<T> {
-    const qs = query && Object.keys(query).length ? `?${new URLSearchParams(Object.entries(query).flatMap(([k,v]) => Array.isArray(v)? v.map(x=>[k,x]): [[k, v]]) as any).toString()}` : '';
-    const res = await fetch(`${BASE}${path}${qs}`, { method: 'GET', headers: trustivsHeaders(headers) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json() as Promise<T>;
-  },
 };

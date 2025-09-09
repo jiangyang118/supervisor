@@ -10,4 +10,3 @@ export function useBaseScale(baseWidth = 1920, baseHeight = 1080) {
   window.addEventListener('resize', apply)
   return () => window.removeEventListener('resize', apply)
 }
-

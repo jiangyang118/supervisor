@@ -1,9 +1,10 @@
 export type SchoolOption = { id: string; name: string };
 
-const KEY = 0;
+const KEY = 'current-school-id';
 
 export function getCurrentSchoolId(): string {
   if (typeof localStorage === 'undefined') return 0;
+  console.log('localStorage',localStorage.getItem(KEY));
   return localStorage.getItem(KEY) || 0;
 }
 

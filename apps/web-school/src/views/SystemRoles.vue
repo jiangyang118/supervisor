@@ -62,11 +62,17 @@ async function onSubmitDialog(v: { name: string; remark?: string; menuIds: strin
   try {
     if (editing.value?.id) {
       await api.sysRoleUpdate(editing.value.id, { name: v.name, remark: v.remark || '' });
+      // Update permissions mapped from selected menus
+      const perms = mapMenuIdsToPerms(v.menuIds);
+      await api.sysRoleSetPermissions(v.name, perms);
       ElMessage.success('角色已更新');
     } else {
       const sid = getCurrentSchoolId();
       const schoolId = sid ? Number(sid) : undefined;
       await api.sysRoleCreate(v.name, v.remark || '', schoolId);
+      // Set permissions for newly created role
+      const perms = mapMenuIdsToPerms(v.menuIds);
+      await api.sysRoleSetPermissions(v.name, perms);
       ElMessage.success('角色已创建');
     }
     showDialog.value = false; editing.value = null;
@@ -80,6 +86,21 @@ async function remove(row: any) {
   await api.sysRoleDelete(row.id);
   ElMessage.success('已删除角色');
   await loadRoles();
+}
+
+function mapMenuIdsToPerms(ids: string[]): string[] {
+  const set = new Set<string>();
+  for (const id of ids || []) {
+    if (id.startsWith('store_')) set.add('inventory.*');
+    else if (id.startsWith('daily_')) set.add('daily.*');
+    else if (id.startsWith('hr_')) set.add('hr.*');
+    else if (id.startsWith('video_') || id.startsWith('check_')) set.add('bright.*');
+    else if (id.startsWith('home_')) set.add('overview.*');
+    else if (id.startsWith('env_')) set.add('env.*');
+    else if (id.startsWith('public_')) set.add('public.*');
+    else if (id.startsWith('sys_')) set.add('system.*');
+  }
+  return Array.from(set);
 }
 </script>
 

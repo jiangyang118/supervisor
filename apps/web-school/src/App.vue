@@ -6,27 +6,35 @@
 
   <!-- Default application shell -->
   <el-container v-else style="height: 100vh">
-    <el-header
-      class="app-header"
-      style="display: flex; align-items: center; justify-content: space-between"
-    >
+    <el-header class="app-header" style="display: flex; align-items: center; justify-content: space-between">
       <div>学校端 • 食品安全云</div>
-      <el-space>
-        <el-button link type="primary" @click="go('/overview')">首页</el-button>
-        <el-button link @click="go('/reports')">每日报表</el-button>
-      </el-space>
+      <div style="display:flex; align-items:center; gap:12px">
+        <el-button v-if="has('overview.*')" link type="primary" @click="go('/overview')">首页</el-button>
+        <el-button v-if="has('overview.*')" link @click="go('/reports')">每日报表</el-button>
+        <el-divider direction="vertical" />
+        <el-dropdown>
+          <span class="el-dropdown-link" style="cursor:pointer">
+            {{ displayName }}<i class="el-icon-arrow-down el-icon--right" />
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="onLogout">退出登录</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </div>
     </el-header>
     <el-container>
       <el-aside width="240px" class="app-aside">
         <el-menu :key="openeds.join(',')" :default-active="active" :default-openeds="openeds" router unique-opened>
-          <el-menu-item index="/overview">首页</el-menu-item>
-          <el-sub-menu index="overview">
+          <el-menu-item v-if="has('overview.*')" index="/overview">首页</el-menu-item>
+          <el-sub-menu v-if="has('overview.*')" index="overview">
             <template #title>总览</template>
             <el-menu-item index="/analytics">数据看板</el-menu-item>
             <el-menu-item index="/overview/alerts">预警概览</el-menu-item>
           </el-sub-menu>
 
-          <el-sub-menu index="bright">
+          <el-sub-menu v-if="has('bright.*')" index="bright">
             <template #title>明厨亮灶管理</template>
             <el-menu-item index="/bright-kitchen/live">实时视频</el-menu-item>
             <el-menu-item index="/bright-kitchen/playback">视频回放</el-menu-item>
@@ -36,7 +44,7 @@
             <el-menu-item index="/ai/events">AI 违规抓拍明细</el-menu-item>
             <el-menu-item index="/ai/summary">AI 行为统计与导出</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu index="daily">
+          <el-sub-menu v-if="has('daily.*')" index="daily">
             <template #title>日常运营管理</template>
             <el-menu-item index="/morning-check">晨检管理</el-menu-item>
             <el-menu-item index="/sampling/records">留样管理</el-menu-item>
@@ -45,7 +53,7 @@
             <el-menu-item index="/waste">废弃物管理</el-menu-item>
             <el-menu-item index="/hygiene/inspections">卫生管理</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu index="inventory">
+          <el-sub-menu v-if="has('inventory.*')" index="inventory">
             <template #title>出入库管理</template>
             <el-menu-item index="/inventory/items">商品管理</el-menu-item>
             <el-menu-item index="/inventory/inbound">入库登记</el-menu-item>
@@ -55,20 +63,20 @@
             <el-menu-item index="/suppliers">供应商管理</el-menu-item>
             <el-menu-item index="/warehouses">仓库信息管理</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu index="hr">
+          <el-sub-menu v-if="has('hr.*')" index="hr">
             <template #title>人事管理</template>
             <el-menu-item index="/certificates">人员健康证</el-menu-item>
             <el-menu-item index="/training">培训与考试</el-menu-item>
             <el-menu-item index="/hr/staff">人员管理</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu index="env-dev">
+          <el-sub-menu v-if="has('env.*')" index="env-dev">
             <template #title>环境及设备管理</template>
             <el-menu-item index="/risks">隐患排查管理</el-menu-item>
             <el-menu-item index="/hygiene/assets">固定资产维护记录</el-menu-item>
             <el-menu-item index="/environment/status">环境状态</el-menu-item>
             <el-menu-item index="/devices">智能终端设备管理</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu index="pub-feed">
+          <el-sub-menu v-if="has('public.*')" index="pub-feed">
             <template #title>公示与反馈</template>
             <el-menu-item index="/public-feedback">公众反馈处理</el-menu-item>
             <el-menu-item index="/public-config">公示内容配置</el-menu-item>
@@ -77,14 +85,14 @@
             <el-menu-item index="/food-waste">食品浪费分析</el-menu-item>
           </el-sub-menu>
           
-          <el-sub-menu index="system">
+          <el-sub-menu v-if="has('system.*') || has('users.manage')" index="system">
             <template #title>系统配置</template>
             <el-menu-item index="/system/canteen">食堂信息维护+食堂资质</el-menu-item>
             <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item>
             <el-menu-item index="/system/app-download">移动端扫码</el-menu-item>
             <el-menu-item index="/system/trustivs-test">TrustIVS 测试</el-menu-item>
-            <el-menu-item index="/system/users">用户管理</el-menu-item>
-            <el-menu-item index="/system/roles">角色管理</el-menu-item>
+            <el-menu-item v-if="has('users.manage')" index="/system/users">用户管理</el-menu-item>
+            <el-menu-item v-if="has('users.manage')" index="/system/roles">角色管理</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>
@@ -122,7 +130,9 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import { computed, ref } from 'vue';
+import { ElMessageBox, ElMessage } from 'element-plus';
 import PageHeader from './components/PageHeader.vue';
+import { useAuthStore } from './stores/auth';
 const route = useRoute();
 const router = useRouter();
 const isAuthPage = computed(() => route.path === '/login');
@@ -163,6 +173,8 @@ const openeds = computed(() => {
   return [] as string[];
 });
 const go = (p: string) => router.push(p);
+const auth = useAuthStore();
+const has = (p: string) => auth.hasPerm(p);
 
 const integration = computed(() => ({
   base: (window as any).SCHOOL_INTEGRATION_BASE as string | undefined,
@@ -195,6 +207,16 @@ function openConfig() {
     localStorage.setItem('MEGO_CANDIDATES', c);
     (window as any).MEGO_CANDIDATES = c;
   }
+}
+
+const displayName = computed(() => auth.user?.name || '未登录');
+async function onLogout() {
+  try {
+    await ElMessageBox.confirm('确认退出登录？', '提示', { type: 'warning', confirmButtonText: '退出', cancelButtonText: '取消' });
+  } catch { return; }
+  await auth.logout();
+  ElMessage.success('已退出登录');
+  router.replace('/login');
 }
 </script>
 

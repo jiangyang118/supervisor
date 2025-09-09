@@ -1,29 +1,43 @@
-import { Controller, Get, Patch, Query, Body } from '@nestjs/common';
+import { Controller, Get, Patch, Query, Body, UseGuards } from '@nestjs/common';
 import { CredentialsService, EntityType } from './credentials.service';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { Perm } from './perm.decorator';
 
 @Controller('reg/credentials')
+@UseGuards(JwtGuard, PermissionGuard)
 export class RegCredentialsController {
   constructor(private readonly svc: CredentialsService) {}
 
-  @Get('canteens') canteens(@Query('schoolId') schoolId?: string) {
+  @Get('canteens')
+  @Perm('credentials:R')
+  canteens(@Query('schoolId') schoolId?: string) {
     return this.svc.listCanteens({ schoolId });
   }
-  @Get('workers') workers(@Query('schoolId') schoolId?: string) {
+  @Get('workers')
+  @Perm('credentials:R')
+  workers(@Query('schoolId') schoolId?: string) {
     return this.svc.listWorkers({ schoolId });
   }
-  @Get('suppliers') suppliers(@Query('schoolId') schoolId?: string) {
+  @Get('suppliers')
+  @Perm('credentials:R')
+  suppliers(@Query('schoolId') schoolId?: string) {
     return this.svc.listSuppliers({ schoolId });
   }
   @Get('exceptions') exceptions(
+    @Perm('credentials:R')
     @Query('type') type?: EntityType,
     @Query('schoolId') schoolId?: string,
   ) {
     return this.svc.listExceptions({ type, schoolId });
   }
-  @Patch('exceptions/measure') setMeasure(@Query('id') id: string, @Body() b: { measure: string }) {
+  @Patch('exceptions/measure')
+  @Perm('credentials:U')
+  setMeasure(@Query('id') id: string, @Body() b: { measure: string }) {
     return this.svc.setMeasure(id, b.measure);
   }
   @Get('export.csv') exportCsv(
+    @Perm('credentials:EX')
     @Query('target') target: 'canteens' | 'workers' | 'suppliers' | 'exceptions' = 'exceptions',
     @Query('type') type?: EntityType,
     @Query('schoolId') schoolId?: string,

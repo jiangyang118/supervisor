@@ -48,8 +48,11 @@
         <el-form-item label="姓名" prop="name" required>
           <el-input v-model="form.name" maxlength="32" show-word-limit />
         </el-form-item>
-        <el-form-item label="手机号" prop="phone" required>
+        <el-form-item label="手机号" prop="phone">
           <el-input v-model="form.phone" maxlength="20" />
+        </el-form-item>
+        <el-form-item label="登录密码" prop="password" :required="!editing">
+          <el-input v-model="form.password" show-password maxlength="64" placeholder="新增用户必填，编辑留空表示不修改" />
         </el-form-item>
         <el-form-item label="所属角色" prop="roles" required>
           <el-select v-model="form.roles" multiple filterable placeholder="选择角色" style="width:100%">
@@ -71,6 +74,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { api } from '../services/api';
+import { getCurrentSchoolId } from '../utils/school';
 
 const users = ref<any[]>([]);
 const roles = ref<any[]>([]);
@@ -78,10 +82,16 @@ const userRoles = ref<Record<string, string[]>>({});
 const showDialog = ref(false);
 const creating = ref(false);
 const formRef = ref();
-const form = ref<{ name: string; phone?: string; roles: string[]; remark?: string }>({ name: '', phone: '', roles: [], remark: '' });
+const form = ref<{ name: string; phone?: string; roles: string[]; remark?: string; password?: string }>({ name: '', phone: '', roles: [], remark: '', password: '' });
 const rules = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
+  password: [{
+    validator: (_: any, v: any, cb: any) => {
+      if (!editing.value && (!v || String(v).trim() === '')) return cb(new Error('请输入登录密码'));
+      cb();
+    },
+    trigger: 'blur',
+  }],
   roles: [
     { type: 'array', required: true, message: '请选择所属角色', trigger: 'change' },
     {
@@ -97,7 +107,8 @@ const dateOnly = (s?: string) => (s ? String(s).slice(0, 10) : '');
 const editing = ref<any | null>(null);
 
 async function load() {
-  users.value = await api.sysUsers();
+  const sid = getCurrentSchoolId();
+  users.value = await api.sysUsers(sid);
   roles.value = await api.sysRoles();
   users.value.forEach(u => {
     userRoles.value[u.id] = [...(u.roles || [])];
@@ -109,10 +120,10 @@ async function saveRoles(row: any) {
   await load();
 }
 
-function openCreate() { form.value = { name: '', phone: '', roles: [], remark: '' }; showDialog.value = true; }
+function openCreate() { editing.value = null; form.value = { name: '', phone: '', roles: [], remark: '', password: '' }; showDialog.value = true; }
 function openEdit(row: any) {
   editing.value = row;
-  form.value = { name: row.displayName, phone: row.phone || '', roles: [...(userRoles.value[row.id] || [])], remark: row.remark || '' };
+  form.value = { name: row.displayName, phone: row.phone || '', roles: [...(userRoles.value[row.id] || [])], remark: row.remark || '', password: '' };
   showDialog.value = true;
 }
 async function onSubmit() {
@@ -121,10 +132,12 @@ async function onSubmit() {
   creating.value = true;
   try {
     if (editing.value?.id) {
-      await api.sysUserUpdate(editing.value.id, { name: form.value.name.trim(), phone: form.value.phone?.trim() || undefined, remark: form.value.remark?.trim() || '' });
+      const patch: any = { name: form.value.name.trim(), phone: form.value.phone?.trim() || undefined, remark: form.value.remark?.trim() || '' };
+      // 编辑时不支持直接改密码，可在后续提供“重置密码”功能
+      await api.sysUserUpdate(editing.value.id, patch);
       await api.sysUserSetRoles(editing.value.id, form.value.roles || []);
     } else {
-      await api.sysUserCreate({ name: form.value.name.trim(), phone: form.value.phone?.trim() || undefined, roles: form.value.roles || [], remark: form.value.remark?.trim() || '' });
+      await api.sysUserCreate({ name: form.value.name.trim(), phone: form.value.phone?.trim() || undefined, roles: form.value.roles || [], remark: form.value.remark?.trim() || '', password: (form.value.password || '').trim(), schoolId: getCurrentSchoolId() as any });
     }
     showDialog.value = false; editing.value = null;
     await load();

@@ -1,7 +1,11 @@
-import { Body, Controller, Get, Post, Patch, Param, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, Param, Query, UseGuards } from '@nestjs/common';
 import { InspectionsService, InspectStatus, InspectType } from './inspections.service';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { Perm } from './perm.decorator';
 
 @Controller('reg/inspections')
+@UseGuards(JwtGuard, PermissionGuard)
 export class RegInspectionsController {
   constructor(private readonly svc: InspectionsService) {}
 
@@ -16,6 +20,7 @@ export class RegInspectionsController {
   }
 
   @Get('tasks')
+  @Perm('inspections:R')
   listTasks(
     @Query('type') type?: InspectType,
     @Query('status') status?: InspectStatus,
@@ -44,6 +49,7 @@ export class RegInspectionsController {
   }
 
   @Post('tasks')
+  @Perm('inspections:C')
   createTask(
     @Body()
     b: {
@@ -59,11 +65,13 @@ export class RegInspectionsController {
   }
 
   @Patch('tasks/:id')
+  @Perm('inspections:U')
   updateTask(@Param('id') id: string, @Body() patch: any) {
     return this.svc.updateTask(id, patch);
   }
 
   @Post('tasks/:id/submit')
+  @Perm('inspections:U')
   submit(
     @Param('id') id: string,
     @Body()
@@ -77,6 +85,7 @@ export class RegInspectionsController {
   }
 
   @Post('tasks/random')
+  @Perm('inspections:C')
   random(
     @Body()
     b: {
@@ -96,6 +105,7 @@ export class RegInspectionsController {
   }
 
   @Get('tasks/export.csv')
+  @Perm('inspections:EX')
   exportTasksCsv(
     @Query('type') type?: InspectType,
     @Query('status') status?: InspectStatus,
@@ -137,41 +147,63 @@ export class RegInspectionsController {
   }
 
   // Inspectors and grid
-  @Get('inspectors') listInspectors() {
+  @Get('inspectors')
+  @Perm('inspections:R')
+  listInspectors() {
     return this.svc.listInspectors();
   }
-  @Post('inspectors') createInspector(
+  @Post('inspectors')
+  @Perm('inspections:M')
+  createInspector(
     @Body() b: { name: string; region?: string; mobile?: string; grids?: string[] },
   ) {
     return this.svc.createInspector(b);
   }
-  @Patch('inspectors/:id') updateInspector(@Param('id') id: string, @Body() patch: any) {
+  @Patch('inspectors/:id')
+  @Perm('inspections:M')
+  updateInspector(@Param('id') id: string, @Body() patch: any) {
     return this.svc.updateInspector(id, patch);
   }
-  @Post('inspectors/:id/delete') deleteInspector(@Param('id') id: string) {
+  @Post('inspectors/:id/delete')
+  @Perm('inspections:M')
+  deleteInspector(@Param('id') id: string) {
     return this.svc.deleteInspector(id);
   }
 
   // Config
-  @Get('config') getConfig() {
+  @Get('config')
+  @Perm('inspections:R')
+  getConfig() {
     return this.svc.listConfig();
   }
-  @Post('config/items') addItem(@Body() b: { name: string }) {
+  @Post('config/items')
+  @Perm('inspections:S')
+  addItem(@Body() b: { name: string }) {
     return this.svc.addConfigItem('items', b.name);
   }
-  @Post('config/penalties') addPenalty(@Body() b: { name: string }) {
+  @Post('config/penalties')
+  @Perm('inspections:S')
+  addPenalty(@Body() b: { name: string }) {
     return this.svc.addConfigItem('penalties', b.name);
   }
-  @Post('config/publications') addPublication(@Body() b: { name: string }) {
+  @Post('config/publications')
+  @Perm('inspections:S')
+  addPublication(@Body() b: { name: string }) {
     return this.svc.addConfigItem('publications', b.name);
   }
-  @Post('config/items/remove') removeItem(@Body() b: { name: string }) {
+  @Post('config/items/remove')
+  @Perm('inspections:S')
+  removeItem(@Body() b: { name: string }) {
     return this.svc.removeConfigItem('items', b.name);
   }
-  @Post('config/penalties/remove') removePenalty(@Body() b: { name: string }) {
+  @Post('config/penalties/remove')
+  @Perm('inspections:S')
+  removePenalty(@Body() b: { name: string }) {
     return this.svc.removeConfigItem('penalties', b.name);
   }
-  @Post('config/publications/remove') removePublication(@Body() b: { name: string }) {
+  @Post('config/publications/remove')
+  @Perm('inspections:S')
+  removePublication(@Body() b: { name: string }) {
     return this.svc.removeConfigItem('publications', b.name);
   }
 }

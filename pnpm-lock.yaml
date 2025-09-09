@@ -6,7 +6,11 @@ settings:
 
 importers:
 
-  .: {}
+  .:
+    dependencies:
+      flv.js:
+        specifier: ^1.6.2
+        version: 1.6.2
 
   apps/mobile-device:
     dependencies:

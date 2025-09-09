@@ -16,22 +16,14 @@
       <el-table-column prop="status" label="状态" width="120" />
       <el-table-column prop="date" label="时间" width="180" />
     </el-table>
-    <el-empty v-if="!rows.length" description="暂无数据，演示占位" />
+    <el-empty v-if="!rows.length" description="暂无数据" />
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref } from 'vue';
 const props = defineProps<{ title: string; mainCol?: string; actions?: string[] }>();
 const mainCol = props.mainCol ?? '名称';
 const actions = props.actions ?? ['export-csv', 'export-pdf'];
 const rows = ref<Record<string, unknown>[]>([]);
-onMounted(() => {
-  rows.value = [1, 2, 3].map((i) => ({
-    id: `${Date.now()}-${i}`,
-    name: `${props.title} 示例 ${i}`,
-    status: i % 2 ? '正常' : '异常',
-    date: new Date().toLocaleString(),
-  }));
-});
 </script>

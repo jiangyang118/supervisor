@@ -40,16 +40,7 @@
 import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
 type Row = { id: string; school: string; staff: string; temp: number; result: string; at: string };
-const rows = ref<Row[]>([
-  {
-    id: 'MC-001',
-    school: '示例一中',
-    staff: '张三',
-    temp: 36.6,
-    result: '正常',
-    at: new Date().toLocaleString(),
-  },
-]);
+const rows = ref<Row[]>([]);
 const filters = reactive<{
   school: string;
   result: '' | '正常' | '异常' | null;

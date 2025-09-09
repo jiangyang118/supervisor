@@ -218,12 +218,13 @@ const cfgFeedbacks = computed(() => ({
 }
 .banner {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  padding: 6px 10px;
-  border: 1px solid rgba(17, 197, 255, 0.2);
-  border-radius: 8px;
-  margin-bottom: 10px;
+  height: 80px;
+  margin:10px;
+
+  background:url('../assets/img/header.png') no-repeat center;
+  background-size: 100% 100%;
 }
 .banner .left {
   color: #9dccff;
@@ -232,7 +233,7 @@ const cfgFeedbacks = computed(() => ({
 .banner .center {
   width:30%;
   text-align: center;
-  font-size: 20px;
+  font-size: 30px;
   font-weight: 800;
   letter-spacing: 1px;
   text-shadow: 0px 4px 21px rgba(27, 126, 242, 0.64);

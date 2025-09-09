@@ -41,10 +41,14 @@ export const useAuthStore = defineStore('auth', {
     isAuthed: (s) => !!s.token && !!s.user,
     hasPerm: (s) => (p: string) => {
       if (!s.user) return false;
-      if (s.user.permissions.includes('*') || s.user.permissions.includes(p)) return true;
-      // wildcard check like settings.*
-      const [ns] = p.split('.') as string[];
-      return s.user.permissions.includes(`${ns}.*`);
+      const owned = s.user.permissions || [];
+      if (owned.includes('*') || owned.includes('*:*') || owned.includes(p)) return true;
+      // Support wildcard namespaces with both dot and colon separators
+      const idxDot = p.indexOf('.')
+      const idxCol = p.indexOf(':')
+      const idx = idxDot === -1 ? idxCol : (idxCol === -1 ? idxDot : Math.min(idxDot, idxCol))
+      const ns = idx > 0 ? p.slice(0, idx) : p
+      return owned.includes(`${ns}.*`) || owned.includes(`${ns}:*`) || owned.some((x) => x.startsWith(`${ns}.`) || x.startsWith(`${ns}:`))
     },
   },
   actions: {

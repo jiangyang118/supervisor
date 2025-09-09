@@ -39,6 +39,44 @@ export class RolesRepository {
     }
   }
 
+  async rolePermissionsInSchool(name: string, schoolId?: number) {
+    const cols = await this.ensureCols();
+    const hasSchool = cols.has('school_id');
+    let sql = 'select r.id, r.name from roles r where r.name = ?';
+    const args: any[] = [name];
+    if (hasSchool && schoolId && Number.isFinite(Number(schoolId))) {
+      sql += ' and r.school_id = ?';
+      args.push(Number(schoolId));
+    }
+    const roleRes = await this.db.query<any>(sql + ' limit 1', args);
+    const roleId = Number(roleRes.rows?.[0]?.id || 0);
+    if (!roleId) return { name, permissions: [] as string[] };
+    const { rows } = await this.db.query<any>('select permission_key as k from role_permissions where role_id = ?', [roleId]);
+    const permissions = (rows || []).map((r: any) => String(r.k)).filter(Boolean);
+    return { name, permissions };
+  }
+
+  async setPermissionsInSchool(name: string, schoolId: number | undefined, perms: string[]) {
+    const cols = await this.ensureCols();
+    const hasSchool = cols.has('school_id');
+    let sql = 'select id from roles where name = ?';
+    const args: any[] = [name];
+    if (hasSchool && schoolId && Number.isFinite(Number(schoolId))) {
+      sql += ' and school_id = ?';
+      args.push(Number(schoolId));
+    }
+    const roleRes = await this.db.query<any>(sql + ' limit 1', args);
+    const roleId = Number(roleRes.rows?.[0]?.id || 0);
+    if (!roleId) throw new Error('role not found');
+    await this.db.query('delete from role_permissions where role_id = ?', [roleId]);
+    if (perms && perms.length) {
+      const values: any[] = [];
+      const placeholders = perms.map(k => { values.push(roleId, k); return '(?,?)'; }).join(',');
+      await this.db.query('insert into role_permissions(role_id, permission_key) values ' + placeholders, values);
+    }
+    return { ok: true } as any;
+  }
+
   async createIfNotExists(name: string, remark?: string) {
     await this.db.query('insert ignore into roles(name) values(?)', [name]);
     if (remark) {
@@ -131,6 +169,46 @@ export class RolesRepository {
 
   async remove(id: number) {
     await this.db.query('delete from roles where id = ?', [id]);
+    return { ok: true };
+  }
+
+  async updateInSchool(id: number, schoolId: number | undefined, patch: { name?: string; remark?: string }) {
+    const cols = await this.ensureCols();
+    const hasSchool = cols.has('school_id');
+    const sets: string[] = [];
+    const vals: any[] = [];
+    if (patch.name !== undefined) { sets.push('name = ?'); vals.push(patch.name); }
+    if (patch.remark !== undefined && cols.has('remark')) { sets.push('remark = ?'); vals.push(patch.remark); }
+    if (!sets.length) return { ok: true };
+    let sql = 'update roles set ' + sets.join(',') + ' where id = ?';
+    vals.push(id);
+    if (hasSchool && schoolId && Number.isFinite(Number(schoolId))) {
+      sql += ' and school_id = ?';
+      vals.push(Number(schoolId));
+    }
+    try {
+      const { affectedRows } = await this.db.query(sql, vals);
+      if (!affectedRows) throw new ConflictException('not found');
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (msg.includes('Duplicate entry') || msg.includes('ER_DUP_ENTRY')) {
+        throw new ConflictException('角色名称已存在');
+      }
+      throw e;
+    }
+    return { ok: true };
+  }
+
+  async removeInSchool(id: number, schoolId: number | undefined) {
+    const cols = await this.ensureCols();
+    const hasSchool = cols.has('school_id');
+    let sql = 'delete from roles where id = ?';
+    const args: any[] = [id];
+    if (hasSchool && schoolId && Number.isFinite(Number(schoolId))) {
+      sql += ' and school_id = ?';
+      args.push(Number(schoolId));
+    }
+    await this.db.query(sql, args);
     return { ok: true };
   }
 }

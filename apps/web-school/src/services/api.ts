@@ -1276,10 +1276,10 @@ export const api = {
   sysRoleSetPermissions: async (name: string, permissions: string[]) => {
     const r = await fetch(`${BASE}/school/system/roles/permissions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ name, permissions }),
     });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) { handleUnauthorized(r.status); throw new Error(`HTTP ${r.status}`); }
     return r.json();
   },
   sysAnnouncementAttach: async (id: string, att: { name: string; url: string }) => {

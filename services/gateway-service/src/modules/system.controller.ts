@@ -94,27 +94,40 @@ export class SystemController {
     if (uid > 0 && sid > 0) await this.schoolUsersRepo.bind(uid, sid);
     return res;
   }
-  @Get('roles') roles(@Query('schoolId') schoolId?: string, @Query('q') q?: string) {
-    return this.rolesRepo.search({ schoolId: schoolId ? Number(schoolId) : undefined, q });
+  @Get('roles') roles(@Req() req: any, @Query('schoolId') schoolId?: string, @Query('q') q?: string) {
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sidParam = schoolId && String(schoolId).trim() !== '' ? Number(schoolId) : undefined;
+    const sid = sidParam && schools.includes(Number(sidParam)) ? Number(sidParam) : (schools.length ? Number(schools[0]) : undefined);
+    return this.rolesRepo.search({ schoolId: sid, q });
   }
   @Post('roles')
   @Perm('users.manage')
-  createRole(@Body() b: { schoolId?: number; name: string; remark?: string }) {
+  createRole(@Req() req: any, @Body() b: { schoolId?: number; name: string; remark?: string }) {
     if (!b?.name) return { ok: false, message: 'name required' } as any;
-    const sid = b.schoolId && Number.isFinite(Number(b.schoolId)) ? Number(b.schoolId) : 1;
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const bodySid = b.schoolId && Number.isFinite(Number(b.schoolId)) ? Number(b.schoolId) : undefined;
+    const sid = bodySid && schools.includes(bodySid) ? bodySid : (schools.length ? Number(schools[0]) : 1);
     return this.rolesRepo.create(sid, b.name, b.remark);
   }
   @Patch('roles')
   @Perm('users.manage')
-  updateRole(@Body() b: { id: number; patch: { name?: string; remark?: string } }) {
+  updateRole(@Req() req: any, @Body() b: { id: number; patch: { name?: string; remark?: string } }) {
     if (!b?.id) return { ok: false, message: 'id required' } as any;
-    return this.rolesRepo.update(Number(b.id), b.patch || {});
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sid = schools.length ? Number(schools[0]) : undefined;
+    return this.rolesRepo.updateInSchool(Number(b.id), sid, b.patch || {});
   }
   @Post('roles/delete')
   @Perm('users.manage')
-  deleteRole(@Body() b: { id: number }) {
+  deleteRole(@Req() req: any, @Body() b: { id: number }) {
     if (!b?.id) return { ok: false, message: 'id required' } as any;
-    return this.rolesRepo.remove(Number(b.id));
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sid = schools.length ? Number(schools[0]) : undefined;
+    return this.rolesRepo.removeInSchool(Number(b.id), sid);
   }
   @Post('users/roles')
   @Perm('users.manage')
@@ -152,13 +165,19 @@ export class SystemController {
   @Get('permissions') permissions() {
     return this.svc.listPermissions();
   }
-  @Get('roles/permissions') rolePermissions(@Query('name') name: string) {
-    return this.rolesRepo.listRoles().then((arr) => arr.find((r) => r.name === name) || { name, permissions: [] });
+  @Get('roles/permissions') rolePermissions(@Req() req: any, @Query('name') name: string) {
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sid = schools.length ? Number(schools[0]) : undefined;
+    return this.rolesRepo.rolePermissionsInSchool(name, sid);
   }
   @Post('roles/permissions')
   @Perm('users.manage')
-  setRolePerms(@Body() b: { name: string; permissions: string[] }) {
-    return this.rolesRepo.setPermissions(b.name, b.permissions);
+  setRolePerms(@Req() req: any, @Body() b: { name: string; permissions: string[] }) {
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sid = schools.length ? Number(schools[0]) : undefined;
+    return this.rolesRepo.setPermissionsInSchool(b.name, sid, b.permissions || []);
   }
 
   // Staff (personnel)

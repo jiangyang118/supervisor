@@ -41,6 +41,7 @@ create table if not exists inv_warehouses (
 create table if not exists inv_inbound (
   id int(20) primary key auto_increment,
   product_id int(20) not null,
+    school_id bigint(20) not null,
   qty decimal(18,3) not null,
   supplier_id int(20) null,
   warehouse_id int(20) null,
@@ -54,6 +55,7 @@ create table if not exists inv_inbound (
 create table if not exists inv_outbound (
   id int(20) primary key auto_increment,
   product_id int(20) not null,
+    school_id bigint(20) not null,
   qty decimal(18,3) not null,
   purpose varchar(255) null,
   by_who varchar(128) null,
@@ -67,6 +69,7 @@ create table if not exists inv_outbound (
 create table if not exists inv_tickets (
   id int(20) primary key auto_increment,
   product_id int(20) not null,
+    school_id bigint(20) not null,
   type varchar(128) not null,
   image_url varchar(255) null,
   at datetime not null,
@@ -75,6 +78,7 @@ create table if not exists inv_tickets (
 
 create table if not exists inv_additives (
   id int(20) primary key auto_increment,
+    school_id bigint(20) not null,
   name varchar(128) not null,
   amount decimal(18,3) not null,
   dish varchar(128) null,

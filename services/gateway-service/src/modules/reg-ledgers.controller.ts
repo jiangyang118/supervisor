@@ -323,7 +323,8 @@ export class RegLedgersController {
     const items = (
       await Promise.all(
         schools.map(async (s) => {
-          const res = await this.waste.list({ schoolId: this.numId(s.id), category, start, end, page: '1', pageSize: '100000' });
+          const catNum = category !== undefined && category !== null && String(category).trim() !== '' ? Number(category) : undefined;
+          const res = await this.waste.list({ schoolId: this.numId(s.id), category: catNum, start, end, page: '1', pageSize: '100000' });
           return res.items.map((r: any) => ({
             id: r.id,
             schoolId: r.schoolId,

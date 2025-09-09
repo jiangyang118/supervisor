@@ -102,7 +102,7 @@ export class WasteService {
     const insertId = await this.repo.insertRecord({
       schoolId,
       date: body.date || todayStr(),
-      category: body.category || '餐厨垃圾',
+      category: (body.category as any) || 1,
       amount: Number(body.amount) || 0,
       buyer: body.buyer || '',
       person: body.person || '',
@@ -112,7 +112,7 @@ export class WasteService {
       id: insertId,
       schoolId,
       date: body.date || todayStr(),
-      category: body.category || '餐厨垃圾',
+      category: (body.category as any) || 1,
       amount: Number(body.amount) || 0,
       buyer: body.buyer || '',
       person: body.person || '',

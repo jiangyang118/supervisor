@@ -72,7 +72,7 @@ export class SamplingService {
   }) {
     const sidInput = params.schoolId;
     const sidNum = sidInput !== undefined && sidInput !== null && String(sidInput).trim() !== '' ? Number(sidInput) : NaN;
-    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : 1;
+    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : undefined;
     const p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
     const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
     const res = await this.repo.searchSamples({

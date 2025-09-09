@@ -77,47 +77,10 @@ type OutRow = {
 };
 type TkRow = { id: string; school: string; item: string; type: string; status: string; at: string };
 type AdRow = { id: string; school: string; name: string; amount: number; dish: string; at: string };
-const inRows = ref<InRow[]>([
-  {
-    id: 'IN-001',
-    school: '示例一中',
-    item: '大米',
-    quantity: 50,
-    supplier: '供应商A',
-    at: new Date().toLocaleString(),
-  },
-]);
-const outRows = ref<OutRow[]>([
-  {
-    id: 'OUT-001',
-    school: '示例二小',
-    item: '大米',
-    quantity: 10,
-    purpose: '午餐',
-    by: '张三',
-    at: new Date().toLocaleString(),
-  },
-]);
-const tkRows = ref<TkRow[]>([
-  {
-    id: 'TK-001',
-    school: '示例一中',
-    item: '大米',
-    type: '合格证',
-    status: '已上传',
-    at: new Date().toLocaleString(),
-  },
-]);
-const adRows = ref<AdRow[]>([
-  {
-    id: 'AD-001',
-    school: '示例二小',
-    name: '食盐',
-    amount: 10,
-    dish: '青菜',
-    at: new Date().toLocaleString(),
-  },
-]);
+const inRows = ref<InRow[]>([]);
+const outRows = ref<OutRow[]>([]);
+const tkRows = ref<TkRow[]>([]);
+const adRows = ref<AdRow[]>([]);
 const onExportCsv = () => {
   const all = [
     ...inRows.value.map((r) => ({ ...r, kind: '入库' })),

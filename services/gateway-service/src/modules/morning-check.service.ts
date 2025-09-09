@@ -48,7 +48,7 @@ export class MorningCheckService {
   }) {
     const sidRaw = params.schoolId;
     const sidNum = sidRaw !== undefined && sidRaw !== null && String(sidRaw).trim() !== '' ? Number(sidRaw) : NaN;
-    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : 1;
+    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : undefined;
     const p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
     const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
     if (this.repo) {
@@ -65,7 +65,7 @@ export class MorningCheckService {
         });
         const mapped = items.map((r) => ({
           id: Number(r.id),
-          schoolId: Number(r.schoolId ?? sid),
+          schoolId: Number(r.schoolId ?? 0),
           staff: r.userId,
           temp: Number(r.foreheadTemp),
           result: r.abnormalTemp ? ('异常' as MCResult) : ('正常' as MCResult),

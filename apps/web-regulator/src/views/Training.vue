@@ -6,7 +6,7 @@
       </div>
     </template>
     <el-tabs v-model="tab">
-      <el-tab-pane label="培训台账" name="courses">
+      <el-tab-pane label="培训课程" name="courses">
         <div style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center">
           <el-select
             v-model="filters.schoolId"
@@ -27,7 +27,7 @@
           <el-table-column prop="createdAt" label="创建时间" width="200" />
         </el-table>
       </el-tab-pane>
-      <el-tab-pane label="考试台账" name="exams">
+      <el-tab-pane label="考试" name="exams">
         <div style="margin-bottom: 8px; display: flex; gap: 8px; align-items: center">
           <el-select
             v-model="filters.schoolId"
@@ -42,7 +42,10 @@
         </div>
         <el-table :data="exams" size="small" border>
           <el-table-column prop="id" label="考试ID" width="160" />
-          <el-table-column prop="title" label="考试标题" />
+          <el-table-column prop="title" label="标题" />
+          <el-table-column label="关联课程" min-width="160">
+            <template #default="{ row }">{{ row.courseTitle || '-' }}</template>
+          </el-table-column>
           <el-table-column prop="school" label="学校" width="180" />
           <el-table-column prop="passScore" label="及格分" width="100" />
           <el-table-column prop="status" label="状态" width="120" />
@@ -111,23 +114,31 @@ async function loadSchools() {
   schools.value = (stats || []).map((s: any) => ({ id: s.id, name: s.name }));
 }
 async function loadCourses() {
-  const { items } = await api.ledgerTraining({ schoolId: filters.value.schoolId });
-  courses.value = items;
+  if (!filters.value.schoolId) { courses.value = []; return; }
+  const list = await api.schoolTrainingCourses(filters.value.schoolId);
+  courses.value = (list || []).map((c: any) => ({ ...c, school: schools.value.find(s => s.id === c.schoolId)?.name || '' }));
 }
 async function loadExams() {
-  const { items } = await api.ledgerExams({ schoolId: filters.value.schoolId });
-  exams.value = items;
+  if (!filters.value.schoolId) { exams.value = []; return; }
+  const [list, courseList] = await Promise.all([
+    api.schoolTrainingExams(filters.value.schoolId),
+    api.schoolTrainingCourses(filters.value.schoolId),
+  ]);
+  const cmap = new Map((courseList || []).map((c: any) => [c.id, c.title] as const));
+  exams.value = (list || []).map((e: any) => ({ ...e, school: schools.value.find(s => s.id === (e.schoolId || filters.value.schoolId))?.name || '', courseTitle: (e.courseId && cmap.get(e.courseId)) || '' }));
 }
 async function loadResults() {
-  const { items } = await api.ledgerResults({
+  if (!filters.value.schoolId) { results.value = []; return; }
+  const res = await api.schoolTrainingResults({
     schoolId: filters.value.schoolId,
     examId: filters.value.examId || undefined,
     user: filters.value.user || undefined,
   });
-  results.value = items;
+  results.value = Array.isArray(res?.items) ? res.items : (res as any);
 }
 async function exportCoursesCsv() {
-  const csv = await api.ledgerTrainingExportCsv({ schoolId: filters.value.schoolId });
+  if (!filters.value.schoolId) return;
+  const csv = await api.schoolTrainingCoursesExportCsv(filters.value.schoolId);
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -137,7 +148,8 @@ async function exportCoursesCsv() {
   URL.revokeObjectURL(url);
 }
 async function exportExamsCsv() {
-  const csv = await api.ledgerExamsExportCsv({ schoolId: filters.value.schoolId });
+  if (!filters.value.schoolId) return;
+  const csv = await api.schoolTrainingExamsExportCsv(filters.value.schoolId);
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -158,11 +170,8 @@ onMounted(async () => {
 });
 
 async function exportResultsCsv() {
-  const csv = await api.ledgerResultsExportCsv({
-    schoolId: filters.value.schoolId,
-    examId: filters.value.examId || undefined,
-    user: filters.value.user || undefined,
-  });
+  if (!filters.value.schoolId) return;
+  const csv = await api.schoolTrainingResultsExportCsv({ schoolId: filters.value.schoolId, examId: filters.value.examId || undefined, user: filters.value.user || undefined });
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');

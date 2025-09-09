@@ -1,13 +1,16 @@
 import { defineStore } from 'pinia';
+import { setCurrentSchoolId } from '../utils/school';
 
 export type User = {
   id: string;
   name: string;
   roles: string[];
   permissions: string[];
+  schools?: number[]; // school IDs bound to this account
 };
 
-const USE_MOCK = (import.meta as any).env?.VITE_USE_MOCK_AUTH !== 'false';
+// 默认禁用 MOCK，只有当 VITE_USE_MOCK_AUTH === 'true' 才启用演示登录
+const USE_MOCK = (import.meta as any).env?.VITE_USE_MOCK_AUTH === 'true';
 
 async function mockLogin(username: string, password: string): Promise<{ token: string; user: User }>{
   // simple demo: admin/admin has all perms; user/user has limited perms
@@ -24,18 +27,28 @@ async function mockLogin(username: string, password: string): Promise<{ token: s
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    token: '' as string,
-    user: null as User | null,
+    token: (typeof localStorage !== 'undefined' && (localStorage.getItem('AUTH_TOKEN') || sessionStorage.getItem('AUTH_TOKEN'))) || '' as string,
+    user: ((): User | null => {
+      try {
+        const u = (typeof localStorage !== 'undefined' && (localStorage.getItem('AUTH_USER') || sessionStorage.getItem('AUTH_USER')));
+        return u ? (JSON.parse(u) as User) : null;
+      } catch { return null; }
+    })(),
+    
     returnTo: '' as string,
   }),
   getters: {
     isAuthed: (s) => !!s.token && !!s.user,
     hasPerm: (s) => (p: string) => {
       if (!s.user) return false;
-      if (s.user.permissions.includes('*') || s.user.permissions.includes(p)) return true;
-      // wildcard check like settings.*
-      const [ns] = p.split('.') as string[];
-      return s.user.permissions.includes(`${ns}.*`);
+      const owned = s.user.permissions || [];
+      if (owned.includes('*') || owned.includes('*:*') || owned.includes(p)) return true;
+      // Support wildcard namespaces with both dot and colon separators
+      const idxDot = p.indexOf('.')
+      const idxCol = p.indexOf(':')
+      const idx = idxDot === -1 ? idxCol : (idxCol === -1 ? idxDot : Math.min(idxDot, idxCol))
+      const ns = idx > 0 ? p.slice(0, idx) : p
+      return owned.includes(`${ns}.*`) || owned.includes(`${ns}:*`) || owned.some((x) => x.startsWith(`${ns}.`) || x.startsWith(`${ns}:`))
     },
   },
   actions: {
@@ -54,12 +67,24 @@ export const useAuthStore = defineStore('auth', {
       this.token = data.token; this.user = data.user;
       localStorage.setItem('AUTH_TOKEN', this.token);
       localStorage.setItem('AUTH_USER', JSON.stringify(this.user));
+      try {
+        const schools: Array<number> | undefined = (data?.user && Array.isArray(data.user.schools)) ? data.user.schools : undefined;
+        if (schools && schools.length > 0 && schools[0] !== undefined && schools[0] !== null) {
+          setCurrentSchoolId(String(schools[0]));
+        }
+      } catch {}
     },
-    logout() {
+    async logout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST', headers: { ...((this.token && { Authorization: `Bearer ${this.token}` }) || {}) } });
+      } catch {}
       this.token = '';
       this.user = null;
-      localStorage.removeItem('AUTH_TOKEN');
-      localStorage.removeItem('AUTH_USER');
+      try {
+        // Clear all saved state including current school selection
+        localStorage.clear();
+        sessionStorage.clear();
+      } catch {}
     },
     setReturnTo(path: string) { this.returnTo = path; },
   },

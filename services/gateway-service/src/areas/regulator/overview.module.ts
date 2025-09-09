@@ -7,6 +7,7 @@ import { DisinfectionService } from '../../modules/disinfection.service';
 import { WasteService } from '../../modules/waste.service';
 import { DevicesService } from '../../modules/devices.service';
 import { PublicFeedbackService } from '../../modules/public-feedback.service';
+import { PesticideService } from '../../modules/pesticide.service';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { PublicFeedbackService } from '../../modules/public-feedback.service';
     // Local providers used by the controller
     SamplingService,
     DisinfectionService,
+    PesticideService,
     WasteService,
     DevicesService,
     PublicFeedbackService,

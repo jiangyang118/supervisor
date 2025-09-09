@@ -1,9 +1,43 @@
 const BASE = import.meta.env.VITE_API_BASE || '/api';
 
+function authHeaders() {
+  const t = (typeof localStorage !== 'undefined' && localStorage.getItem('AUTH_TOKEN')) || '';
+  return t ? { Authorization: `Bearer ${t}` } : {};
+}
+
+function handleUnauthorized(status: number) {
+  if (status === 401) {
+    try {
+      localStorage.removeItem('AUTH_TOKEN');
+      localStorage.removeItem('AUTH_USER');
+    } catch {}
+    try { (window as any).ElMessage?.warning?.('登录已过期，请重新登录'); } catch {}
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.replace('/login');
+    }
+  }
+}
+
 async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const res = await fetch(`${BASE}${path}`, { headers: { ...authHeaders() } });
+  if (!res.ok) {
+    handleUnauthorized(res.status);
+    throw new Error(`HTTP ${res.status}`);
+  }
   return res.json() as Promise<T>;
+}
+
+async function post<T>(path: string, body?: any, method: string = 'POST'): Promise<T> {
+  const r = await fetch(`${BASE}${path}`, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!r.ok) {
+    handleUnauthorized(r.status);
+    throw new Error(`HTTP ${r.status}`);
+  }
+  return r.json();
 }
 
 export const api = {
@@ -11,27 +45,9 @@ export const api = {
   schools: () => get<any[]>('/reg/schools/stats'),
   // System schools config
   sysSchools: () => get<Array<{ id: number; name: string; enabled: boolean }>>('/reg/schools/config'),
-  sysSchoolCreate: async (body: { name: string; enabled?: boolean }) => {
-    const r = await fetch(`${BASE}/reg/schools/config`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
-  },
-  sysSchoolUpdate: async (id: number, body: { name?: string; enabled?: boolean }) => {
-    const r = await fetch(`${BASE}/reg/schools/config?id=${encodeURIComponent(String(id))}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
-  },
-  sysSchoolDelete: async (id: number) => {
-    const r = await fetch(`${BASE}/reg/schools/config/delete`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
-  },
+  sysSchoolCreate: async (body: { name: string; enabled?: boolean }) => post(`/reg/schools/config`, body),
+  sysSchoolUpdate: async (id: number, body: { name?: string; enabled?: boolean }) => post(`/reg/schools/config?id=${encodeURIComponent(String(id))}`, body, 'PATCH'),
+  sysSchoolDelete: async (id: number) => post(`/reg/schools/config/delete`, { id }),
   cameras: (schoolId: string) => get<any[]>(`/reg/schools/${schoolId}/cameras`),
   // AI events (regulator)
   aiEvents: (
@@ -62,7 +78,7 @@ export const api = {
     } = {},
   ) => {
     const url = `/reg/ai/events/export.csv?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null)) as any).toString()}`;
-    const r = await fetch(`${BASE}${url}`);
+    const r = await fetch(`${BASE}${url}`, { headers: { ...authHeaders() } });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const { csv } = await r.json();
     return csv as string;
@@ -81,44 +97,17 @@ export const api = {
     period?: { start?: string; end?: string };
     schools: string[];
   }) => {
-    const r = await fetch(`${BASE}/reg/ai/tasks`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+    return post(`/reg/ai/tasks`, body);
   },
   aiTaskUpdate: async (id: string, patch: any) => {
-    const r = await fetch(`${BASE}/reg/ai/tasks/${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(patch),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+    return post(`/reg/ai/tasks/${encodeURIComponent(id)}`, patch, 'PATCH');
   },
   aiTaskSetStatus: async (id: string, status: '待处理' | '进行中' | '已完成') => {
-    const r = await fetch(
-      `${BASE}/reg/ai/tasks/${encodeURIComponent(id)}/status?id=${encodeURIComponent(id)}`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status }),
-      },
-    );
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+    return post(`/reg/ai/tasks/${encodeURIComponent(id)}/status?id=${encodeURIComponent(id)}`, { status }, 'PATCH');
   },
   // Broadcast
   aiBroadcast: async (body: { school: string; camera: string; text: string }) => {
-    const r = await fetch(`${BASE}/reg/ai/broadcast`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+    return post(`/reg/ai/broadcast`, body);
   },
   aiBroadcastLogs: () => get<any[]>(`/reg/ai/broadcast/logs`),
   aiMethods: () => get<string[]>(`/reg/ai/methods`),
@@ -144,13 +133,7 @@ export const api = {
     at?: string;
     url?: string;
   }) => {
-    const r = await fetch(`${BASE}/bright/reg/snapshots`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+    return post(`/bright/reg/snapshots`, body);
   },
   // Credentials (regulator)
   credCanteens: (schoolId?: string) =>
@@ -170,16 +153,7 @@ export const api = {
       `/reg/credentials/exceptions?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '')) as any).toString()}`,
     ),
   credSetMeasure: async (id: string, measure: string) => {
-    const r = await fetch(
-      `${BASE}/reg/credentials/exceptions/measure?id=${encodeURIComponent(id)}`,
-      {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ measure }),
-      },
-    );
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
-    return r.json();
+    return post(`/reg/credentials/exceptions/measure?id=${encodeURIComponent(id)}`, { measure }, 'PATCH');
   },
   credExportCsv: async (params: {
     target: 'canteens' | 'workers' | 'suppliers' | 'exceptions';
@@ -288,6 +262,30 @@ export const api = {
     const { csv } = await r.json();
     return csv as string;
   },
+  // School training endpoints (for consistency with school-side)
+  schoolTrainingCourses: (schoolId: string) => get<any[]>(`/school/training/courses?schoolId=${encodeURIComponent(schoolId)}`),
+  schoolTrainingExams: (schoolId: string) => get<any[]>(`/school/training/exams?schoolId=${encodeURIComponent(schoolId)}`),
+  schoolTrainingResults: (params: { schoolId: string; examId?: string; user?: string }) =>
+    get<any[]>(`/school/training/results?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null)) as any).toString()}`),
+  schoolTrainingCoursesExportCsv: async (schoolId: string) => {
+    const r = await fetch(`${BASE}/school/training/courses/export.csv?schoolId=${encodeURIComponent(schoolId)}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const { csv } = await r.json();
+    return csv as string;
+  },
+  schoolTrainingExamsExportCsv: async (schoolId: string) => {
+    const r = await fetch(`${BASE}/school/training/exams/export.csv?schoolId=${encodeURIComponent(schoolId)}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const { csv } = await r.json();
+    return csv as string;
+  },
+  schoolTrainingResultsExportCsv: async (params: { schoolId: string; examId?: string; user?: string }) => {
+    const url = `/school/training/results/export.csv?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '')) as any).toString()}`;
+    const r = await fetch(`${BASE}${url}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const { csv } = await r.json();
+    return csv as string;
+  },
   // Daily report
   dailyReport: (params: { start?: string; end?: string; schoolId?: string } = {}) => {
     const qs = new URLSearchParams(
@@ -377,7 +375,7 @@ export const api = {
     params: { type?: string; schoolId?: string; start?: string; end?: string } = {},
   ) => {
     const url = `/reg/alerts/events/export.csv?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '')) as any).toString()}`;
-    const r = await fetch(`${BASE}${url}`);
+    const r = await fetch(`${BASE}${url}`, { headers: { ...authHeaders() } });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const { csv } = await r.json();
     return csv as string;
@@ -386,7 +384,7 @@ export const api = {
   alertsConfigSave: async (patch: any) => {
     const r = await fetch(`${BASE}/reg/alerts/config`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(patch),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -399,7 +397,7 @@ export const api = {
   }) => {
     const r = await fetch(`${BASE}/reg/alerts/notify`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -691,7 +689,7 @@ export const api = {
   }) => {
     const r = await fetch(`${BASE}/reg/system/users`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -700,7 +698,7 @@ export const api = {
   sysUserUpdate: async (id: string, patch: any) => {
     const r = await fetch(`${BASE}/reg/system/users?id=${encodeURIComponent(id)}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(patch),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -709,18 +707,27 @@ export const api = {
   sysUserDelete: async (id: string) => {
     const r = await fetch(`${BASE}/reg/system/users/delete`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ id }),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();
   },
   sysRoles: () => get<any[]>(`/reg/system/roles`),
+  sysRoleCreate: async (body: { name: string; remark?: string }) => {
+    const r = await fetch(`${BASE}/reg/system/roles`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
   sysPermissions: () => get<any[]>(`/reg/system/permissions`),
   sysSetUserRoles: async (id: string, roles: string[]) => {
     const r = await fetch(`${BASE}/reg/system/users/roles`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ id, roles }),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -729,7 +736,7 @@ export const api = {
   sysSetRolePerms: async (name: string, permissions: string[]) => {
     const r = await fetch(`${BASE}/reg/system/roles/permissions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ name, permissions }),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -739,9 +746,31 @@ export const api = {
   sysInfoSave: async (body: any) => {
     const r = await fetch(`${BASE}/reg/system/info`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(body),
     });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
+  // School account management
+  sysCreateSchoolAccount: async (body: { schoolId: number; username: string; displayName?: string; phone?: string; password?: string; roles?: string[] }) => {
+    const r = await fetch(`${BASE}/reg/system/school-accounts`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
+  sysSchoolAccountList: (params: { schoolId?: number; q?: string } = {}) =>
+    get<any[]>(`/reg/system/school-accounts?${new URLSearchParams(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null)) as any).toString()}`),
+  sysSchoolAccountUpdate: async (id: number, patch: { displayName?: string; phone?: string; enabled?: boolean; roles?: string[]; schoolId?: number }) => {
+    const r = await fetch(`${BASE}/reg/system/school-accounts/${encodeURIComponent(String(id))}?id=${encodeURIComponent(String(id))}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(patch),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+  },
+  sysSchoolAccountDelete: async (id: number) => {
+    const r = await fetch(`${BASE}/reg/system/school-accounts/${encodeURIComponent(String(id))}/delete?id=${encodeURIComponent(String(id))}`, { method: 'POST', headers: { ...authHeaders() } });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();
   },

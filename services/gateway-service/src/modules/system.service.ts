@@ -1,6 +1,9 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { StaffRepository } from './repositories/staff.repository';
 import { UsersRepository } from './repositories/users.repository';
+import { RolesRepository } from './repositories/roles.repository';
+import { PermissionsRepository } from './repositories/permissions.repository';
+import { SchoolUsersRepository } from './repositories/school-users.repository';
 
 export type Attachment = { id: string; name: string; url: string };
 export type Announcement = {
@@ -63,7 +66,13 @@ export type RegulatorInfo = {
 
 @Injectable()
 export class SystemService {
-  constructor(private readonly staffRepo: StaffRepository, private readonly usersRepo: UsersRepository) {}
+  constructor(
+    private readonly staffRepo: StaffRepository,
+    private readonly usersRepo: UsersRepository,
+    private readonly schoolUsers: SchoolUsersRepository,
+    private readonly rolesRepo: RolesRepository,
+    private readonly permsRepo: PermissionsRepository,
+  ) {}
   private seq = 1;
   private id(p: string) {
     return `${p}-${String(this.seq++).padStart(4, '0')}`;
@@ -115,8 +124,10 @@ export class SystemService {
     },
   ];
   roles: Role[] = [
-    { name: 'ADMIN', permissions: ['users.manage', 'announcements.publish', 'meals.edit'] },
-    { name: 'SCHOOL', permissions: ['announcements.read', 'reports.view'] },
+    // ADMIN 作为演示超管，放开所有权限
+    { name: 'ADMIN', permissions: ['*:*'] },
+    // SCHOOL 演示用户拥有基础只读权限
+    { name: 'SCHOOL', permissions: ['report:R', 'food_safety:R', 'inventory:R', 'stream:R'] },
   ];
   permissionsTree: PermissionNode[] = [
     {
@@ -232,11 +243,34 @@ export class SystemService {
       return [];
     }
   }
-  listRoles() {
-    return this.roles;
+  async listRoles() {
+    try {
+      const rows = await this.rolesRepo.listRoles();
+      return rows;
+    } catch {
+      return this.roles;
+    }
   }
-  listPermissions() {
-    return this.permissionsTree;
+  async listPermissions() {
+    try {
+      const flat = await this.permsRepo.list();
+      // group by resource (split by ':' preferred, fallback '.')
+      const groups = new Map<string, Array<{ key: string; label: string }>>();
+      for (const p of flat) {
+        const key = p.key as string;
+        const idx = key.includes(':') ? key.indexOf(':') : key.indexOf('.');
+        const res = idx > 0 ? key.slice(0, idx) : key;
+        if (!groups.has(res)) groups.set(res, []);
+        groups.get(res)!.push(p);
+      }
+      const tree = Array.from(groups.entries()).map(([res, items]) => ({
+        label: res,
+        children: items.map((it) => ({ key: it.key, label: it.label })),
+      }));
+      return tree;
+    } catch {
+      return this.permissionsTree;
+    }
   }
   async setUserRoles(id: string, roles: string[]) {
     const uid = Number(id);
@@ -244,13 +278,74 @@ export class SystemService {
     await this.usersRepo.setUserRoles(uid, roles || []);
     return { ok: true } as any;
   }
-  async createUser(b: { name: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean }) {
-    if (!b?.name) throw new BadRequestException('name required');
-    const displayName = b.name.trim();
-    const username = (b.phone && String(b.phone).trim()) || `u${Date.now()}`;
-    const insertId = await this.usersRepo.insertOne({ username, displayName, enabled: b.enabled ?? true, phone: b.phone?.trim(), remark: b.remark?.trim(), createdBy: '系统' });
-    if ((b.roles || []).length) await this.usersRepo.setUserRoles(insertId, b.roles || []);
+  async createUser(b: { name?: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean; password?: string } | { username: string; displayName?: string; roles?: string[]; enabled?: boolean; password?: string }) {
+    // Support both shapes:
+    // - School-side: { name, phone?, roles?, remark?, enabled? }
+    // - Regulator-side: { username, displayName?, roles?, enabled? }
+    const asAny = b as any;
+    if (asAny.username) {
+      const username = String(asAny.username).trim();
+      if (!username) throw new BadRequestException('username required');
+      const displayName = (asAny.displayName || username).trim();
+      const insertId = await this.usersRepo.insertOne({ username, displayName, enabled: asAny.enabled ?? true });
+      if (asAny.password && String(asAny.password).trim()) {
+        await this.usersRepo.setCredential(insertId, String(asAny.password).trim());
+      }
+      if ((asAny.roles || []).length) await this.usersRepo.setUserRoles(insertId, asAny.roles || []);
+      return { id: insertId } as any;
+    }
+    if (!asAny?.name) throw new BadRequestException('name required');
+    const displayName = String(asAny.name).trim();
+    const username = (asAny.phone && String(asAny.phone).trim()) || `u${Date.now()}`;
+    const insertId = await this.usersRepo.insertOne({ username, displayName, enabled: asAny.enabled ?? true, phone: asAny.phone?.trim(), remark: asAny.remark?.trim(), createdBy: '系统' });
+    if (asAny.password && String(asAny.password).trim()) {
+      await this.usersRepo.setCredential(insertId, String(asAny.password).trim());
+    }
+    if ((asAny.roles || []).length) await this.usersRepo.setUserRoles(insertId, asAny.roles || []);
     return { id: insertId } as any;
+  }
+
+  async createSchoolAccount(params: { schoolId: number; username: string; displayName?: string; phone?: string; password?: string; roles?: string[] }) {
+    if (!params?.schoolId || !Number.isFinite(Number(params.schoolId))) throw new BadRequestException('schoolId required');
+    if (!params?.username) throw new BadRequestException('username required');
+    if (!params?.password || String(params.password).trim() === '') throw new BadRequestException('password required');
+    const username = params.username.trim();
+    const displayName = (params.displayName || username).trim();
+    // create user
+    const uid = await this.usersRepo.insertOne({ username, displayName, enabled: true, phone: params.phone?.trim(), createdBy: 'regulator' });
+    // set credential (password now required)
+    const raw = String(params.password).trim();
+    await this.usersRepo.setCredential(uid, raw);
+    // set role: default ADMIN for school-side super admin
+    const roles = params.roles && params.roles.length ? params.roles : ['ADMIN'];
+    await this.usersRepo.setUserRoles(uid, roles);
+    // bind to school
+    await this.schoolUsers.bind(uid, Number(params.schoolId));
+    return { id: uid, username, initialPassword: raw } as any;
+  }
+
+  async listSchoolAccounts(params: { schoolId?: number; q?: string }) {
+    return this.schoolUsers.listAccounts({ schoolId: params.schoolId, q: params.q });
+  }
+
+  async updateSchoolAccount(id: number, patch: { displayName?: string; phone?: string; enabled?: boolean; roles?: string[]; schoolId?: number }) {
+    const uid = Number(id);
+    if (!Number.isFinite(uid) || uid <= 0) throw new BadRequestException('invalid user id');
+    const pu: any = {};
+    if (patch.displayName !== undefined) pu.displayName = patch.displayName;
+    if (patch.phone !== undefined) pu.phone = patch.phone;
+    if (patch.enabled !== undefined) pu.enabled = !!patch.enabled;
+    if (Object.keys(pu).length) await this.usersRepo.updateOne(uid, pu);
+    if (patch.roles) await this.usersRepo.setUserRoles(uid, patch.roles);
+    if (patch.schoolId && Number.isFinite(Number(patch.schoolId))) {
+      await this.schoolUsers.unbindAll(uid);
+      await this.schoolUsers.bind(uid, Number(patch.schoolId));
+    }
+    return { ok: true } as any;
+  }
+
+  async deleteSchoolAccount(id: number, actor?: { id?: number | string; username?: string }) {
+    return this.deleteUser(id, actor);
   }
 
   async updateUser(id: number, patch: { name?: string; phone?: string; remark?: string; enabled?: boolean }) {
@@ -264,9 +359,18 @@ export class SystemService {
     return { ok: true } as any;
   }
 
-  async deleteUser(id: number) {
-    if (!id || !Number.isFinite(Number(id))) throw new BadRequestException('id required');
-    await this.usersRepo.removeOne(Number(id));
+  async deleteUser(id: number, actor?: { id?: number | string; username?: string }) {
+    const targetId = Number(id);
+    if (!targetId || !Number.isFinite(targetId)) throw new BadRequestException('id required');
+    // Protect super
+    try {
+      const target = await this.usersRepo.findById(targetId);
+      if (target?.username === 'super') throw new BadRequestException('不可删除 super 账号');
+    } catch {}
+    // Protect self
+    const actorIdNum = actor?.id !== undefined ? Number(actor.id) : NaN;
+    if (Number.isFinite(actorIdNum) && actorIdNum === targetId) throw new BadRequestException('不可删除自身账号');
+    await this.usersRepo.removeOne(targetId);
     return { ok: true } as any;
   }
   setRolePermissions(name: string, perms: string[]) {
@@ -276,29 +380,7 @@ export class SystemService {
     return this.roles[i];
   }
 
-  createUser(b: { username: string; displayName: string; roles?: string[]; enabled?: boolean }) {
-    if (!b?.username) throw new BadRequestException('username required');
-    const it: User = {
-      id: this.id('USR'),
-      username: b.username,
-      displayName: b.displayName || b.username,
-      roles: b.roles || [],
-      enabled: b.enabled ?? true,
-    };
-    this.users.unshift(it);
-    return it;
-  }
-  updateUser(id: string, patch: Partial<Omit<User, 'id'>>) {
-    const i = this.users.findIndex((u) => u.id === id);
-    if (i === -1) throw new BadRequestException('not found');
-    this.users[i] = { ...this.users[i], ...patch, id: this.users[i].id };
-    return this.users[i];
-  }
-  deleteUser(id: string) {
-    const before = this.users.length;
-    this.users = this.users.filter((u) => u.id !== id);
-    return { ok: this.users.length < before };
-  }
+  // Removed legacy in-memory create/update/delete to avoid overriding DB-backed methods
 
   // News
   listNews(params?: {

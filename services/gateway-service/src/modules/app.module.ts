@@ -69,6 +69,9 @@ import { TrustivsModule } from './trustivs/trustivs.module';
 import { AuthController } from './auth.controller';
 import { IotController } from './iot.controller';
 import { IotService } from './iot.service';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { TokenBlacklistService } from './token-blacklist.service';
 
 @Module({
   imports: [
@@ -148,6 +151,9 @@ import { IotService } from './iot.service';
     RateLimitGuard,
     DbBootstrapService,
     IotService,
+    JwtGuard,
+    PermissionGuard,
+    TokenBlacklistService,
   ],
 })
 export class AppModule {}

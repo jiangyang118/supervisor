@@ -46,7 +46,7 @@ export class PesticideService {
     const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
     const sidInput = params.schoolId;
     const sidNum = sidInput !== undefined && sidInput !== null && String(sidInput).trim() !== '' ? Number(sidInput) : NaN;
-    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : 1;
+    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : undefined;
     return this.repo.list({
       schoolId: sid,
       q: params.q,

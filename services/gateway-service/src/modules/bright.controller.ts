@@ -1,5 +1,7 @@
-import { Controller, Get, Param, Query, Post, Body, Headers } from '@nestjs/common';
-import { IotService } from './iot.service';
+import { Controller, Get, Param, Query, Post, Body, UseGuards } from '@nestjs/common';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { Perm } from './perm.decorator';
 
 @Controller('bright')
 export class BrightController {
@@ -132,6 +134,8 @@ export class BrightController {
   }
 
   @Get('reg/snapshots')
+  @UseGuards(JwtGuard, PermissionGuard)
+  @Perm('stream:R')
   listSnaps(
     @Query('schoolId') schoolId?: string,
     @Query('cameraId') cameraId?: string,
@@ -157,6 +161,8 @@ export class BrightController {
   }
 
   @Post('reg/snapshots')
+  @UseGuards(JwtGuard, PermissionGuard)
+  @Perm('stream:C')
   createSnap(@Body() b: { schoolId: string; cameraId: string; at?: string; url?: string }) {
     const id = this.id();
     const at = b.at || new Date().toISOString();

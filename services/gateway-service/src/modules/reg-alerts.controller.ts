@@ -1,9 +1,13 @@
-import { Controller, Get, Query, Sse, MessageEvent, Post, Body } from '@nestjs/common';
+import { Controller, Get, Query, Sse, MessageEvent, Post, Body, UseGuards } from '@nestjs/common';
 import { CertificatesService } from './certificates.service';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { Perm } from './perm.decorator';
 import { DevicesService } from './devices.service';
 import { PesticideService } from './pesticide.service';
 import { MorningCheckService } from './morning-check.service';
 import { PublicFeedbackService } from './public-feedback.service';
+import { SchoolsRepository } from './repositories/schools.repository';
 import { Observable, Subject } from 'rxjs';
 
 type AlertType =
@@ -17,6 +21,7 @@ type AlertType =
   | '投诉预警';
 
 @Controller('reg/alerts')
+@UseGuards(JwtGuard, PermissionGuard)
 export class RegAlertsController {
   private events$ = new Subject<MessageEvent>();
   private config = {
@@ -40,29 +45,19 @@ export class RegAlertsController {
     private readonly pesticide: PesticideService,
     private readonly morning: MorningCheckService,
     private readonly feedback: PublicFeedbackService,
+    private readonly schoolsRepo: SchoolsRepository,
   ) {}
 
-  private schools() {
-    return [
-      { id: 'sch-001', name: '示例一中' },
-      { id: 'sch-002', name: '示例二小' },
-      { id: 'sch-003', name: '示例三幼' },
-      { id: 'sch-004', name: '示例四小' },
-      { id: 'sch-005', name: '示例五中' },
-    ];
-  }
-
   @Get('summary')
+  @Perm('alerts:R')
   async summary(@Query('start') start?: string, @Query('end') end?: string) {
-    const schools = this.schools();
+    const schools = await this.schoolsRepo.listAll(true);
     // 证件过期
     const certExpired = (await this.certs.list({ status: '过期' })).length;
     // 食材过期（演示占位，真实接入入库保质期后实现）
     const foodExpired = 0;
-    // 行为预警（AI OPEN）
-    const aiOpen = (global as any).DataStore?.aiEvents
-      ? (global as any).DataStore.aiEvents.filter((e: any) => e.status === 'OPEN').length
-      : 0;
+    // 行为预警（AI OPEN）- 需对接AI事件持久化后统计，此处不使用模拟数据
+    const aiOpen = 0;
     // 设备离线
     const offline = this.devices.list({}).filter((d) => d.status === 'OFFLINE').length;
     // 设备预警（温控超标等）
@@ -108,6 +103,7 @@ export class RegAlertsController {
   }
 
   @Get('events')
+  @Perm('alerts:R')
   async events(
     @Query('type') type?: AlertType,
     @Query('schoolId') schoolId?: string,
@@ -117,9 +113,14 @@ export class RegAlertsController {
     @Query('pageSize') pageSize = '50',
   ) {
     const sid = schoolId;
+    const sidNum = sid !== undefined && sid !== null && String(sid).trim() !== '' ? Number(sid) : undefined;
     let items: any[] = [];
-    const schools = this.schools();
-    const nameOf = (id?: string) => schools.find((s) => s.id === id)?.name || id;
+    const schools = await this.schoolsRepo.listAll(true);
+    const nameOf = (id?: string | number) => {
+      if (id === undefined || id === null) return '';
+      const nid = Number(String(id).replace(/\D/g, ''));
+      return schools.find((s) => Number(s.id) === nid)?.name || String(id);
+    };
     const p = Math.max(parseInt(page, 10) || 1, 1);
     const ps = Math.max(parseInt(pageSize, 10) || 50, 1);
     const inRange = (tISO: string) => (!start || tISO >= start) && (!end || tISO <= end);
@@ -142,25 +143,7 @@ export class RegAlertsController {
     if (!type || type === '食材过期') {
       // 占位（真实环境从入库保质期/库存有效期生成）
     }
-    if (!type || type === '行为预警') {
-      const ds = (global as any).DataStore;
-      if (ds) {
-        push(
-          ds.aiEvents
-            .filter((e: any) => e.status === 'OPEN')
-            .filter((e: any) => !sid || e.schoolId === sid)
-            .filter((e: any) => inRange(e.detectedAt))
-            .map((e: any) => ({
-              id: e.id,
-              schoolId: e.schoolId,
-              school: nameOf(e.schoolId),
-              kind: e.type,
-              detail: 'AI行为预警',
-              at: e.detectedAt,
-            })),
-        );
-      }
-    }
+    // 行为预警数据来源依赖 AI 事件持久化，当前未接入，故不在 events 明细中返回模拟数据
     if (!type || type === '设备离线' || type === '设备预警') {
       const devs = this.devices.list({});
       if (!type || type === '设备离线')
@@ -198,7 +181,7 @@ export class RegAlertsController {
     }
     if (!type || type === '农残预警') {
       for (const s of schools) {
-        if (sid && s.id !== sid) continue;
+        if (sidNum !== undefined && Number(s.id) !== sidNum) continue;
         const { items: arr } = await this.pesticide.list({
           schoolId: s.id,
           result: '不合格',
@@ -227,7 +210,7 @@ export class RegAlertsController {
         today.getDate(),
       ).toISOString();
       for (const s of schools) {
-        if (sid && s.id !== sid) continue;
+        if (sidNum !== undefined && Number(s.id) !== sidNum) continue;
         const cRes = await this.morning.list({
           schoolId: s.id,
           start: dayStart,
@@ -270,6 +253,7 @@ export class RegAlertsController {
   }
 
   @Get('events/export.csv')
+  @Perm('alerts:EX')
   async exportCsv(
     @Query('type') type?: AlertType,
     @Query('schoolId') schoolId?: string,
@@ -294,20 +278,25 @@ export class RegAlertsController {
   }
 
   @Get('config')
+  @Perm('alerts:R')
   getConfig() {
     return this.config;
   }
   @Post('config')
+  @Perm('config:S')
   setConfig(@Body() patch: any) {
     this.config = { ...this.config, ...patch, rules: patch?.rules ?? this.config.rules };
     return this.config;
   }
   @Post('notify')
+  @Perm('alerts:A')
   notify(@Body() b: { to: string[]; message: string; channel?: 'sms' | 'app' | 'both' }) {
     this.events$.next({ type: 'notify', data: { at: new Date().toISOString(), ...b } as any });
     return { ok: true };
   }
 
+  // guards/decorators
+  // Note: import statements added below
   @Sse('stream')
   stream(): Observable<MessageEvent> {
     setTimeout(() => this.events$.next({ type: 'hello', data: { ok: true } }), 0);

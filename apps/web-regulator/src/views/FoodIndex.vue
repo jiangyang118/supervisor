@@ -42,10 +42,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { exportCsv } from '../utils/export';
-const ranking = ref([
-  { school: '示例一中', score: 95, level: 'A' },
-  { school: '示例二小', score: 90, level: 'A' },
-]);
+const ranking = ref<{ school: string; score: number; level: string }[]>([]);
 const weights = ref({ ai: 40, reports: 30, satisfaction: 30 });
 const onExportCsv = () =>
   exportCsv('食安指数排行', ranking.value as any, { school: '学校', score: '分数', level: '等级' });

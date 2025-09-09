@@ -1,11 +1,15 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { SamplingService } from './sampling.service';
 import { DisinfectionService } from './disinfection.service';
 import { DineService } from './dine.service';
 import { WasteService } from './waste.service';
 import { TrainingService } from './training.service';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { Perm } from './perm.decorator';
 
 @Controller('reg/ledgers')
+@UseGuards(JwtGuard, PermissionGuard)
 export class RegLedgersController {
   constructor(
     private readonly sampling: SamplingService,
@@ -33,6 +37,7 @@ export class RegLedgersController {
 
   // Training Courses (by school)
   @Get('training')
+  @Perm('training:R')
   trainingCourses(
     @Query('schoolId') schoolId?: string,
     @Query('page') page = '1',
@@ -60,24 +65,30 @@ export class RegLedgersController {
 
   // Exams (by school)
   @Get('exams')
+  @Perm('training:R')
   trainingExams(
     @Query('schoolId') schoolId?: string,
     @Query('page') page = '1',
     @Query('pageSize') pageSize = '50',
   ) {
     const schools = schoolId ? [{ id: schoolId }] : this.schools();
-    const items = schools.flatMap((s) =>
-      this.training.listExams({ schoolId: s.id }).map((e) => ({
+    const items = schools.flatMap((s) => {
+      const courseMap = new Map(
+        this.training.listCourses({ schoolId: s.id }).map((c) => [c.id, c.title] as const),
+      );
+      return this.training.listExams({ schoolId: s.id }).map((e) => ({
         id: e.id,
         schoolId: e.schoolId || s.id,
         school:
           this.schools().find((x) => x.id === (e.schoolId || s.id))?.name || e.schoolId || s.id,
         title: e.title,
+        courseId: e.courseId || '',
+        courseTitle: (e.courseId && courseMap.get(e.courseId)) || '',
         passScore: e.passScore,
         status: e.status,
         createdAt: e.createdAt,
-      })),
-    );
+      }));
+    });
     const p = Math.max(parseInt(page, 10) || 1, 1);
     const ps = Math.max(parseInt(pageSize, 10) || 50, 1);
     const total = items.length;
@@ -88,6 +99,7 @@ export class RegLedgersController {
   }
 
   @Get('training/export.csv')
+  @Perm('training:EX')
   exportTrainingCsv(@Query('schoolId') schoolId?: string) {
     const { items } = this.trainingCourses(schoolId, '1', '100000');
     const headers = ['id', 'schoolId', 'school', 'title', 'status', 'createdAt'];
@@ -107,6 +119,7 @@ export class RegLedgersController {
   }
 
   @Get('exams/export.csv')
+  @Perm('training:EX')
   exportExamsCsv(@Query('schoolId') schoolId?: string) {
     const { items } = this.trainingExams(schoolId, '1', '100000');
     const headers = ['id', 'schoolId', 'school', 'title', 'passScore', 'status', 'createdAt'];
@@ -128,6 +141,7 @@ export class RegLedgersController {
 
   // Results (by school)
   @Get('results')
+  @Perm('training:R')
   resultsList(
     @Query('schoolId') schoolId?: string,
     @Query('examId') examId?: string,
@@ -159,6 +173,7 @@ export class RegLedgersController {
   }
 
   @Get('results/export.csv')
+  @Perm('training:EX')
   resultsExportCsv(
     @Query('schoolId') schoolId?: string,
     @Query('examId') examId?: string,
@@ -193,6 +208,7 @@ export class RegLedgersController {
   }
 
   @Get('sampling')
+  @Perm('food_safety:R')
   async samplingList(
     @Query('schoolId') schoolId?: string,
     @Query('start') start?: string,
@@ -225,6 +241,7 @@ export class RegLedgersController {
   }
 
   @Get('disinfection')
+  @Perm('food_safety:R')
   async disinfectionList(
     @Query('schoolId') schoolId?: string,
     @Query('method') method?: string,
@@ -259,6 +276,7 @@ export class RegLedgersController {
   }
 
   @Get('dine')
+  @Perm('food_safety:R')
   async dineList(
     @Query('schoolId') schoolId?: string,
     @Query('meal') meal?: string,
@@ -292,6 +310,7 @@ export class RegLedgersController {
   }
 
   @Get('waste')
+  @Perm('waste:R')
   async wasteList(
     @Query('schoolId') schoolId?: string,
     @Query('category') category?: string,

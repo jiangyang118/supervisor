@@ -1,7 +1,11 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { PublicFeedbackService, FeedbackStatus, FeedbackType } from './public-feedback.service';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { Perm } from './perm.decorator';
 
 @Controller('reg/public/feedback')
+@UseGuards(JwtGuard, PermissionGuard)
 export class RegPublicFeedbackController {
   constructor(private readonly svc: PublicFeedbackService) {}
 
@@ -23,6 +27,7 @@ export class RegPublicFeedbackController {
   }
 
   @Get('list')
+  @Perm('public_feedback:R')
   async list(
     @Query('schoolId') schoolId?: string,
     @Query('type') type?: FeedbackType | '评价',
@@ -50,6 +55,7 @@ export class RegPublicFeedbackController {
   }
 
   @Get('export.csv')
+  @Perm('public_feedback:EX')
   async exportCsv(
     @Query('schoolId') schoolId?: string,
     @Query('type') type?: FeedbackType | '评价',
@@ -96,6 +102,7 @@ export class RegPublicFeedbackController {
   }
 
   @Get('stats')
+  @Perm('public_feedback:R')
   async stats(
     @Query('schoolId') schoolId?: string,
     @Query('start') start?: string,
@@ -114,6 +121,7 @@ export class RegPublicFeedbackController {
 
   // 可选：监管端也能回复
   @Post('reply')
+  @Perm('public_feedback:U')
   reply(@Body() b: { id: string; replyContent: string; replyBy?: string }) {
     return this.svc.reply(b.id, b.replyContent, b.replyBy || '监管单位');
   }

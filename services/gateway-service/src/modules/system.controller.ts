@@ -1,10 +1,19 @@
-import { Body, Controller, Get, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Patch, Post, Query, UseGuards, Req } from '@nestjs/common';
 import { SystemService } from './system.service';
 import { RolesRepository } from './repositories/roles.repository';
+import { SchoolUsersRepository } from './repositories/school-users.repository';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { Perm } from './perm.decorator';
 
 @Controller('school/system')
+@UseGuards(JwtGuard, PermissionGuard)
 export class SystemController {
-  constructor(private readonly svc: SystemService, private readonly rolesRepo: RolesRepository) {}
+  constructor(
+    private readonly svc: SystemService,
+    private readonly rolesRepo: RolesRepository,
+    private readonly schoolUsersRepo: SchoolUsersRepository,
+  ) {}
 
   // Announcements
   @Get('announcements') listAnnouncements(
@@ -61,29 +70,68 @@ export class SystemController {
   }
 
   // Users & roles
-  @Get('users') users() {
-    return this.svc.listUsers();
+  @Get('users') users(@Req() req: any, @Query('schoolId') qSchoolId?: string, @Query('q') q?: string) {
+    // For school-side: only list accounts under current user's school by default
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools : [];
+    const sid = qSchoolId && String(qSchoolId).trim() !== '' ? Number(qSchoolId) : (schools.length ? Number(schools[0]) : 1);
+    return this.rolesRepo
+      .search({}) // warm up DI (no-op)
+      .then(() => this.svc.listSchoolAccounts({ schoolId: sid, q }));
   }
-  @Post('users') createUser(@Body() b: { name: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean }) {
-    return this.svc.createUser(b);
+  @Post('users')
+  @Perm('users.manage')
+  async createUser(
+    @Body() b: { name: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean; password?: string; schoolId?: number },
+    @Req() req: any,
+  ) {
+    // Create user then bind to current school
+    const res = await this.svc.createUser(b as any);
+    const uid = Number((res as any)?.id || 0);
+    const bodySid = b?.schoolId && Number.isFinite(Number(b.schoolId)) ? Number(b.schoolId) : 0;
+    const schools = Array.isArray(req?.user?.schools) ? (req.user.schools as number[]) : [];
+    const sid = bodySid || (schools.length ? Number(schools[0]) : 0);
+    if (uid > 0 && sid > 0) await this.schoolUsersRepo.bind(uid, sid);
+    return res;
   }
-  @Get('roles') roles(@Query('schoolId') schoolId?: string, @Query('q') q?: string) {
-    return this.rolesRepo.search({ schoolId: schoolId ? Number(schoolId) : undefined, q });
+  @Get('roles') roles(@Req() req: any, @Query('schoolId') schoolId?: string, @Query('q') q?: string) {
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sidParam = schoolId && String(schoolId).trim() !== '' ? Number(schoolId) : undefined;
+    const sid = sidParam && schools.includes(Number(sidParam)) ? Number(sidParam) : (schools.length ? Number(schools[0]) : undefined);
+    return this.rolesRepo.search({ schoolId: sid, q });
   }
-  @Post('roles') createRole(@Body() b: { schoolId?: number; name: string; remark?: string }) {
+  @Post('roles')
+  @Perm('users.manage')
+  createRole(@Req() req: any, @Body() b: { schoolId?: number; name: string; remark?: string }) {
     if (!b?.name) return { ok: false, message: 'name required' } as any;
-    const sid = b.schoolId && Number.isFinite(Number(b.schoolId)) ? Number(b.schoolId) : 1;
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const bodySid = b.schoolId && Number.isFinite(Number(b.schoolId)) ? Number(b.schoolId) : undefined;
+    const sid = bodySid && schools.includes(bodySid) ? bodySid : (schools.length ? Number(schools[0]) : 1);
     return this.rolesRepo.create(sid, b.name, b.remark);
   }
-  @Patch('roles') updateRole(@Body() b: { id: number; patch: { name?: string; remark?: string } }) {
+  @Patch('roles')
+  @Perm('users.manage')
+  updateRole(@Req() req: any, @Body() b: { id: number; patch: { name?: string; remark?: string } }) {
     if (!b?.id) return { ok: false, message: 'id required' } as any;
-    return this.rolesRepo.update(Number(b.id), b.patch || {});
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sid = schools.length ? Number(schools[0]) : undefined;
+    return this.rolesRepo.updateInSchool(Number(b.id), sid, b.patch || {});
   }
-  @Post('roles/delete') deleteRole(@Body() b: { id: number }) {
+  @Post('roles/delete')
+  @Perm('users.manage')
+  deleteRole(@Req() req: any, @Body() b: { id: number }) {
     if (!b?.id) return { ok: false, message: 'id required' } as any;
-    return this.rolesRepo.remove(Number(b.id));
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sid = schools.length ? Number(schools[0]) : undefined;
+    return this.rolesRepo.removeInSchool(Number(b.id), sid);
   }
-  @Post('users/roles') setUserRoles(@Body() b: { id: string; roles: string[] }) {
+  @Post('users/roles')
+  @Perm('users.manage')
+  setUserRoles(@Body() b: { id: string; roles: string[] }) {
     return this.svc.setUserRoles(b.id, b.roles);
   }
   @Patch('users') updateUser(
@@ -101,22 +149,35 @@ export class SystemController {
     };
     return this.svc.updateUser((b as any).id, patch || {});
   }
-  @Post('users/enabled') setUserEnabled(@Body() b: { id: number; enabled: boolean }) {
+  @Post('users/enabled')
+  @Perm('users.manage')
+  setUserEnabled(@Body() b: { id: number; enabled: boolean }) {
     if (!b?.id) return { ok: false, message: 'id required' } as any;
     return this.svc.updateUser(b.id, { enabled: b.enabled });
   }
-  @Post('users/delete') removeUser(@Body() b: { id: number }) {
+  @Post('users/delete')
+  @Perm('users.manage')
+  removeUser(@Body() b: { id: number }, @Req() req: any) {
     if (!b?.id) return { ok: false, message: 'id required' } as any;
-    return this.svc.deleteUser(b.id);
+    const u: any = req?.user || {};
+    return this.svc.deleteUser(Number(b.id), { id: u?.sub, username: u?.username });
   }
   @Get('permissions') permissions() {
     return this.svc.listPermissions();
   }
-  @Get('roles/permissions') rolePermissions(@Query('name') name: string) {
-    return this.rolesRepo.listRoles().then((arr) => arr.find((r) => r.name === name) || { name, permissions: [] });
+  @Get('roles/permissions') rolePermissions(@Req() req: any, @Query('name') name: string) {
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sid = schools.length ? Number(schools[0]) : undefined;
+    return this.rolesRepo.rolePermissionsInSchool(name, sid);
   }
-  @Post('roles/permissions') setRolePerms(@Body() b: { name: string; permissions: string[] }) {
-    return this.rolesRepo.setPermissions(b.name, b.permissions);
+  @Post('roles/permissions')
+  @Perm('users.manage')
+  setRolePerms(@Req() req: any, @Body() b: { name: string; permissions: string[] }) {
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sid = schools.length ? Number(schools[0]) : undefined;
+    return this.rolesRepo.setPermissionsInSchool(b.name, sid, b.permissions || []);
   }
 
   // Staff (personnel)

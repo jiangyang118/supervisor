@@ -42,11 +42,7 @@ const form = reactive({
 });
 const records = ref<Rec[]>([]);
 const send = async () => {
-  const rec = await api.aiBroadcast({
-    school: form.school || '示例学校',
-    camera: form.camera || '1# 操作台',
-    text: form.text,
-  });
+  const rec = await api.aiBroadcast({ school: form.school, camera: form.camera, text: form.text });
   records.value.unshift(rec);
 };
 onMounted(async () => {

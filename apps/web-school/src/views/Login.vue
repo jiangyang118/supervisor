@@ -35,7 +35,7 @@
         <el-form-item prop="username">
           <el-input
             v-model="form.username"
-            placeholder="用户名（admin 或 user）"
+            placeholder="请输入用户名"
             clearable
             autofocus
             autocomplete="username"
@@ -73,7 +73,7 @@
           <el-button type="primary" class="submit-btn grad" :loading="loading" :disabled="!form.username || !form.password" @click="onSubmit">登录</el-button>
         </el-form-item>
       </el-form>
-      <div class="hint">演示账号：admin/admin 或 user/user</div>
+      <div class="hint">请使用分配的学校端账号登录。如忘记密码，请联系管理员或通过预留手机号找回。</div>
     </el-card>
   </div>
 </template>

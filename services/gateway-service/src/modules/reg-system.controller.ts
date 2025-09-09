@@ -1,9 +1,15 @@
-import { Body, Controller, Get, Post, Patch, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, Query, UseGuards, Req } from '@nestjs/common';
 import { SystemService } from './system.service';
+import { RolesRepository } from './repositories/roles.repository';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { Perm } from './perm.decorator';
+import type { Request } from 'express';
 
 @Controller('reg/system')
+@UseGuards(JwtGuard, PermissionGuard)
 export class RegSystemController {
-  constructor(private readonly svc: SystemService) {}
+  constructor(private readonly svc: SystemService, private readonly rolesRepo: RolesRepository) {}
 
   // News (food safety infos)
   @Get('news') listNews(
@@ -54,30 +60,128 @@ export class RegSystemController {
   }
 
   // Users & roles
-  @Get('users') users() {
-    return this.svc.listUsers();
+  @Get('users') users(@Req() req: Request) {
+    const current = (req as any)?.user as { username?: string; roles?: string[] } | undefined;
+    const isSuper = !!current?.roles?.includes('PLATFORM_SUPER') || current?.username === 'super';
+    return this.svc.listUsers().then((rows) => (isSuper ? rows : rows.filter((u: any) => u.username !== 'super')));
   }
-  @Post('users') createUser(
+  @Post('users')
+  @Perm('users.manage')
+  createUser(
     @Body() b: { username: string; displayName: string; roles?: string[]; enabled?: boolean },
   ) {
     return this.svc.createUser(b);
   }
-  @Patch('users') updateUser(@Query('id') id: string, @Body() b: any) {
+
+  // Create school-side account and bind to a school
+  @Post('school-accounts')
+  @Perm('users.manage')
+  createSchoolAccount(
+    @Body()
+    b: { schoolId: number; username: string; displayName?: string; phone?: string; password?: string; roles?: string[] },
+  ) {
+    return this.svc.createSchoolAccount({
+      schoolId: Number(b.schoolId),
+      username: b.username,
+      displayName: b.displayName,
+      phone: b.phone,
+      password: b.password,
+      roles: b.roles,
+    });
+  }
+
+  // Aliases with singular path for compatibility
+  @Post('school-account')
+  @Perm('users.manage')
+  createSchoolAccountAlias(
+    @Body()
+    b: { schoolId: number; username: string; displayName?: string; phone?: string; password?: string; roles?: string[] },
+  ) {
+    return this.createSchoolAccount(b);
+  }
+
+  @Get('school-accounts')
+  @Perm('users.manage')
+  listSchoolAccounts(@Query('schoolId') schoolId?: string, @Query('q') q?: string) {
+    return this.svc.listSchoolAccounts({ schoolId: schoolId ? Number(schoolId) : undefined, q });
+  }
+
+  @Get('school-account')
+  @Perm('users.manage')
+  listSchoolAccountsAlias(@Query('schoolId') schoolId?: string, @Query('q') q?: string) {
+    return this.listSchoolAccounts(schoolId, q);
+  }
+
+  @Patch('school-accounts/:id')
+  @Perm('users.manage')
+  updateSchoolAccount(@Query('id') idQuery: string, @Body() b: any) {
+    const id = Number(idQuery || b?.id);
+    return this.svc.updateSchoolAccount(id, { displayName: b?.displayName, phone: b?.phone, enabled: b?.enabled, roles: b?.roles, schoolId: b?.schoolId });
+  }
+
+  @Patch('school-account/:id')
+  @Perm('users.manage')
+  updateSchoolAccountAlias(@Query('id') idQuery: string, @Body() b: any) {
+    return this.updateSchoolAccount(idQuery, b);
+  }
+
+  @Post('school-accounts/:id/delete')
+  @Perm('users.manage')
+  deleteSchoolAccount(@Query('id') idQuery: string, @Body() b: any, @Req() req: Request) {
+    const id = Number(idQuery || b?.id);
+    const u: any = (req as any)?.user || {};
+    return this.svc.deleteSchoolAccount(id, { id: u?.sub, username: u?.username });
+  }
+
+  @Post('school-account/:id/delete')
+  @Perm('users.manage')
+  deleteSchoolAccountAlias(@Query('id') idQuery: string, @Body() b: any, @Req() req: Request) {
+    return this.deleteSchoolAccount(idQuery, b, req);
+  }
+  @Patch('users')
+  @Perm('users.manage')
+  updateUser(@Query('id') id: string, @Body() b: any) {
     return this.svc.updateUser(id, b);
   }
-  @Post('users/delete') deleteUser(@Body() b: { id: string }) {
-    return this.svc.deleteUser(b.id);
+  @Post('users/delete')
+  @Perm('users.manage')
+  deleteUser(@Body() b: { id: string }, @Req() req: Request) {
+    const u: any = (req as any)?.user || {};
+    return this.svc.deleteUser(Number(b.id), { id: u?.sub, username: u?.username });
   }
   @Get('roles') roles() {
     return this.svc.listRoles();
   }
+  @Post('roles')
+  @Perm('users.manage')
+  createRole(@Body() b: { name: string; remark?: string }) {
+    if (!b?.name) return { ok: false, message: 'name required' } as any;
+    // regulator roles are global (no schoolId linkage)
+    return this.rolesRepo.create(1, b.name, b.remark);
+  }
+  @Patch('roles')
+  @Perm('users.manage')
+  updateRole(@Body() b: { id: number; patch: { name?: string; remark?: string } }) {
+    if (!b?.id) return { ok: false, message: 'id required' } as any;
+    return this.rolesRepo.update(Number(b.id), b.patch || {});
+  }
+  @Post('roles/delete')
+  @Perm('users.manage')
+  deleteRole(@Body() b: { id: number }) {
+    if (!b?.id) return { ok: false, message: 'id required' } as any;
+    return this.rolesRepo.remove(Number(b.id));
+  }
   @Get('permissions') permissions() {
     return this.svc.listPermissions();
   }
-  @Post('users/roles') setUserRoles(@Body() b: { id: string; roles: string[] }) {
+  @Post('users/roles')
+  @Perm('users.manage')
+  setUserRoles(@Body() b: { id: string; roles: string[] }) {
     return this.svc.setUserRoles(b.id, b.roles);
   }
-  @Post('roles/permissions') setRolePerms(@Body() b: { name: string; permissions: string[] }) {
+  @Post('roles/permissions')
+  @Perm('users.manage')
+  setRolePerms(@Body() b: { name: string; permissions: string[] }) {
     return this.svc.setRolePermissions(b.name, b.permissions);
   }
 

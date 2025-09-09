@@ -1,5 +1,5 @@
 <template>
-  <div ref="box" class="tbl-wrap" :style="wrapStyle" @mouseenter="onEnter" @mouseleave="onLeave">
+  <div ref="box" class="tbl-wrap hairline" :style="wrapStyle" @mouseenter="onEnter" @mouseleave="onLeave">
   <table class="tbl">
     <thead>
       <tr>
@@ -54,4 +54,6 @@ const wrapStyle = computed(() => ({ maxHeight: props.height + 'px', overflowY: '
 .tbl thead th { text-align: left; padding: 6px 8px; color:#9dccff; font-size:12px; border-bottom:1px solid rgba(17,197,255,.2); }
 .tbl tbody td { padding: 8px; color:#e5f4ff; font-size:13px; border-bottom:1px dashed rgba(17,197,255,.12) }
 .empty { color:#9dccff; font-size:12px; padding:6px }
+/* Keep hairline in pure px when px->vw is enabled */
+.hairline .tbl thead th { border-bottom:1px solid rgba(17,197,255,.2); }
 </style>

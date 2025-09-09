@@ -162,7 +162,7 @@ onMounted(async () => {
 const cfgPesticide = computed(() => ({
   header: ['样品', '结果', '时间'],
   data: store.pesticides.map((r) => [r.sample, r.result, r.at]),
-  rowNum: 6,
+  rowNum: 5,
   carousel: 'single',
   waitTime: 2000,
   headerBGC: 'rgba(17,197,255,.08)',
@@ -174,7 +174,7 @@ const cfgPesticide = computed(() => ({
 const cfgDisinfections = computed(() => ({
   header: ['类型', '负责人', '时间'],
   data: store.disinfections.map((r) => [r.type, r.by, r.at]),
-  rowNum: 6,
+  rowNum: 5,
   carousel: 'single',
   waitTime: 2000,
   headerBGC: 'rgba(17,197,255,.08)',
@@ -186,7 +186,7 @@ const cfgDisinfections = computed(() => ({
 const cfgSamples = computed(() => ({
   header: ['菜品', '状态', '时间'],
   data: store.samples.map((r) => [r.dish, r.status, r.at]),
-  rowNum: 6,
+  rowNum: 5,
   carousel: 'single',
   waitTime: 2000,
   headerBGC: 'rgba(17,197,255,.08)',
@@ -198,7 +198,7 @@ const cfgSamples = computed(() => ({
 const cfgFeedbacks = computed(() => ({
   header: ['姓名', '角色', '电话'],
   data: store.feedbacks.map((f) => [f.name, f.role, f.phone]),
-  rowNum: 6,
+  rowNum: 5,
   carousel: 'single',
   waitTime: 2000,
   headerBGC: 'rgba(17,197,255,.08)',
@@ -209,21 +209,24 @@ const cfgFeedbacks = computed(() => ({
 }));
 </script>
 <style scoped lang="less">
-// .scale-root { width: 1920px; height: 1080px; transform-origin: 0 0; transform: scale(var(--scale, 1)); }
 .screen {
   background: #061423;
   color: #cde7ff;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   padding: 10px;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 .banner {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  padding: 6px 10px;
-  border: 1px solid rgba(17, 197, 255, 0.2);
-  border-radius: 8px;
-  margin-bottom: 10px;
+  height: 80px;
+  margin:10px;
+
+  background:url('../assets/img/header.png') no-repeat center;
+  background-size: 100% 100%;
 }
 .banner .left {
   color: #9dccff;
@@ -232,7 +235,7 @@ const cfgFeedbacks = computed(() => ({
 .banner .center {
   width:30%;
   text-align: center;
-  font-size: 20px;
+  font-size: 30px;
   font-weight: 800;
   letter-spacing: 1px;
   text-shadow: 0px 4px 21px rgba(27, 126, 242, 0.64);

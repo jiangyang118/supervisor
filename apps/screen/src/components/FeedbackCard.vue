@@ -1,12 +1,12 @@
 <template>
   <div class="fb">
     <div v-for="f in items" :key="f.name+f.phone" class="row">
-      <div class="avatar">{{ f.name.slice(0,1) }}</div>
+      <div class="avatar hairline">{{ f.name.slice(0,1) }}</div>
       <div class="info">
         <div class="name">{{ f.name }} · {{ f.role }}</div>
         <div class="phone">{{ f.phone }}</div>
       </div>
-      <div class="qr" :style="qrStyle"></div>
+      <div class="qr hairline" :style="qrStyle"></div>
     </div>
   </div>
 </template>

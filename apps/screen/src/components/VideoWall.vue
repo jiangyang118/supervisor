@@ -1,6 +1,6 @@
 <template>
   <div class="wall" :style="gridStyle">
-    <div v-for="(v,i) in displayVideos" :key="i" class="cell">
+    <div v-for="(v,i) in displayVideos" :key="i" class="cell hairline">
       <template v-if="v.src">
         <div class="video-wrap">
           <video v-if="useNative(v.src)" :src="v.src" :poster="v.poster" muted autoplay loop playsinline></video>

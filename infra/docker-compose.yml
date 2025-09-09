@@ -92,6 +92,30 @@ services:
       - '80:80'
     depends_on: [gateway-service]
 
+  # Development-only service: mount migrations and dist, auto-reload with Node 20 --watch
+  gateway-service-dev:
+    build:
+      context: ..
+      dockerfile: services/gateway-service/Dockerfile
+    env_file:
+      - ../.env
+    environment:
+      PORT: 3000
+      DATABASE_URL: ${DATABASE_URL:-mysql://foodsafe:secret@mysql:3306/foodsafe_dev}
+    command: ["sh", "-lc", "node scripts/run-migrations.js && node --watch dist/services/gateway-service/src/main.js"]
+    volumes:
+      - ../services/gateway-service/migrations:/app/migrations:ro
+      - ../services/gateway-service/dist:/app/dist
+    ports: ['3301:3000']
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_started
+    profiles: ["dev"]
+
 volumes:
   mysqldata:
   minio:

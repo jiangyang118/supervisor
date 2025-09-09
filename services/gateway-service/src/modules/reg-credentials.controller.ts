@@ -24,8 +24,9 @@ export class RegCredentialsController {
   suppliers(@Query('schoolId') schoolId?: string) {
     return this.svc.listSuppliers({ schoolId });
   }
-  @Get('exceptions') exceptions(
-    @Perm('credentials:R')
+  @Get('exceptions')
+  @Perm('credentials:R')
+  exceptions(
     @Query('type') type?: EntityType,
     @Query('schoolId') schoolId?: string,
   ) {
@@ -36,8 +37,9 @@ export class RegCredentialsController {
   setMeasure(@Query('id') id: string, @Body() b: { measure: string }) {
     return this.svc.setMeasure(id, b.measure);
   }
-  @Get('export.csv') exportCsv(
-    @Perm('credentials:EX')
+  @Get('export.csv')
+  @Perm('credentials:EX')
+  exportCsv(
     @Query('target') target: 'canteens' | 'workers' | 'suppliers' | 'exceptions' = 'exceptions',
     @Query('type') type?: EntityType,
     @Query('schoolId') schoolId?: string,

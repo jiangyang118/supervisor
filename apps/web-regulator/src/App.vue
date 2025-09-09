@@ -60,7 +60,6 @@
           <el-sub-menu index="system">
             <template #title>系统配置</template>
             <el-menu-item v-if="has('settings.*')" index="/system/info">监管单位信息</el-menu-item>
-            <el-menu-item v-if="has('users.manage')" index="/system/roles">监管端角色权限</el-menu-item>
             <el-menu-item v-if="has('users.manage')" index="/system/users">监管端用户配置</el-menu-item>
             <el-menu-item v-if="has('settings.*')" index="/system/app">APP 下载</el-menu-item>
             <el-menu-item v-if="has('settings.*')" index="/system/news">食安资讯</el-menu-item>

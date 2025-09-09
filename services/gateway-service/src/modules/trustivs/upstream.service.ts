@@ -50,7 +50,17 @@ export class TrustivsUpstreamService {
   }
 
   async request<T = any>(method: string, path: string, opts: { query?: any; body?: any; headers?: Record<string, any> }, autoAuth = true): Promise<StdResponse<T>> {
-    const qs = opts?.query ? '?' + new URLSearchParams(Object.entries(opts.query).flatMap(([k,v]) => Array.isArray(v)? v.map(x=>[k,x]): [[k, v]])).toString() : '';
+    const qs = opts?.query
+      ?
+        '?' +
+        new URLSearchParams(
+          (Object.entries(opts.query).flatMap(([k, v]) =>
+            Array.isArray(v)
+              ? (v as any[]).map((x) => [k, String(x)] as [string, string])
+              : [[k, String(v)]]
+          ) as unknown) as readonly [string, string][]
+        ).toString()
+      : '';
     const url = this.base.replace(/\/$/, '') + (path.startsWith('/')? path : '/' + path) + qs;
     const hdr = await this.headers(opts?.headers, autoAuth);
     let body: any = undefined;

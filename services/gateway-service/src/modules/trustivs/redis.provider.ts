@@ -1,6 +1,13 @@
-import type { Redis } from 'ioredis';
+// Avoid hard dependency on ioredis types; define minimal interface
+type RedisClientLike = {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string, ...args: any[]): Promise<any>;
+  del(key: string): Promise<any>;
+  expire(key: string, seconds: number): Promise<any>;
+  pipeline(): any;
+};
 
-export type RedisLike = Pick<Redis, 'get' | 'set' | 'del' | 'expire' | 'pipeline'> | null;
+export type RedisLike = RedisClientLike | null;
 
 export function createRedis(): RedisLike {
   try {
@@ -19,4 +26,3 @@ export function createRedis(): RedisLike {
     return null;
   }
 }
-

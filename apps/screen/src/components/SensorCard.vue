@@ -1,5 +1,5 @@
 <template>
-  <div class="sensor" :class="{ abnormal: isAbnormal }">
+  <div class="sensor hairline" :class="{ abnormal: isAbnormal }">
     <div class="name">{{ name }}</div>
     <div class="val">{{ value }}<span class="unit">{{ unit }}</span></div>
   </div>

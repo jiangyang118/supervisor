@@ -73,14 +73,21 @@ export class AuthController {
       permissions = Array.from(new Set(permissions));
     } catch {
       try {
-        permissions = (this.sys.listRoles().find((r) => r.name === roles[0])?.permissions || []);
+        const mem = await this.sys.listRoles();
+        permissions = (mem.find((r: any) => r.name === roles[0])?.permissions || []);
         if (roles.includes('ADMIN') || roles.includes('PLATFORM_SUPER')) permissions.push('*');
       } catch {
         permissions = [];
       }
     }
 
-    const schools = await this.schoolUsers.listSchools(userId);
+    let schools: number[] = [];
+    try {
+      schools = await this.schoolUsers.listSchools(userId);
+    } catch {
+      // Graceful fallback when DB schema/privileges not ready
+      schools = [];
+    }
     const secret = process.env.JWT_SECRET || 'dev-secret';
     const token = signHS256({ sub: userId, username: b.username, roles, schools }, secret, 8 * 3600);
     return { ok: true, token, user: { id: userId, name: displayName, roles, permissions, schools } };
@@ -105,9 +112,9 @@ export class AuthController {
       permissions = Array.from(new Set(permissions));
     } catch {
       try {
-        const mem = this.sys.listRoles() as any[];
+        const mem = await this.sys.listRoles() as any[];
         for (const role of roles) {
-          const found = mem.find((r) => r.name === role);
+          const found = mem.find((r: any) => r.name === role);
           if (found?.permissions) permissions.push(...found.permissions);
         }
         if (roles.includes('ADMIN') || roles.includes('PLATFORM_SUPER')) permissions.push('*:*');

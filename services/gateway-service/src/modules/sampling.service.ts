@@ -149,7 +149,7 @@ export class SamplingService {
   }
 
   deviceCompleted(body: {
-    schoolId?: string;
+    schoolId?: number | string;
     sample: string;
     weight: number;
     imageUrl?: string;

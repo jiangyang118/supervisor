@@ -169,14 +169,24 @@ function actToggleFav() { if (menu.cameraId) store.toggleFavorite(menu.cameraId)
 
 // Playback & download
 import { streamsApi } from '../../api/streams';
-import dayjs from 'dayjs';
+// Lightweight date helpers to avoid external deps
+function fmt(ts: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  const y = ts.getFullYear();
+  const m = p(ts.getMonth() + 1);
+  const d = p(ts.getDate());
+  const hh = p(ts.getHours());
+  const mm = p(ts.getMinutes());
+  const ss = p(ts.getSeconds());
+  return `${y}-${m}-${d} ${hh}:${mm}:${ss}`;
+}
 const playback = reactive<{ visible: boolean; start: string; end: string }>({ visible: false, start: '', end: '' });
 function openPlayback() {
   if (!menu.cameraId) return;
-  const end = dayjs();
-  const start = end.subtract(1, 'hour');
-  playback.start = start.format('YYYY-MM-DD HH:mm:ss');
-  playback.end = end.format('YYYY-MM-DD HH:mm:ss');
+  const end = new Date();
+  const start = new Date(end.getTime() - 3600 * 1000);
+  playback.start = fmt(start);
+  playback.end = fmt(end);
   playback.visible = true;
 }
 async function confirmPlayback() {
@@ -192,9 +202,9 @@ async function confirmPlayback() {
 }
 async function actDownload() {
   if (!menu.cameraId) return;
-  const end = dayjs();
-  const start = end.subtract(1, 'hour');
-  const list = await streamsApi.download(menu.cameraId, start.format('YYYY-MM-DD HH:mm:ss'), end.format('YYYY-MM-DD HH:mm:ss'));
+  const end = new Date();
+  const start = new Date(end.getTime() - 3600 * 1000);
+  const list = await streamsApi.download(menu.cameraId, fmt(start), fmt(end));
   const url = list[0];
   if (url) window.open(url, '_blank');
   hideMenu();

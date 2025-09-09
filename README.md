@@ -65,7 +65,7 @@
   - `docker compose -f infra/docker-compose.yml up -d mysql redis minio zookeeper kafka kafka-ui gateway-service nginx`
 - 数据库初始化：服务启动时会自动执行迁移与初始化（可通过 `DB_AUTO_MIGRATE=0` 关闭）。
   - 也可手动执行迁移：`make migrate`
-  - 或：`DATABASE_URL="mysql://foodsafe:secret@127.0.0.1:3306/foodsafe" pnpm -C services/gateway-service db:migrate`
+  - 或：`DATABASE_URL="mysql://foodsafe:secret@127.0.0.1:3307/foodsafe" pnpm -C services/gateway-service db:migrate`
 - 查看日志：
   - `docker compose -f infra/docker-compose.yml logs -f gateway-service`
 
@@ -87,7 +87,7 @@
   - 测试：`make dev-test`
   - 生产模拟：`make dev-prod`
 - 数据库连接：优先读取 `.env` 和 `.env.$(ENV)`；你也可以直接覆盖 `DATABASE_URL`/`MYSQL_*` 环境变量。
-  - 本地默认示例：`DATABASE_URL=mysql://root:ygyg1344@127.0.0.1:3306/foodsafe`
+- 本地默认示例：`DATABASE_URL=mysql://root:ygyg1344@127.0.0.1:3307/foodsafe`
 - 迁移与初始化：
   - 自动执行：非生产环境默认自动执行（`DB_AUTO_MIGRATE` 未设置或为 `1/true`）
   - 手动执行：`make migrate ENV=local`

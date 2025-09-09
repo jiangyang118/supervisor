@@ -141,7 +141,7 @@ export class RegSystemController {
   @Patch('users')
   @Perm('users.manage')
   updateUser(@Query('id') id: string, @Body() b: any) {
-    return this.svc.updateUser(id, b);
+    return this.svc.updateUser(Number(id), b);
   }
   @Post('users/delete')
   @Perm('users.manage')
@@ -184,6 +184,7 @@ export class RegSystemController {
   setRolePerms(@Body() b: { name: string; permissions: string[] }) {
     return this.svc.setRolePermissions(b.name, b.permissions);
   }
+
 
   // Regulator info
   @Get('info') info() {

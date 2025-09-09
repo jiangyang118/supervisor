@@ -1,4 +1,7 @@
-import { Controller, Get, Res, Query } from '@nestjs/common';
+import { Controller, Get, Res, Query, UseGuards } from '@nestjs/common';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { Perm } from './perm.decorator';
 import { MorningCheckService } from './morning-check.service';
 import { SamplingService } from './sampling.service';
 import { DisinfectionService } from './disinfection.service';
@@ -8,6 +11,7 @@ import { SchoolsRepository } from './repositories/schools.repository';
 // 使用 any 避免本地缺少 @types/express 造成编译失败
 
 @Controller('reg/reports')
+@UseGuards(JwtGuard, PermissionGuard)
 export class ReportsController {
   constructor(
     private readonly morning: MorningCheckService,
@@ -79,6 +83,7 @@ export class ReportsController {
   }
 
   @Get('daily')
+  @Perm('report:R')
   async daily(
     @Query('start') start?: string,
     @Query('end') end?: string,
@@ -87,6 +92,7 @@ export class ReportsController {
     return this.buildDailyRows(start, end, schoolId);
   }
   @Get('export')
+  @Perm('report:EX')
   async export(
     @Query('format') format = 'csv',
     @Query('start') start?: string,

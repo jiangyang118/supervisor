@@ -48,24 +48,7 @@ type Row = {
   status: string;
   at: string;
 };
-const rows = ref<Row[]>([
-  {
-    id: 'PT-001',
-    school: '示例一中',
-    sample: '黄瓜',
-    result: '合格',
-    status: '正常',
-    at: new Date().toLocaleString(),
-  },
-  {
-    id: 'PT-002',
-    school: '示例二小',
-    sample: '菠菜',
-    result: '不合格',
-    status: '异常',
-    at: new Date().toLocaleString(),
-  },
-]);
+const rows = ref<Row[]>([]);
 const filters = reactive<{
   school: string;
   result: '' | '合格' | '不合格' | null;
@@ -82,23 +65,5 @@ const onExportCsv = () =>
     at: '时间',
   });
 const onExportPdf = () => alert('导出 PDF（演示）');
-onMounted(() => {
-  // 读取学校端写入的 cookie（localhost 跨端口共享）
-  try {
-    const key = 'fs_pesticide_records';
-    const cookie = document.cookie.split('; ').find((c) => c.startsWith(key + '='));
-    if (cookie) {
-      const arr = JSON.parse(decodeURIComponent(cookie.split('=')[1])) as any[];
-      const mapped: Row[] = arr.map((r, idx) => ({
-        id: `PT-C${idx + 1}`,
-        school: r.school || '示例中学',
-        sample: r.sample,
-        result: r.result,
-        status: r.status,
-        at: r.at,
-      }));
-      rows.value = [...mapped, ...rows.value];
-    }
-  } catch {}
-});
+onMounted(() => {});
 </script>

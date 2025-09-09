@@ -60,6 +60,13 @@ export class UsersRepository {
     return rows[0] ? { id: Number(rows[0].id), username: rows[0].username, displayName: rows[0].displayName, enabled: Number(rows[0].enabled) } : null;
   }
 
+  async findById(id: number): Promise<{ id: number; username: string; displayName: string; enabled: number } | null> {
+    const { rows } = await this.db.query<any>('select id, username, display_name as displayName, enabled from users where id = ? limit 1', [id]);
+    return rows[0]
+      ? { id: Number(rows[0].id), username: rows[0].username, displayName: rows[0].displayName, enabled: Number(rows[0].enabled) }
+      : null;
+  }
+
   async findWithRolesByUsername(username: string): Promise<
     | { id: number; username: string; displayName: string; enabled: number; roles: string[] }
     | null
@@ -115,6 +122,13 @@ export class UsersRepository {
       salt: String(rows[0].salt),
       passwordHash: String(rows[0].passwordHash).toUpperCase(),
     };
+  }
+
+  async setCredential(userId: number, rawPassword: string) {
+    const { createHash, randomBytes } = await import('crypto');
+    const salt = randomBytes(8).toString('hex');
+    const hash = createHash('sha256').update(salt + rawPassword).digest('hex').toUpperCase();
+    await this.db.query('insert into user_credentials(user_id, salt, password_hash) values(?,?,?) on duplicate key update salt = values(salt), password_hash = values(password_hash)', [userId, salt, hash]);
   }
 
   async insertOne(b: { username: string; displayName: string; enabled?: boolean; phone?: string; remark?: string; createdBy?: string }) {

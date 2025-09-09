@@ -1,20 +1,25 @@
-import { Controller, Get, Post, Patch, Body, Query, ParseIntPipe, Param } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Query, ParseIntPipe, Param, UseGuards } from '@nestjs/common';
 import { MorningCheckService } from './morning-check.service';
 import { SamplingService } from './sampling.service';
 import { DisinfectionService } from './disinfection.service';
+import { PesticideService } from './pesticide.service';
 import { DineService } from './dine.service';
 import { WasteService } from './waste.service';
 import { DevicesService } from './devices.service';
 import { PublicFeedbackService } from './public-feedback.service';
-import { DataStore } from './data.store';
 import { SchoolsRepository } from './repositories/schools.repository';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { Perm } from './perm.decorator';
 
 @Controller('reg')
+@UseGuards(JwtGuard, PermissionGuard)
 export class RegOverviewController {
   constructor(
     private readonly morning: MorningCheckService,
     private readonly sampling: SamplingService,
     private readonly disinfection: DisinfectionService,
+    private readonly pesticide: PesticideService,
     private readonly dine: DineService,
     private readonly waste: WasteService,
     private readonly devices: DevicesService,
@@ -28,6 +33,7 @@ export class RegOverviewController {
     return Number.isFinite(n) ? n : 0;
   }
   @Get('overview')
+  @Perm('report:R')
   async overview() {
     const schoolsList = await this.localSchools();
     const schools = schoolsList.length;
@@ -43,7 +49,12 @@ export class RegOverviewController {
     const ws = sliceAll(await this.waste.list({ start: dayStart, page: '1', pageSize: '100000' }));
     const todayReports = mc.length + sp.length + df.length + dn.length + ws.length;
     // AI 预警（OPEN）
-    const aiOpen = (DataStore.aiEvents || []).filter((e) => e.status === 'OPEN').length;
+    // 基于数据库的异常/预警聚合（替换原先的内存 AI 事件）
+    const nowIso = new Date().toISOString();
+    const mcAbnormal = await this.morning.list({ start: dayStart, end: nowIso, result: '异常', page: 1, pageSize: 100000 });
+    const disEx = await this.disinfection.list({ start: dayStart, end: nowIso, exception: 'true', page: 1, pageSize: 100000 });
+    const pestBad = await this.pesticide.list({ start: dayStart, end: nowIso, result: '不合格', page: 1, pageSize: 100000 });
+    const aiOpen = (mcAbnormal.total || 0) + (disEx.total || 0) + (pestBad.total || 0);
     // 卫生合格率（以晨检为例）
     const ok = mc.filter((e: any) => e.result === '正常').length;
     const hygienePassRate = mc.length ? Math.round((ok / mc.length) * 100) : 100;
@@ -51,13 +62,12 @@ export class RegOverviewController {
     const devs = this.devices.list({});
     const online = devs.filter((d) => d.status === 'ONLINE').length;
     const devicesOnlineRate = devs.length ? Math.round((online / devs.length) * 100) : 100;
-    // AI 类型分布
-    const aiByTypeMap = new Map<string, number>();
-    (DataStore.aiEvents || []).forEach((e) => {
-      if (e.status !== 'OPEN') return;
-      aiByTypeMap.set(e.type, (aiByTypeMap.get(e.type) || 0) + 1);
-    });
-    const aiByType = Array.from(aiByTypeMap.entries()).map(([type, count]) => ({ type, count }));
+    // 预警类型分布（基于数据库统计）
+    const aiByType = [
+      { type: '晨检异常', count: mcAbnormal.total || 0 },
+      { type: '消毒异常', count: disEx.total || 0 },
+      { type: '农残不合格', count: pestBad.total || 0 },
+    ];
     // 近 7 天上报数量（按晨检）
     const dailyReports = await Promise.all(Array.from({ length: 7 }).map(async (_, i) => {
       const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (6 - i));
@@ -101,6 +111,7 @@ export class RegOverviewController {
   }
 
   @Get('schools')
+  @Perm('school:R')
   async schools() {
     try {
       const rows = await this.schoolsRepo.listAll();
@@ -119,11 +130,13 @@ export class RegOverviewController {
 
   // System management: schools config
   @Get('schools/config')
+  @Perm('school:R')
   async schoolsConfig() {
     const rows = await this.schoolsRepo.listAll(true);
     return rows.map((r) => ({ id: this.numId(r.id), name: r.name, enabled: !!r.enabled }));
   }
   @Post('schools/config')
+  @Perm('config:S')
   async createSchool(@Body() b: { name: string; enabled?: boolean }) {
     if (!b?.name || String(b.name).trim() === '') {
       return { ok: false, message: 'name required' };
@@ -152,12 +165,14 @@ export class RegOverviewController {
     }
   }
   @Patch('schools/config')
+  @Perm('config:S')
   async updateSchool(@Query('id', ParseIntPipe) id: number, @Body() b: { name?: string; enabled?: boolean }) {
     if (!id) return { ok: false, message: 'id required' } as any;
     await this.schoolsRepo.update(id, b);
     return { ok: true };
   }
   @Post('schools/config/delete')
+  @Perm('config:S')
   async deleteSchool(@Body() body: { id: number }) {
     if (!body?.id) return { ok: false, message: 'id required' } as any;
     await this.schoolsRepo.update(body.id, { enabled: false });
@@ -165,6 +180,7 @@ export class RegOverviewController {
   }
 
   @Get('schools/stats')
+  @Perm('school:R')
   async schoolStats() {
     const base = await this.localSchools();
     return base.map((s) => {

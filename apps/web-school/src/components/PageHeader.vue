@@ -6,18 +6,7 @@
       </el-breadcrumb>
       <div class="page-title">{{ title }}</div>
     </div>
-    <div style="display: flex; align-items: center; gap: 8px">
-      <el-select
-        v-model="schoolId"
-        size="small"
-        placeholder="请选择"
-        style="min-width: 160px"
-        @change="onSchoolChange"
-      >
-        <el-option v-for="s in schools" :key="s.id" :label="s.name" :value="s.id" />
-      </el-select>
-      <slot />
-    </div>
+
   </div>
 </template>
 

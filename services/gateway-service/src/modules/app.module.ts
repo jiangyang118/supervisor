@@ -67,6 +67,9 @@ import { RegulatorLedgersModule } from '../areas/regulator/ledgers.module';
 import { InventoryModule } from '../inventory/inventory.module';
 import { TrustivsModule } from './trustivs/trustivs.module';
 import { AuthController } from './auth.controller';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { TokenBlacklistService } from './token-blacklist.service';
 
 @Module({
   imports: [
@@ -144,6 +147,9 @@ import { AuthController } from './auth.controller';
     RegulatorMorningChecksService,
     RateLimitGuard,
     DbBootstrapService,
+    JwtGuard,
+    PermissionGuard,
+    TokenBlacklistService,
   ],
 })
 export class AppModule {}

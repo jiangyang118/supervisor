@@ -1,7 +1,11 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { FoodWasteService, WasteSource } from './food-waste.service';
+import { JwtGuard } from './jwt.guard';
+import { PermissionGuard } from './permission.guard';
+import { Perm } from './perm.decorator';
 
 @Controller('reg/food-waste')
+@UseGuards(JwtGuard, PermissionGuard)
 export class RegFoodWasteController {
   constructor(private readonly svc: FoodWasteService) {}
 
@@ -16,6 +20,7 @@ export class RegFoodWasteController {
   }
 
   @Get('ranking')
+  @Perm('food_waste:R')
   ranking(
     @Query('start') start?: string,
     @Query('end') end?: string,
@@ -43,6 +48,7 @@ export class RegFoodWasteController {
   }
 
   @Get('details')
+  @Perm('food_waste:R')
   details(
     @Query('schoolId') schoolId?: string,
     @Query('source') source?: WasteSource,
@@ -69,6 +75,7 @@ export class RegFoodWasteController {
   }
 
   @Get('details/export.csv')
+  @Perm('food_waste:EX')
   exportDetails(
     @Query('schoolId') schoolId?: string,
     @Query('source') source?: WasteSource,
@@ -108,6 +115,7 @@ export class RegFoodWasteController {
   }
 
   @Get('ranking/export.csv')
+  @Perm('food_waste:EX')
   exportRanking(
     @Query('start') start?: string,
     @Query('end') end?: string,
@@ -124,6 +132,7 @@ export class RegFoodWasteController {
   }
 
   @Get('summary')
+  @Perm('food_waste:R')
   summary(
     @Query('schoolId') schoolId?: string,
     @Query('start') start?: string,
@@ -156,6 +165,7 @@ export class RegFoodWasteController {
   }
 
   @Get('trend')
+  @Perm('food_waste:R')
   trend(
     @Query('schoolId') schoolId?: string,
     @Query('start') start?: string,

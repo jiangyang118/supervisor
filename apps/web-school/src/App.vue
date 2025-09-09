@@ -6,15 +6,23 @@
 
   <!-- Default application shell -->
   <el-container v-else style="height: 100vh">
-    <el-header
-      class="app-header"
-      style="display: flex; align-items: center; justify-content: space-between"
-    >
+    <el-header class="app-header" style="display: flex; align-items: center; justify-content: space-between">
       <div>学校端 • 食品安全云</div>
-      <el-space>
+      <div style="display:flex; align-items:center; gap:12px">
         <el-button link type="primary" @click="go('/overview')">首页</el-button>
         <el-button link @click="go('/reports')">每日报表</el-button>
-      </el-space>
+        <el-divider direction="vertical" />
+        <el-dropdown>
+          <span class="el-dropdown-link" style="cursor:pointer">
+            {{ displayName }}<i class="el-icon-arrow-down el-icon--right" />
+          </span>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="onLogout">退出登录</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
+      </div>
     </el-header>
     <el-container>
       <el-aside width="240px" class="app-aside">
@@ -83,8 +91,8 @@
             <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item>
             <el-menu-item index="/system/app-download">移动端扫码</el-menu-item>
             <el-menu-item index="/system/trustivs-test">TrustIVS 测试</el-menu-item>
-            <el-menu-item index="/system/users">用户管理</el-menu-item>
-            <el-menu-item index="/system/roles">角色管理</el-menu-item>
+            <el-menu-item v-if="has('users.manage')" index="/system/users">用户管理</el-menu-item>
+            <el-menu-item v-if="has('users.manage')" index="/system/roles">角色管理</el-menu-item>
           </el-sub-menu>
         </el-menu>
       </el-aside>
@@ -122,7 +130,9 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
 import { computed, ref } from 'vue';
+import { ElMessageBox, ElMessage } from 'element-plus';
 import PageHeader from './components/PageHeader.vue';
+import { useAuthStore } from './stores/auth';
 const route = useRoute();
 const router = useRouter();
 const isAuthPage = computed(() => route.path === '/login');
@@ -163,6 +173,8 @@ const openeds = computed(() => {
   return [] as string[];
 });
 const go = (p: string) => router.push(p);
+const auth = useAuthStore();
+const has = (p: string) => auth.hasPerm(p);
 
 const integration = computed(() => ({
   base: (window as any).SCHOOL_INTEGRATION_BASE as string | undefined,
@@ -195,6 +207,16 @@ function openConfig() {
     localStorage.setItem('MEGO_CANDIDATES', c);
     (window as any).MEGO_CANDIDATES = c;
   }
+}
+
+const displayName = computed(() => auth.user?.name || '未登录');
+async function onLogout() {
+  try {
+    await ElMessageBox.confirm('确认退出登录？', '提示', { type: 'warning', confirmButtonText: '退出', cancelButtonText: '取消' });
+  } catch { return; }
+  await auth.logout();
+  ElMessage.success('已退出登录');
+  router.replace('/login');
 }
 </script>
 

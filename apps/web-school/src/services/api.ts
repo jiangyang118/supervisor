@@ -5,13 +5,28 @@ export const API_BASE = BASE;
 const SCHOOL_INTEGRATION_BASE = (window as any)?.SCHOOL_INTEGRATION_BASE || 'http://localhost:4001';
 
 function authHeaders() {
-  const token = localStorage.getItem('AUTH_TOKEN');
+  const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('AUTH_TOKEN') || sessionStorage.getItem('AUTH_TOKEN'))) || '';
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function handleUnauthorized(status: number) {
+  if (status === 401) {
+    try {
+      localStorage.removeItem('AUTH_TOKEN');
+      localStorage.removeItem('AUTH_USER');
+      sessionStorage.removeItem('AUTH_TOKEN');
+      sessionStorage.removeItem('AUTH_USER');
+    } catch {}
+    try { (window as any).ElMessage?.warning?.('登录已过期，请重新登录'); } catch {}
+    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+      window.location.replace('/login');
+    }
+  }
 }
 
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { headers: { ...authHeaders() } });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
   return res.json() as Promise<T>;
 }
 
@@ -21,7 +36,7 @@ async function post<T>(path: string, body?: any): Promise<T> {
     headers: { 'Content-Type': 'application/json', ...authHeaders() },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
   return res.json() as Promise<T>;
 }
 
@@ -1184,7 +1199,22 @@ export const api = {
     return r.json();
   },
   sysApps: () => get<any[]>(`/school/system/apps`),
-  sysUsers: () => get<any[]>(`/school/system/users`),
+  sysUsers: (schoolId?: string | number) => get<any[]>(`/school/system/users${schoolId!==undefined&&schoolId!==null&&String(schoolId) !== '' ? `?schoolId=${encodeURIComponent(String(schoolId))}` : ''}`),
+  sysUserCreate: async (body: { name: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean; password?: string }) => {
+    return post(`/school/system/users`, body);
+  },
+  sysUserUpdate: async (id: number | string, patch: { name?: string; phone?: string; remark?: string; enabled?: boolean }) => {
+    const r = await fetch(`${BASE}/school/system/users`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ id, patch }),
+    });
+    if (!r.ok) { handleUnauthorized(r.status); throw new Error(`HTTP ${r.status}`); }
+    return r.json();
+  },
+  sysUserDelete: async (id: number | string) => {
+    return post(`/school/system/users/delete`, { id });
+  },
   sysRoles: (params: { schoolId?: number; q?: string } = {}) =>
     get<any[]>(`/school/system/roles?${new URLSearchParams(
       Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null)) as any,
@@ -1235,10 +1265,10 @@ export const api = {
   sysUserSetRoles: async (id: string, roles: string[]) => {
     const r = await fetch(`${BASE}/school/system/users/roles`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ id, roles }),
     });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) { handleUnauthorized(r.status); throw new Error(`HTTP ${r.status}`); }
     return r.json();
   },
   sysPermissions: () => get<any[]>(`/school/system/permissions`),

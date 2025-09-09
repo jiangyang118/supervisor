@@ -6,6 +6,11 @@ const Reports = () => import('../views/Reports.vue');
 
 const routes: RouteRecordRaw[] = [
   { path: '/login', component: () => import('../views/Login.vue'), meta: { public: true } },
+  { path: '/logout', meta: { public: true }, beforeEnter: (_to, _from, next) => {
+    const auth = useAuthStore();
+    auth.logout();
+    next({ path: '/login' });
+  } },
   { path: '/', redirect: '/overview' },
   { path: '/overview', name: 'overview', component: Home },
   {
@@ -83,8 +88,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/system/canteen', component: () => import('../views/SystemCanteen.vue') },
   { path: '/system/linkage', component: () => import('../views/SystemLinkage.vue') },
   { path: '/system/app-download', component: () => import('../views/SystemApp.vue') },
-  { path: '/system/users', component: () => import('../views/SystemUsers.vue'), meta: { perms: ['users.view'] } },
-  { path: '/system/roles', component: () => import('../views/SystemRoles.vue'), meta: { perms: ['roles.view'] } },
+  { path: '/system/users', component: () => import('../views/SystemUsers.vue'), meta: { perms: ['users.manage'] } },
+  { path: '/system/roles', component: () => import('../views/SystemRoles.vue'), meta: { perms: ['users.manage'] } },
   { path: '/hr/staff', component: () => import('../views/StaffManagement.vue') },
 ];
 

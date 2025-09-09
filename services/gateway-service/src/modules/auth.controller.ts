@@ -80,7 +80,13 @@ export class AuthController {
       }
     }
 
-    const schools = await this.schoolUsers.listSchools(userId);
+    let schools: number[] = [];
+    try {
+      schools = await this.schoolUsers.listSchools(userId);
+    } catch {
+      // Graceful fallback when DB schema/privileges not ready
+      schools = [];
+    }
     const secret = process.env.JWT_SECRET || 'dev-secret';
     const token = signHS256({ sub: userId, username: b.username, roles, schools }, secret, 8 * 3600);
     return { ok: true, token, user: { id: userId, name: displayName, roles, permissions, schools } };

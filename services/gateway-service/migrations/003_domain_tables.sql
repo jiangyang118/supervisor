@@ -1,11 +1,13 @@
 -- Inventory tables
 create table if not exists inv_categories (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   name varchar(255) not null
 );
 
 create table if not exists inv_products (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   name varchar(255) not null,
   unit varchar(64) not null,
   category_id int(20) null,
@@ -14,6 +16,7 @@ create table if not exists inv_products (
 
 create table if not exists inv_suppliers (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   name varchar(255) not null,
   phone varchar(64) null,
   license varchar(128) null,
@@ -32,6 +35,7 @@ create table if not exists inv_suppliers (
 
 create table if not exists inv_warehouses (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   name varchar(255) not null,
   location varchar(255) null,
   capacity int null,
@@ -40,6 +44,7 @@ create table if not exists inv_warehouses (
 
 create table if not exists inv_inbound (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   product_id int(20) not null,
   qty decimal(18,3) not null,
   supplier_id int(20) null,
@@ -53,6 +58,7 @@ create table if not exists inv_inbound (
 
 create table if not exists inv_outbound (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   product_id int(20) not null,
   qty decimal(18,3) not null,
   purpose varchar(255) null,
@@ -66,6 +72,7 @@ create table if not exists inv_outbound (
 
 create table if not exists inv_tickets (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   product_id int(20) not null,
   type varchar(128) not null,
   image_url varchar(255) null,
@@ -75,6 +82,7 @@ create table if not exists inv_tickets (
 
 create table if not exists inv_additives (
   id int(20) primary key auto_increment,
+  school_id int(20) not null,
   name varchar(128) not null,
   amount decimal(18,3) not null,
   dish varchar(128) null,
@@ -123,3 +131,4 @@ create table if not exists food_waste_reasons (
   name varchar(255) not null,
   enabled tinyint not null default 1
 );
+

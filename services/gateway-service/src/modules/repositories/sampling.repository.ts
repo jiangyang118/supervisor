@@ -68,7 +68,7 @@ export class SamplingRepository {
   }
 
   async searchSamples(params: {
-    schoolId: number;
+    schoolId?: number;
     sample?: string;
     status?: 'ACTIVE' | 'EXPIRED' | 'CLEARED';
     exception?: boolean;
@@ -77,14 +77,15 @@ export class SamplingRepository {
     page: number;
     pageSize: number;
   }): Promise<{ items: SampleRow[]; total: number; page: number; pageSize: number }>{
-    const where: string[] = ['school_id = ?'];
-    const args: any[] = [params.schoolId];
+    const where: string[] = [];
+    const args: any[] = [];
+    if (params.schoolId !== undefined) { where.push('school_id = ?'); args.push(params.schoolId); }
     if (params.sample) { where.push('sample like ?'); args.push(`%${params.sample}%`); }
     if (params.status) { where.push('status = ?'); args.push(params.status); }
     if (typeof params.exception === 'boolean') { where.push('exception = ?'); args.push(params.exception ? 1 : 0); }
     if (params.start) { where.push('at >= ?'); args.push(new Date(params.start)); }
     if (params.end) { where.push('at <= ?'); args.push(new Date(params.end)); }
-    const whereSql = `where ${where.join(' and ')}`;
+    const whereSql = where.length ? `where ${where.join(' and ')}` : '';
     const cnt = await this.db.query<any>(`select count(1) as c from sampling_records ${whereSql}`, args);
     const total = Number(cnt.rows[0]?.c || 0);
     const limit = params.pageSize;

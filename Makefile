@@ -44,7 +44,7 @@ demo:
 
 migrate:
 	@echo "Running DB migrations [ENV=$(ENV)]"
-		@( $(LOAD_ENV); DATABASE_URL="$${DATABASE_URL:-mysql://root:ygyg1344@127.0.0.1:3306/foodsafe}" pnpm -C services/gateway-service db:migrate )
+		@( $(LOAD_ENV); DATABASE_URL="$${DATABASE_URL:-mysql://root:ygyg1344@127.0.0.1:3307/foodsafe}" pnpm -C services/gateway-service db:migrate )
 
 # Convenience targets
 dev-local:

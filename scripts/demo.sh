@@ -132,4 +132,4 @@ fi
 log "Basic seeds (placeholder)"
 # TODO: add real seed scripts
 
-log "Demo ready. Open API docs: http://localhost/api/docs"
+log "Demo ready. Open API docs: http://localhost:8081/api/docs"

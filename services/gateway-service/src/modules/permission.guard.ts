@@ -25,7 +25,7 @@ export class PermissionGuard implements CanActivate {
       return Array.from(owned);
     } catch {
       // fallback to in-memory roles if available; otherwise none
-      const mem = this.sys ? (this.sys.listRoles() as any[]) : [];
+      const mem = this.sys ? (await this.sys.listRoles() as any[]) : [];
       let perms: string[] = [];
       for (const role of roles) {
         const found = mem.find((r) => r.name === role);
@@ -40,7 +40,7 @@ export class PermissionGuard implements CanActivate {
     if (!required) return true;
     if (owned.includes('*') || owned.includes('*:*') || owned.includes(required)) return true;
     const [ns, act] = required.includes(':') ? required.split(':') : [required, ''];
-    return owned.includes(`${ns}:*`) || owned.includes(`${ns}.*`) || (act && owned.includes(`${ns}:${act}`));
+    return owned.includes(`${ns}:*`) || owned.includes(`${ns}.*`) || (!!act && owned.includes(`${ns}:${act}`));
   }
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {

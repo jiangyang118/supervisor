@@ -141,7 +141,7 @@ export class RegSystemController {
   @Patch('users')
   @Perm('users.manage')
   updateUser(@Query('id') id: string, @Body() b: any) {
-    return this.svc.updateUser(id, b);
+    return this.svc.updateUser(Number(id), b);
   }
   @Post('users/delete')
   @Perm('users.manage')

@@ -51,7 +51,7 @@ export class InventoryRepository {
     );
     return res.insertId || 0;
   }
-  async updateSupplier(id: string, patch: Partial<Record<string, any>>) {
+  async updateSupplier(id: string | number, patch: Partial<Record<string, any>>) {
     const fields: string[] = [];
     const values: any[] = [];
     const map: Record<string, string> = {
@@ -83,7 +83,7 @@ export class InventoryRepository {
     }
     return r;
   }
-  async listSuppliers(filters: { schoolId?: number | string; q?: string; enabled?: boolean; page: number; pageSize: number }) {
+  async listSuppliers(filters: { schoolId?: number | string; q?: string; enabled?: boolean; expired?: boolean; expireStart?: string; expireEnd?: string; page: number; pageSize: number }) {
     const where: string[] = ['deleted = 0'];
     const values: any[] = [];
     if (filters.schoolId !== undefined && filters.schoolId !== null) { where.push('school_id = ?'); values.push(filters.schoolId); }
@@ -93,6 +93,10 @@ export class InventoryRepository {
       const like = `%${filters.q}%`;
       values.push(like, like, like);
     }
+    if (filters.expired === true) { where.push('license_expire_at is not null and license_expire_at < now()'); }
+    if (filters.expired === false) { where.push('(license_expire_at is null or license_expire_at >= now())'); }
+    if (filters.expireStart) { where.push('license_expire_at >= ?'); values.push(new Date(filters.expireStart)); }
+    if (filters.expireEnd) { where.push('license_expire_at <= ?'); values.push(new Date(filters.expireEnd)); }
     const base = `from inv_suppliers where ${where.join(' and ')}`;
     const totalRows = await this.db.query<any>(`select count(1) as c ${base}`, values);
     const total = Number(totalRows.rows[0]?.c || 0);

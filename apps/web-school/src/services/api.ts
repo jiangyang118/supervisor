@@ -4,9 +4,9 @@ export const API_BASE = BASE;
 // 学校端集成服务（MEGO 对接演示服务，默认 4001）
 const SCHOOL_INTEGRATION_BASE = (window as any)?.SCHOOL_INTEGRATION_BASE || 'http://localhost:4001';
 
-function authHeaders() {
+function authHeaders(): Record<string, string> {
   const token = (typeof localStorage !== 'undefined' && (localStorage.getItem('AUTH_TOKEN') || sessionStorage.getItem('AUTH_TOKEN'))) || '';
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return token ? { Authorization: `Bearer ${token}` } : ({} as Record<string, string>);
 }
 
 function handleUnauthorized(status: number) {
@@ -1466,35 +1466,39 @@ export const api = {
 
 };
 
-// TrustIVS raw API client (through gateway), used by TrustivsTest.vue
+// TrustIVS helper client for calling gateway TrustIVS endpoints
+// Adds required headers (time, uuid, token) and supports simple get/post.
+let TRUSTIVS_TOKEN = (typeof localStorage !== 'undefined' && localStorage.getItem('TRUSTIVS_TOKEN')) || '';
+function trustivsHeaders() {
+  const h: Record<string, string> = {};
+  h['time'] = String(Date.now());
+  h['uuid'] = Math.random().toString(36).slice(2, 12);
+  if (TRUSTIVS_TOKEN) h['token'] = TRUSTIVS_TOKEN;
+  return h;
+}
+async function trustivsGet<T>(path: string, params?: Record<string, any>): Promise<T> {
+  const qs = params
+    ? '?' + new URLSearchParams(Object.fromEntries(Object.entries(params).map(([k, v]) => [k, String(v)])) as any).toString()
+    : '';
+  const res = await fetch(`${BASE}${path}${qs}`, { headers: trustivsHeaders() });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json() as Promise<T>;
+}
+async function trustivsPost<T>(path: string, body?: any): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...trustivsHeaders() },
+    body: JSON.stringify(body || {}),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
 export const trustivsApi = {
   setToken(t?: string) {
-    try { localStorage.setItem('TRUSTIVS_TOKEN', t || ''); } catch {}
+    TRUSTIVS_TOKEN = t || '';
+    try { localStorage.setItem('TRUSTIVS_TOKEN', TRUSTIVS_TOKEN); } catch {}
   },
-  async get<T = any>(path: string, query?: Record<string, any>): Promise<T> {
-    const token = (typeof localStorage !== 'undefined' && localStorage.getItem('TRUSTIVS_TOKEN')) || '';
-    const headers: Record<string, string> = {
-      time: String(Date.now()),
-      uuid: 'web-client',
-    };
-    if (token) headers['token'] = token;
-    const qs = query
-      ? (path.includes('?') ? '&' : '?') + new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== null && v !== '') as any).toString()
-      : '';
-    const res = await fetch(`${BASE}${path}${qs}`, { headers } as any);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return (await res.json()) as T;
-  },
-  async post<T = any>(path: string, body?: any): Promise<T> {
-    const token = (typeof localStorage !== 'undefined' && localStorage.getItem('TRUSTIVS_TOKEN')) || '';
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      time: String(Date.now()),
-      uuid: 'web-client',
-    };
-    if (token) headers['token'] = token;
-    const res = await fetch(`${BASE}${path}`, { method: 'POST', headers, body: JSON.stringify(body || {}) } as any);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return (await res.json()) as T;
-  },
+  get: trustivsGet,
+  post: trustivsPost,
 };

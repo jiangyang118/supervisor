@@ -65,20 +65,22 @@
   - `docker compose -f infra/docker-compose.yml up -d mysql redis minio zookeeper kafka kafka-ui gateway-service nginx`
 - 数据库初始化：服务启动时会自动执行迁移与初始化（可通过 `DB_AUTO_MIGRATE=0` 关闭）。
   - 也可手动执行迁移：`make migrate`
-  - 或：`DATABASE_URL="mysql://foodsafe:secret@127.0.0.1:3306/foodsafe" pnpm -C services/gateway-service db:migrate`
+  - 或：`DATABASE_URL="mysql://foodsafe:secret@127.0.0.1:3307/foodsafe" pnpm -C services/gateway-service db:migrate`
 - 查看日志：
   - `docker compose -f infra/docker-compose.yml logs -f gateway-service`
 
 启动成功后（浏览器访问）：
 - 网关健康检查：`http://localhost:3300/health`
-- OpenAPI 文档（经 Nginx）：`http://localhost/api/docs`
+- OpenAPI 文档（经 Nginx）：`http://localhost:8081/api/docs`
 - Kafka UI：`http://localhost:8080`
 - MinIO 控制台：`http://localhost:9001`（默认 `minioadmin/minioadmin`）
 
 前端（需本地启动）：
-- 学校端：`cd apps/web-school && npm i && npm run dev`（默认 `http://localhost:5173`）
-- 监管端：`cd apps/web-regulator && npm i && npm run dev`（默认 `http://localhost:5174`）
+- 学校端：`cd apps/web-school && npm i && npm run dev`（默认 `http://localhost:4200`）
+- 监管端：`cd apps/web-regulator && npm i && npm run dev`（默认 `http://localhost:4300`）
 - 大屏：`cd apps/screen && pnpm dev`（默认 `http://localhost:5208`）
+- 移动端（设备管理）：`cd apps/mobile-device && npm i && npm run dev`（默认 `http://localhost:4210`）
+- 移动端（应急管理）：`cd apps/mobile-emergency && npm i && npm run dev`（默认 `http://localhost:4220`）
 - 与容器网关联调：前端设置 `VITE_API_BASE=http://<宿主机IP>:3300`
 
 ### 方式二：Make 本地启动（多环境）
@@ -87,7 +89,7 @@
   - 测试：`make dev-test`
   - 生产模拟：`make dev-prod`
 - 数据库连接：优先读取 `.env` 和 `.env.$(ENV)`；你也可以直接覆盖 `DATABASE_URL`/`MYSQL_*` 环境变量。
-  - 本地默认示例：`DATABASE_URL=mysql://root:ygyg1344@127.0.0.1:3306/foodsafe`
+- 本地默认示例：`DATABASE_URL=mysql://root:ygyg1344@127.0.0.1:3307/foodsafe`
 - 迁移与初始化：
   - 自动执行：非生产环境默认自动执行（`DB_AUTO_MIGRATE` 未设置或为 `1/true`）
   - 手动执行：`make migrate ENV=local`
@@ -195,4 +197,20 @@ CI 示例：`.github/workflows/ci.yml`
 - 质量：关键页面 E2E、后端单测、Lint/Prettier/Husky/Commitlint
 
 ## OpenAPI
-- 启动网关后访问：`http://localhost/api/docs`
+- 启动网关后访问：`http://localhost:8081/api/docs`
+
+**端口一览表**
+- 网关服务：`3300`（容器内 `3000`，`infra/docker-compose.yml` 映射 `3300:3000`）
+- 网关热重载（dev profile）：`3301`（容器内 `3000`，映射 `3301:3000`）
+- Nginx 反向代理：`8081`（转发至网关 `/api/*`、`/iot/*`）
+- Kafka UI：`8080`
+- MinIO：`9000`（S3 API）、`9001`（Console）
+- MySQL：`3307`（映射到容器 `3306`）
+- Redis：`6379`
+- Zookeeper：`2181`
+- Kafka Broker：`9092`
+- 学校端（Vite Dev）：`4200`（Preview `4201`）
+- 监管端（Vite Dev）：`4300`（Preview `4301`）
+- 大屏（Vite Dev）：`5208`
+- 移动端-设备管理（Vite Dev）：`4210`
+- 移动端-应急管理（Vite Dev）：`4220`

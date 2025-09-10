@@ -76,9 +76,11 @@
 - MinIO 控制台：`http://localhost:9001`（默认 `minioadmin/minioadmin`）
 
 前端（需本地启动）：
-- 学校端：`cd apps/web-school && npm i && npm run dev`（默认 `http://localhost:5173`）
-- 监管端：`cd apps/web-regulator && npm i && npm run dev`（默认 `http://localhost:5174`）
+- 学校端：`cd apps/web-school && npm i && npm run dev`（默认 `http://localhost:4200`）
+- 监管端：`cd apps/web-regulator && npm i && npm run dev`（默认 `http://localhost:4300`）
 - 大屏：`cd apps/screen && pnpm dev`（默认 `http://localhost:5208`）
+- 移动端（设备管理）：`cd apps/mobile-device && npm i && npm run dev`（默认 `http://localhost:4210`）
+- 移动端（应急管理）：`cd apps/mobile-emergency && npm i && npm run dev`（默认 `http://localhost:4220`）
 - 与容器网关联调：前端设置 `VITE_API_BASE=http://<宿主机IP>:3300`
 
 ### 方式二：Make 本地启动（多环境）

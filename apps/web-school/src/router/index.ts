@@ -65,10 +65,7 @@ const routes: RouteRecordRaw[] = [
   // Environment & devices
   { path: '/environment/status', component: () => import('../views/EnvironmentStatus.vue'), meta: { perms: ['env.*'] } },
 
-  // Training & public & waste
-  { path: '/training', component: () => import('../views/Training.vue'), meta: { perms: ['hr.*'] } },
-  { path: '/training/courses', redirect: { path: '/training', query: { tab: 'courses' } } },
-  { path: '/training/exams', redirect: { path: '/training', query: { tab: 'exams' } } },
+  // Public & waste
   { path: '/food-waste', component: () => import('../views/FoodWaste.vue'), meta: { perms: ['public.*'] } },
   { path: '/public-feedback', component: () => import('../views/PublicFeedback.vue'), meta: { perms: ['public.*'] } },
   { path: '/public-config', component: () => import('../views/PublicConfig.vue'), meta: { perms: ['public.*'] } },

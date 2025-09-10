@@ -4,7 +4,6 @@ import { SchoolDineModule } from '../school/dine.module';
 import { SamplingService } from '../../modules/sampling.service';
 import { DisinfectionService } from '../../modules/disinfection.service';
 import { WasteService } from '../../modules/waste.service';
-import { TrainingService } from '../../modules/training.service';
 
 @Module({
   imports: [
@@ -15,7 +14,6 @@ import { TrainingService } from '../../modules/training.service';
     SamplingService,
     DisinfectionService,
     WasteService,
-    TrainingService,
   ],
 })
 export class RegulatorLedgersModule {}

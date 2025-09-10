@@ -67,8 +67,7 @@
           <el-sub-menu v-if="has('hr.*')" index="hr">
             <template #title>人事管理</template>
             <el-menu-item index="/certificates">人员健康证</el-menu-item>
-            <el-menu-item index="/training">培训与考试</el-menu-item>
-            <el-menu-item index="/hr/staff">人员管理</el-menu-item>
+            <el-menu-item index="/hr/staff">人员资质</el-menu-item>
             <el-menu-item index="/hr/canteen-licenses">食堂资质</el-menu-item>
           </el-sub-menu>
           <el-sub-menu v-if="has('env.*')" index="env-dev">
@@ -161,7 +160,7 @@ const openeds = computed(() => {
     p === '/warehouses'
   )
     return ['inventory'];
-  if (p.startsWith('/certificates') || p.startsWith('/training') || p.startsWith('/hr/')) return ['hr'];
+  if (p.startsWith('/certificates') || p.startsWith('/hr/')) return ['hr'];
   if (
     p.startsWith('/public-') ||
     p.startsWith('/system/news') ||

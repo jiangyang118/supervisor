@@ -15,8 +15,6 @@ import { HygieneController } from './hygiene.controller';
 import { HygieneService } from './hygiene.service';
 import { CredentialsController } from './credentials.controller';
 import { CredentialsService } from './credentials.service';
-import { TrainingController } from './training.controller';
-import { TrainingService } from './training.service';
 import { WasteController } from './waste.controller';
 import { WasteService } from './waste.service';
 import { CertificatesService } from './certificates.service';
@@ -102,7 +100,6 @@ import { SchoolCertificatesController } from './school-certificates.controller';
     HygieneController,
     WasteController,
     StaffCertsController,
-    TrainingController,
     FoodWasteController,
     PublicFeedbackController,
     RegPublicFeedbackController,
@@ -139,7 +136,6 @@ import { SchoolCertificatesController } from './school-certificates.controller';
     WasteService,
     CertificatesService,
     StaffCertsService,
-    TrainingService,
     FoodWasteService,
     PublicFeedbackService,
     PublicConfigService,

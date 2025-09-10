@@ -20,7 +20,6 @@ const map: Record<string, string> = {
   '/ledgers/waste': '废弃物台账',
   '/ledgers/inventory': '出入库/索证/添加剂',
   '/certificates': '资质证件监管',
-  '/training': '培训考试监管',
   '/food-waste': '食品浪费监管',
   '/public': '公示监管',
   '/inspections': '监督检查',

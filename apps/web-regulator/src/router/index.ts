@@ -29,7 +29,6 @@ const routes: RouteRecordRaw[] = [
   { path: '/ledgers/waste', component: () => import('../views/LedgerWaste.vue') },
   { path: '/ledgers/inventory', component: () => import('../views/LedgerInventory.vue') },
   { path: '/certificates', component: () => import('../views/Certificates.vue') },
-  { path: '/training', component: () => import('../views/Training.vue') },
   { path: '/food-waste', component: () => import('../views/FoodWaste.vue') },
   { path: '/public', component: () => import('../views/PublicOversight.vue') },
   { path: '/inspections', component: () => import('../views/Inspections.vue') },

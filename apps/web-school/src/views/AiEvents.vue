@@ -276,6 +276,7 @@ import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
 import { getCurrentSchoolId } from '../utils/school';
+import { useRoute } from 'vue-router';
 // 引入Element Plus的ElMessage组件用于显示操作反馈
 import { ElMessage } from 'element-plus';
 
@@ -395,6 +396,18 @@ function onPage(p: number) {
 async function init() {
   try {
     types.value = await api.aiTypes();
+    const route = useRoute();
+    const qType = (route.query?.type as string) || '';
+    if (qType) filters.value.type = qType;
+    const qStart = (route.query?.start as string) || '';
+    const qEnd = (route.query?.end as string) || '';
+    if (qStart && qEnd) {
+      const start = new Date(qStart);
+      const end = new Date(qEnd);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        filters.value.range = [start, end];
+      }
+    }
     await load();
   } catch (error) {
     ElMessage({ message: '初始化失败，请刷新页面重试', type: 'error' });

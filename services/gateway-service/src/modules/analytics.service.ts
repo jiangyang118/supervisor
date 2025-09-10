@@ -4,6 +4,12 @@ import { InventoryService } from '../inventory/inventory.service';
 import { HygieneRepository } from './repositories/hygiene.repository';
 import { MorningChecksRepository } from './repositories/morning-checks.repository';
 import { StaffCertsRepository } from './repositories/staff-certs.repository';
+import { CertificatesService } from './certificates.service';
+import { PesticideService } from './pesticide.service';
+import { MorningCheckService } from './morning-check.service';
+import { DevicesService } from './devices.service';
+import { DisinfectionService } from './disinfection.service';
+import { DataStore } from './data.store';
 
 @Injectable()
 export class AnalyticsService {
@@ -12,6 +18,11 @@ export class AnalyticsService {
     private readonly hygiene?: HygieneRepository,
     private readonly morning?: MorningChecksRepository,
     private readonly staffCerts?: StaffCertsRepository,
+    private readonly certsSvc?: CertificatesService,
+    private readonly pesticide?: PesticideService,
+    private readonly mcSvc?: MorningCheckService,
+    private readonly devices?: DevicesService,
+    private readonly disinfection?: DisinfectionService,
   ) {}
   private events$ = new Subject<MessageEvent>();
   private rand(min: number, max: number) {
@@ -103,50 +114,157 @@ export class AnalyticsService {
     };
   }
 
-  async foodIndex(params?: { schoolId?: string }) {
+  // removed: foodIndex() — 食安指数不再在“预警概览”模块展示
+
+  async alertsOverview(params?: { schoolId?: string; type?: string; status?: '未处理' | '已处理'; start?: string; end?: string }) {
     const sidInput = params?.schoolId;
     const sidNum = sidInput !== undefined && sidInput !== null && String(sidInput).trim() !== '' ? Number(sidInput) : NaN;
     const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : 1;
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const [mc, hy] = await Promise.all([
-      this.morning?.search({ schoolId: sid, page: 1, pageSize: 1, start: todayStr, end: todayStr }) || Promise.resolve({ total: 0 } as any),
-      this.hygiene?.listInspections({ schoolId: sid, page: 1, pageSize: 100 }) || Promise.resolve({ items: [], total: 0 } as any),
-    ]);
-    const totalHy = Number((hy as any).total || 0);
-    const itemsHy = (hy as any).items || [];
-    const pass = itemsHy.filter((x: any) => x.result === '合格').length;
-    const passRate = totalHy ? Math.round((pass / totalHy) * 100) : 100;
-    const mcToday = Number((mc as any).total || 0);
-    const hygieneScore = passRate;
-    const morningScore = Math.min(100, mcToday * 5 + 50); // simplistic scaling
-    const score = Math.round(hygieneScore * 0.6 + morningScore * 0.4);
-    const submetrics = [
-      { metric: '综合得分', value: score },
-      { metric: '操作卫生', value: hygieneScore },
-      { metric: '晨检覆盖', value: morningScore },
-    ];
-    return { score, submetrics };
+    const items: Array<{ id: string; type: string; level: string; status: '未处理' | '已处理'; at: string; detail?: string; school?: string }> = [];
+
+    // 1) 证件过期（学校/供应商等）
+    try {
+      const certs = await this.certsSvc?.list({ schoolId: sid, status: '过期' });
+      (certs || []).forEach((c: any) =>
+        items.push({ id: `CERT-${c.id}`, type: '证件过期', level: '中', status: '未处理', at: c.expireAt, detail: `${c.owner}:${c.type}已过期` }),
+      );
+    } catch {}
+    try {
+      const sup = await this.inv?.listSuppliers({ schoolId: sid, expired: 'true', page: 1, pageSize: 100000 });
+      (sup?.items || []).forEach((s: any) =>
+        items.push({ id: `SUP-${s.id}`, type: '证件过期', level: '中', status: '未处理', at: s.licenseExpireAt || new Date().toISOString(), detail: `${s.name || '供应商'}营业执照已到期` }),
+      );
+    } catch {}
+
+    // 2) 健康证到期（人员）
+    try {
+      const now = new Date();
+      const todayIso = now.toISOString();
+      const res = await this.staffCerts?.list({ schoolId: sid, page: 1, pageSize: 100000 } as any);
+      const arr = (res?.items || []).filter((r: any) => r.endAt && new Date(r.endAt) < new Date(todayIso));
+      arr.forEach((r: any) => items.push({ id: `HC-${r.id}`, type: '健康证到期', level: '中', status: '未处理', at: new Date(r.endAt).toISOString(), detail: `${r.staffName || '员工'}健康证已过期` }));
+    } catch {}
+
+    // 3) 日常行为AI预警
+    try {
+      const sidStr = String(sid).padStart(3, '0');
+      const schoolId = `sch-${sidStr}`;
+      const events = (DataStore?.aiEvents || []).filter((e) => e.schoolId === schoolId);
+      events.forEach((e) =>
+        items.push({
+          id: e.id,
+          type: '日常行为AI预警',
+          level: '中',
+          status: e.status === 'OPEN' ? '未处理' : '已处理',
+          at: e.detectedAt,
+          detail: e.type,
+        }),
+      );
+    } catch {}
+
+    // 4) 环境监测异常（温控） & 设备安全异常（离线）
+    try {
+      const devs = this.devices?.list({ schoolId: `sch-${String(sid).padStart(3, '0')}` }) || [];
+      devs.forEach((d: any) => {
+        if (d?.metrics && typeof d.metrics.temp === 'number' && d.metrics.temp > 8)
+          items.push({ id: d.id, type: '环境监测异常', level: '高', status: '未处理', at: d.lastSeen, detail: '温度超标' });
+        if (d?.status === 'OFFLINE')
+          items.push({ id: d.id, type: '设备安全异常', level: '高', status: '未处理', at: d.lastSeen, detail: '设备离线' });
+      });
+    } catch {}
+
+    // 5) 农残检测（不合格）
+    try {
+      const bad = await this.pesticide?.list({ schoolId: sid, result: '不合格', page: 1, pageSize: 100000 });
+      (bad?.items || []).forEach((r: any) =>
+        items.push({ id: `PE-${r.id}`, type: '农残检测', level: '高', status: r.measure ? '已处理' : '未处理', at: r.at, detail: `${r.sample}不合格` }),
+      );
+    } catch {}
+
+    // 6) 晨检异常
+    try {
+      const mc = await this.mcSvc?.list({ schoolId: sid, result: '异常', page: 1, pageSize: 100000 } as any);
+      (mc?.items || []).forEach((r: any) =>
+        items.push({ id: `MC-${r.id}`, type: '晨检异常', level: '中', status: r.measure ? '已处理' : '未处理', at: r.at, detail: '晨检异常' }),
+      );
+    } catch {}
+
+    // 7) 消毒管理（当日未提交记录）
+    try {
+      const today = new Date();
+      const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const df = await this.disinfection?.list({ schoolId: `sch-${String(sid).padStart(3, '0')}`, start: dayStart, page: 1, pageSize: 1 });
+      if ((df?.total || 0) === 0)
+        items.push({ id: `DS-NONE-${dayStart.slice(0,10)}`, type: '消毒管理', level: '中', status: '未处理', at: new Date().toISOString(), detail: '当日未提交消毒记录' });
+    } catch {}
+
+    // 8) 食材过期预警（占位：暂无数据来源）
+    // 可在接入库存保质期后补充
+
+    // Filter
+    let filtered = items;
+    const startRaw = params?.start;
+    const endRaw = params?.end;
+    // 精确到日：仅比较 YYYY-MM-DD
+    const toDay = (s?: string) => {
+      if (!s) return undefined as string | undefined;
+      try { return new Date(s).toISOString().slice(0, 10); } catch { return undefined as any; }
+    };
+    const startDay = toDay(startRaw);
+    const endDay = toDay(endRaw);
+    if (startDay || endDay) {
+      filtered = filtered.filter((x) => {
+        const d = (x.at || '').slice(0, 10);
+        return (!startDay || d >= startDay) && (!endDay || d <= endDay);
+      });
+    }
+    if (params?.type) filtered = filtered.filter((x) => x.type === params!.type);
+    if (params?.status) filtered = filtered.filter((x) => x.status === params!.status);
+
+    filtered.sort((a, b) => (a.at < b.at ? 1 : -1));
+    const summaryMap = new Map<string, number>();
+    filtered.forEach((x) => summaryMap.set(x.type, (summaryMap.get(x.type) || 0) + 1));
+    const summary = Array.from(summaryMap.entries()).map(([name, count]) => ({ name, count }));
+    const normalized = filtered.slice(0, 200).map((x) => ({ ...x, at: String(x.at || '').slice(0, 10) }));
+    return { items: normalized, summary };
   }
 
-  async alertsOverview(params?: { schoolId?: string }) {
-    const sidInput = params?.schoolId;
-    const sidNum = sidInput !== undefined && sidInput !== null && String(sidInput).trim() !== '' ? Number(sidInput) : NaN;
-    const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : 1;
-    const items: Array<{ id: string; type: string; level: string; status: string; at: string }> = [];
-    try {
-      const hy = await this.hygiene?.listInspections({ schoolId: sid, page: 1, pageSize: 50 });
-      for (const r of hy?.items || []) {
-        if (r.result === '不合格') items.push({ id: `H-${r.id}`, type: '卫生', level: '中', status: '未处理', at: r.date });
+  async handleAlert(b: { id: string; type: string; measure?: string; status?: '未处理' | '已处理' }) {
+    const type = b?.type;
+    const id = b?.id;
+    const measure = b?.measure || '已处理';
+    if (!type || !id) throw new Error('id/type required');
+    // 农残检测
+    if (type === '农残检测') {
+      const m = String(id).match(/(\d+)/);
+      if (!m) throw new Error('invalid id');
+      await this.pesticide?.setMeasure(Number(m[1]), measure);
+      return { ok: true };
+    }
+    // 晨检异常
+    if (type === '晨检异常') {
+      const m = String(id).match(/(\d+)/);
+      if (!m) throw new Error('invalid id');
+      await this.mcSvc?.setMeasure(Number(m[1]), measure);
+      return { ok: true };
+    }
+    // 日常行为AI预警
+    if (type === '日常行为AI预警') {
+      const ev = (DataStore.aiEvents || []).find((e) => e.id === id);
+      if (!ev) throw new Error('event not found');
+      ev.measure = measure;
+      ev.status = 'CLOSED';
+      return { ok: true };
+    }
+    // 消毒管理（占位：仅对已有记录可处理；当日未提交 不可处理）
+    if (type === '消毒管理') {
+      if (id.startsWith('DS-')) {
+        await this.disinfection?.setMeasure(id, measure);
+        return { ok: true };
       }
-    } catch {}
-    try {
-      const mc = await this.morning?.search({ schoolId: sid, page: 1, pageSize: 50, abnormal: true } as any);
-      for (const r of mc?.items || []) items.push({ id: `M-${r.id}`, type: '晨检', level: '中', status: '未处理', at: r.checkTime });
-    } catch {}
-    items.sort((a, b) => (a.at < b.at ? 1 : -1));
-    const summaryMap = new Map<string, number>();
-    items.forEach(x => summaryMap.set(x.type, (summaryMap.get(x.type) || 0) + 1));
-    const summary = Array.from(summaryMap.entries()).map(([name, count]) => ({ name, count }));
-    return { items: items.slice(0, 50), summary };
+      return { ok: false, message: '当日未提交记录无法设置处理' } as any;
+    }
+    // 证件过期/健康证到期/设备/环境/食材过期：当前无处理动作落库
+    return { ok: false, message: '该类型暂不支持处理落库' } as any;
   }
 }

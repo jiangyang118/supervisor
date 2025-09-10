@@ -68,13 +68,10 @@ export class SchoolUsersRepository {
       const sql = `
         select u.id, u.username, u.display_name as displayName, u.enabled,
                ${selectPhone}, ${selectRemark},
-               s.id as schoolId, s.name as schoolName,
-               group_concat(r.name separator ',') as roles
+               s.id as schoolId, s.name as schoolName
           from school_users su
           join users u on su.user_id = u.id
           join schools s on su.school_id = s.id
-          left join user_roles ur on ur.user_id = u.id
-          left join roles r on r.id = ur.role_id
          ${where.length ? 'where ' + where.join(' and ') : ''}
          group by u.id, u.username, u.display_name, u.enabled${groupExtras.length ? ', ' + groupExtras.join(', ') : ''}, s.id, s.name
          order by u.id desc`;
@@ -88,7 +85,6 @@ export class SchoolUsersRepository {
         remark: r.remark || undefined,
         schoolId: Number(r.schoolId),
         schoolName: r.schoolName,
-        roles: r.roles ? String(r.roles).split(',').filter(Boolean) : [],
       }));
     } catch (e: any) {
       const msg = String(e?.message || '');

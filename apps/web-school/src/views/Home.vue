@@ -1,346 +1,569 @@
 <template>
-  <div>
-    <!-- KPI 概览，风格对齐监管端 -->
-    <el-row :gutter="12">
-      <el-col :span="4"
-        ><el-card
-          ><template #header>入库（数量）</template>
-          <div class="kpi">{{ kpi.inboundQty ?? 0 }}</div></el-card
-        ></el-col
-      >
-      <el-col :span="4"
-        ><el-card
-          ><template #header>出库（数量）</template>
-          <div class="kpi">{{ kpi.outboundQty ?? 0 }}</div></el-card
-        ></el-col
-      >
-      <el-col :span="4"
-        ><el-card
-          ><template #header>卫生合格率</template>
-          <div class="kpi">{{ kpi.hygienePassRate ?? hygienePassRate }}%</div></el-card
-        ></el-col
-      >
-      <el-col :span="4"
-        ><el-card
-          ><template #header>设备在线率</template>
-          <div class="kpi">{{ kpi.deviceOnlineRate ?? deviceOnlineRate }}%</div></el-card
-        ></el-col
-      >
-      <el-col :span="4"
-        ><el-card
-          ><template #header>AI 预警</template>
-          <div class="kpi">{{ aiTotal }}</div></el-card
-        ></el-col
-      >
-    </el-row>
+  <div class="kpi-theme ">
+    <!-- 顶部全局状态栏 -->
+    <el-card class="topbar" shadow="never">
+      <div class="topbar-row">
+        <div class="tb-item clickable" @click="go('/overview/alerts')">
+          今日预警总数：<el-tag type="danger">{{ todayWarnings }}</el-tag>
+        </div>
+        <div class="tb-item">当前时间：{{ nowStr }}</div>
+      </div>
+    </el-card>
 
-    <el-row :gutter="12" style="margin-top: 12px">
-      <el-col :span="24">
-        <el-card>
-          <template #header>入库/出库</template>
-          <el-tabs v-model="ioTab" type="border-card">
-            <el-tab-pane label="入库" name="in">
-              <el-table :data="inventoryInbounds" size="small" border>
-                <el-table-column prop="date" label="日期" width="120" />
-                <el-table-column prop="item" label="商品" />
-                <el-table-column prop="qty" label="数量" width="100" />
-                <el-table-column prop="supplier" label="供应商" />
-              </el-table>
-            </el-tab-pane>
-            <el-tab-pane label="出库" name="out">
-              <el-table :data="inventoryOutbounds" size="small" border>
-                <el-table-column prop="date" label="日期" width="120" />
-                <el-table-column prop="item" label="商品" />
-                <el-table-column prop="qty" label="数量" width="100" />
-                <el-table-column prop="purpose" label="用途" />
-              </el-table>
-            </el-tab-pane>
-          </el-tabs>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <el-row :gutter="12" style="margin-top: 12px">
-      <el-col :span="12">
-        <el-card>
-          <template #header>卫生上报与设备信息</template>
-          <el-row :gutter="12">
-            <el-col :span="12">
-              <el-card>
-                <template #header>卫生上报</template>
-                <el-table :data="hygienes" size="small" border>
-                  <el-table-column prop="date" label="日期" width="120" />
-                  <el-table-column prop="by" label="检查人" />
-                  <el-table-column prop="result" label="结果" width="100" />
-                </el-table>
-              </el-card>
-            </el-col>
-            <el-col :span="12">
-              <el-card>
-                <template #header>设备信息</template>
-                <el-table :data="devices" size="small" border>
-                  <el-table-column prop="id" label="设备ID" width="120" />
-                  <el-table-column prop="type" label="类型" />
-                  <el-table-column label="状态" width="100">
-                    <template #default="{ row }">
-                      <el-tag :type="row.status === '在线' ? 'success' : 'info'">{{
-                        row.status
-                      }}</el-tag>
-                    </template>
-                  </el-table-column>
-                </el-table>
-              </el-card>
-            </el-col>
-          </el-row>
-        </el-card>
-      </el-col>
-      <el-col :span="12">
-        <el-card>
-          <template #header>基础信息与待办</template>
-          <el-row :gutter="12">
-            <el-col :span="12">
-              <el-card>
-                <template #header>学校基础数据</template>
-                <el-descriptions :column="1" size="small" border>
-                  <el-descriptions-item label="食堂">{{ canteen?.name || '-' }}</el-descriptions-item>
-                  <el-descriptions-item label="负责人">{{ canteen?.manager || '-' }}</el-descriptions-item>
-                  <el-descriptions-item label="联系电话">{{ canteen?.phone || '-' }}</el-descriptions-item>
-                  <el-descriptions-item label="地址">{{ canteen?.address || '-' }}</el-descriptions-item>
-                </el-descriptions>
-              </el-card>
-            </el-col>
-            <el-col :span="12">
-              <el-card>
-                <template #header>今日待办</template>
-                <div style="display: flex; gap: 6px; margin-bottom: 6px">
-                  <el-input
-                    v-model="newTask"
-                    placeholder="新增待办"
-                    size="small"
-                    style="width: 140px"
-                    @keyup.enter.native="addTask"
-                  />
-                  <el-button size="small" type="primary" @click="addTask">添加</el-button>
-                  <el-button size="small" @click="resetToday">重置</el-button>
-                </div>
-                <el-checkbox-group v-model="doneIds">
-                  <div
-                    v-for="t in tasks"
-                    :key="t.id"
-                    style="
-                      display: flex;
-                      align-items: center;
-                      justify-content: space-between;
-                      margin: 6px 0;
-                    "
-                  >
-                    <div>
-                      <el-checkbox :label="t.id">{{ t.text }}</el-checkbox>
-                    </div>
-                    <el-button type="danger" text size="small" @click="removeTask(t.id)"
-                      >删除</el-button
-                    >
-                  </div>
-                </el-checkbox-group>
-                <div style="margin-top: 6px; color: #909399; font-size: 12px">
-                  已完成 {{ doneIds.length }}/{{ tasks.length }}
-                </div>
-              </el-card>
-            </el-col>
-          </el-row>
-          <div style="margin-top: 8px; text-align: right">
-            <el-button @click="refresh">刷新数据</el-button>
+    <!-- 一行四卡：晨检数据 / 人员健康证 / 卫生消毒上报 / 今日预警 -->
+    <el-row :gutter="12" class="kpi-row" style="margin: 20px 0">
+      <el-col :xs="24" :sm="12" :md="12" :lg="6" :xl="6">
+        <el-card :class="['card','clickable','kpi-card','card-morning', morningOk ? 'ok' : 'warn']" @click="go('/morning-check')">
+          <template #header>
+            <div class="kpi-header">
+              <div class="kpi-title-wrap">
+                <el-icon class="kpi-icon"><CircleCheck /></el-icon>
+                <span class="kpi-title">晨检数据</span>
+              </div>
+              <span :class="['kpi-badge', morningOk ? 'ok' : 'warn']">{{ morningOk ? '正常' : `异常 ${morningAbnormal}` }}</span>
+            </div>
+          </template>
+          <div class="kpi-main" :class="{ warn: !morningOk }">
+            <span class="num">{{ morningRate }}</span><span class="unit">%</span>
           </div>
+          <div class="kpi-line"><span>应检/已检：</span><b>{{ morningExpected }}</b>/<b>{{ morningActual }}</b></div>
+          <div class="kpi-line"><span>完成率：</span><b>{{ morningRate }}%</b></div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="12" :lg="6" :xl="6">
+        <el-card :class="['card','clickable','kpi-card','card-cert', certExpired>0 ? 'warn' : 'ok']" @click="go('/certificates')">
+          <template #header>
+            <div class="kpi-header">
+              <div class="kpi-title-wrap">
+                <el-icon class="kpi-icon"><User /></el-icon>
+                <span class="kpi-title">人员健康证</span>
+              </div>
+              <span :class="['kpi-badge', certStatusClass]">{{ certStatusText }}</span>
+            </div>
+          </template>
+          <div class="kpi-main" :class="{ warn: certExpired>0 }">
+            <span class="num">{{ certExpired }}</span><span class="unit">过期</span>
+          </div>
+          <div class="kpi-line"><span>总人数：</span><b>{{ certTotal }}</b></div>
+          <div class="kpi-line"><span>临期(30天)：</span><b>{{ certExpiring }}</b></div>
+          <div class="kpi-line"><span>过期：</span><b class="warn">{{ certExpired }}</b></div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="12" :lg="6" :xl="6">
+        <el-card :class="['card','clickable','kpi-card','card-disinfection', disinfectionOk ? 'ok' : 'warn']" @click="go('/disinfection')">
+          <template #header>
+            <div class="kpi-header">
+              <div class="kpi-title-wrap">
+                <el-icon class="kpi-icon"><Brush /></el-icon>
+                <span class="kpi-title">卫生消毒上报</span>
+              </div>
+              <span :class="['kpi-badge', disinfectionOk ? 'ok' : 'warn']">{{ disinfectionOk ? '正常' : '未完成' }}</span>
+            </div>
+          </template>
+          <div class="kpi-main" :class="{ warn: !disinfectionOk }">
+            <span class="num">{{ disinfectionRate }}</span><span class="unit">%</span>
+          </div>
+          <div class="kpi-line"><span>应上报/已上报：</span><b>{{ disinfectionExpected }}</b>/<b>{{ disinfectionSubmitted }}</b></div>
+          <div class="kpi-line"><span>完成率：</span><b>{{ disinfectionRate }}%</b></div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="12" :lg="6" :xl="6">
+        <el-card :class="['card','clickable','kpi-card','card-sampling', samplingOk ? 'ok' : 'warn']" @click="go('/sampling/records')">
+          <template #header>
+            <div class="kpi-header">
+              <div class="kpi-title-wrap">
+                <el-icon class="kpi-icon"><Bell /></el-icon>
+                <span class="kpi-title">菜品留样</span>
+              </div>
+              <span :class="['kpi-badge', samplingOk ? 'ok' : 'warn']">{{ samplingOk ? '有留样' : '未留样' }}</span>
+            </div>
+          </template>
+          <div class="kpi-main" :class="{ warn: !samplingOk }">
+            <span class="num">{{ samplingTodayCount }}</span><span class="unit">款</span>
+          </div>
+          <div class="kpi-line"><span>今日已留样总数：</span><b>{{ samplingTodayCount }}</b>款</div>
         </el-card>
       </el-col>
     </el-row>
+    <!-- 两栏布局：AI预警类型分布 | 物联网设备状态 -->
+    <el-row :gutter="12" style="margin-top: 12px">
+      <el-col :span="12">
+        <el-card class="hover:shadow-md transition-shadow">
+          <template #header>
+            <div style="display:flex; align-items:center; justify-content:space-between">
+              <span style="font-weight:600">AI预警类型分布</span>
+              <div style="display:flex; align-items:center; gap:8px">
+                <el-tag size="small" effect="plain">Top {{ aiTopN }}</el-tag>
+                <el-select v-model="periodMode" size="small" style="width: 120px">
+                  <el-option label="本周" value="week" />
+                  <el-option label="最近7天" value="7d" />
+                </el-select>
+                <el-button size="small" type="text" @click.stop="exportAiBar">导出</el-button>
+              </div>
+            </div>
+          </template>
+          <v-chart class="ai-bar" :option="aiBarOption" autoresize @click="onAiBarClick" style="height: 260px; width: 100%" />
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card class="hover:shadow-md transition-shadow">
+          <template #header>
+            <div style="display:flex; align-items:center; justify-content:space-between">
+              <span style="font-weight:600">物联网设备状态</span>
+              <div style="display:flex; align-items:center; gap:8px">
+                <el-select v-model="sortMode" size="small" style="width: 120px">
+                  <el-option label="默认排序" value="default" />
+                  <el-option label="异常优先" value="abnormal" />
+                  <el-option label="在线优先" value="online" />
+                </el-select>
+                <el-switch v-model="onlyAbnormal" size="small" />
+                <span style="font-size:12px;color:#909399">仅看异常</span>
+                <el-button size="small" type="text" @click="go('/devices')">查看全部</el-button>
+              </div>
+            </div>
+          </template>
+          <el-table
+            :data="displayedDevices"
+            size="small"
+            border
+            height="260"
+            empty-text="暂无设备数据"
+          >
+            <el-table-column prop="name" label="设备名称" min-width="160" show-overflow-tooltip />
+            <el-table-column label="状态" width="120" align="center">
+              <template #default="{ row }">
+                <span class="status-dot" :class="row.statusClass" style="margin-right:6px"></span>
+                <span>{{ row.statusText }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="last" label="最后上报时间" min-width="180" show-overflow-tooltip />
+          </el-table>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, computed } from 'vue';
+import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue';
+import { CircleCheck, User, Brush, Bell } from '@element-plus/icons-vue';
+import { useRouter } from 'vue-router';
 import { api } from '../services/api';
-// Removed mock charts and ECharts imports
+import { exportCsv } from '../utils/export';
+// charts for AI overview
+import { use } from 'echarts/core';
+import { BarChart } from 'echarts/charts';
+import { GridComponent, TooltipComponent } from 'echarts/components';
+import { CanvasRenderer } from 'echarts/renderers';
+import VChart from 'vue-echarts';
+use([BarChart, GridComponent, TooltipComponent, CanvasRenderer]);
+const vChart = VChart;
 import { getCurrentSchoolId } from '../utils/school';
 
 // 今日待办：本地可编辑，可持久化
-type Task = { id: string; text: string };
-const defaultTasks: Task[] = [
-  { id: 't1', text: '晨检' },
-  { id: 't2', text: '消毒' },
-  { id: 't3', text: '留样' },
-  { id: 't4', text: '陪餐' },
-  { id: 't5', text: '废弃物处理' },
-  { id: 't6', text: '卫生检查' },
-];
-const tasks = ref<Task[]>([]);
-const doneIds = ref<string[]>([]);
-const newTask = ref('');
-const addTask = () => {
-  const txt = newTask.value.trim();
-  if (!txt) return;
-  tasks.value.push({ id: `t${Date.now()}`, text: txt });
-  newTask.value = '';
-};
-const removeTask = (id: string) => {
-  tasks.value = tasks.value.filter((t) => t.id !== id);
-  doneIds.value = doneIds.value.filter((d) => d !== id);
-};
-const resetToday = () => {
-  tasks.value = [...defaultTasks];
-  doneIds.value = [];
-  saveDate();
-};
-const dateKey = 'fs_home_tasks_date';
-function todayStr() {
-  return new Date().toISOString().slice(0, 10);
+// 顶部状态栏数据（学校名称已在全局 Header 展示）
+const nowStr = ref<string>('');
+let tm: any;
+function tickNow() {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, '0');
+  nowStr.value = `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 }
-function saveDate() {
-  localStorage.setItem(dateKey, todayStr());
-}
-onMounted(() => {
+const todayWarnings = ref<number>(0);
+
+// 核心数据
+const morningExpected = ref<number>(0);
+const morningActual = ref<number>(0);
+const morningAbnormal = ref<number>(0);
+const morningRate = computed(() => morningExpected.value ? Math.round((morningActual.value / morningExpected.value) * 100) : 100);
+const morningOk = computed(() => morningAbnormal.value === 0);
+
+const certTotal = ref<number>(0);
+const certExpiring = ref<number>(0);
+const certExpired = ref<number>(0);
+const certStatusClass = computed(() => certExpired.value > 0 ? 'warn' : (certExpiring.value > 0 ? 'warn' : 'ok'));
+const certStatusText = computed(() => certExpired.value > 0 ? '危险（有过期）' : (certExpiring.value > 0 ? '警告（有临期）' : '正常'));
+
+const disinfectionSubmitted = ref<number>(0);
+const disinfectionExpected = ref<number>(0);
+const disinfectionRate = computed(() => disinfectionExpected.value ? Math.round((disinfectionSubmitted.value / disinfectionExpected.value) * 100) : 100);
+const disinfectionOk = computed(() => disinfectionSubmitted.value >= disinfectionExpected.value);
+
+const aiOpen = ref<number>(0);
+const disinfectionExceptions = ref<number>(0);
+const samplingTodayCount = ref<number>(0);
+const samplingOk = computed(() => samplingTodayCount.value > 0);
+
+// AI本周类型分布（水平条形图）
+type AiBarItem = { code: string; label: string; count: number };
+const aiBar = ref<AiBarItem[]>([]);
+const aiBarOption = computed(() => {
+  const sorted = [...aiBar.value].sort((a, b) => b.count - a.count).slice(0, aiTopN.value);
+  const total = sorted.reduce((s, x) => s + (Number(x.count) || 0), 0) || 0;
+  // 单色系 + Top3 轻微高亮
+  const main = '#409EFF';
+  const top2 = '#73A1FF';
+  const top3 = '#A7C2FF';
+  const normal = '#C9D8FF';
+  return {
+    grid: { left: 80, right: 18, top: 10, bottom: 16, containLabel: true },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: { type: 'shadow' },
+      formatter: (params: any) => {
+        try {
+          const p = Array.isArray(params) ? params[0] : params;
+          const val = Number(p?.value ?? 0);
+          const pct = total ? Math.round((val / total) * 100) : 0;
+          return `${p?.name}<br/>数量：${val}（${pct}%）`;
+        } catch {
+          return '';
+        }
+      },
+      backgroundColor: 'rgba(50,50,50,0.9)',
+      borderWidth: 0,
+      textStyle: { color: '#fff' },
+    },
+    xAxis: {
+      type: 'value',
+      splitLine: { show: true, lineStyle: { type: 'dashed', color: '#e5eaf3' } },
+      axisLine: { show: false },
+      axisTick: { show: false },
+    },
+    yAxis: {
+      type: 'category',
+      data: sorted.map((x) => x.label),
+      axisTick: { show: false },
+      axisLine: { show: false },
+      axisLabel: {
+        formatter: (v: string) => (v && v.length > 8 ? v.slice(0, 8) + '…' : v),
+        color: '#606266',
+      },
+    },
+    series: [
+      {
+        type: 'bar',
+        data: sorted.map((x) => x.count),
+        barWidth: 18,
+        barCategoryGap: '30%',
+        itemStyle: {
+          borderRadius: [0, 6, 6, 0],
+          color: (p: any) => (p.dataIndex === 0 ? main : p.dataIndex === 1 ? top2 : p.dataIndex === 2 ? top3 : normal),
+        },
+        label: {
+          show: true,
+          position: 'right',
+          color: '#606266',
+          formatter: (p: any) => {
+            const val = Number(p?.value ?? 0);
+            const pct = total ? Math.round((val / total) * 100) : 0;
+            return `${val}${total ? `（${pct}%）` : ''}`;
+          },
+        },
+        emphasis: { focus: 'series', itemStyle: { opacity: 1 } },
+        animationDuration: 300,
+        animationEasing: 'quadraticOut',
+      },
+    ],
+  } as any;
+});
+
+// 移除“AI预警设备分布”相关逻辑，统一两栏：类型分布 | 设备状态
+
+const router = useRouter();
+function go(path: string) { router.push(path); }
+
+async function refreshAll() {
+  const sid = getCurrentSchoolId();
+  // 晨检
   try {
-    const d = localStorage.getItem(dateKey);
-    const saved = localStorage.getItem('fs_home_tasks');
-    const savedDone = localStorage.getItem('fs_home_tasks_done');
-    const isToday = d === todayStr();
-    tasks.value = isToday && saved ? JSON.parse(saved) : [...defaultTasks];
-    doneIds.value = isToday && savedDone ? JSON.parse(savedDone) : [];
-    if (!isToday) saveDate();
+    const staffRes = await api.staffList({ schoolId: sid ? Number(sid) : undefined, page: 1, pageSize: 1 });
+    morningExpected.value = Number(staffRes?.total || 0);
+  } catch { morningExpected.value = 0; }
+  try {
+    const start = new Date(); start.setHours(0,0,0,0);
+    const end = new Date();
+    const r = await api.morningList({ start: start.toISOString(), end: end.toISOString(), page: 1, pageSize: 100000, schoolId: sid ? Number(sid) : undefined } as any);
+    const items = (r as any)?.items || [];
+    morningActual.value = Number((r as any)?.total || items.length || 0);
+    morningAbnormal.value = items.filter((x: any) => x.result === '异常' || x.abnormalTemp || (Array.isArray(x.handCheckResult) && x.handCheckResult.length) || (Array.isArray(x.healthAskResult) && x.healthAskResult.length)).length;
+  } catch { morningActual.value = 0; morningAbnormal.value = 0; }
+  // 健康证
+  try {
+    const list = await api.certList({ schoolId: sid });
+    const items = Array.isArray(list) ? list : [];
+    certTotal.value = items.length;
+    const now = Date.now();
+    const in30 = now + 30*24*3600*1000;
+    certExpired.value = items.filter((c: any) => c.status === '过期' || (c.expireAt && Date.parse(c.expireAt) < now)).length;
+    certExpiring.value = items.filter((c: any) => c.status !== '过期' && c.expireAt && Date.parse(c.expireAt) >= now && Date.parse(c.expireAt) <= in30).length;
+  } catch { certTotal.value = 0; certExpiring.value = 0; certExpired.value = 0; }
+  // 消毒
+  try {
+    const start = new Date(); start.setHours(0,0,0,0);
+    const end = new Date();
+    const r = await api.disinfectionList({ start: start.toISOString(), end: end.toISOString(), page: 1, pageSize: 100000, schoolId: sid as any } as any);
+    const items = (r as any)?.items || [];
+    disinfectionSubmitted.value = Number((r as any)?.total || items.length || 0);
+    disinfectionExpected.value = disinfectionSubmitted.value || 0; // 兜底视为100%
+    disinfectionExceptions.value = items.filter((x: any) => x.exception).length;
+  } catch { disinfectionSubmitted.value = 0; disinfectionExpected.value = 0; disinfectionExceptions.value = 0; }
+  // 今日预警（AI OPEN + 消毒异常）
+  try {
+    const start = new Date(); start.setHours(0,0,0,0);
+    const end = new Date();
+    const ev = await api.aiEventsList({ schoolId: sid, status: 'OPEN', start: start.toISOString(), end: end.toISOString(), page: 1, pageSize: 1000 });
+    aiOpen.value = Number((ev as any)?.total || ((ev as any)?.items || []).length || 0);
+  } catch { aiOpen.value = 0; }
+  todayWarnings.value = aiOpen.value + disinfectionExceptions.value;
+
+  // 今日菜品留样数量
+  try {
+    const start = new Date(); start.setHours(0,0,0,0);
+    const end = new Date();
+    const r = await api.samplingList({ start: start.toISOString(), end: end.toISOString(), page: 1, pageSize: 100000, schoolId: sid ? Number(sid) : undefined } as any);
+    const items = (r as any)?.items || [];
+    samplingTodayCount.value = Number((r as any)?.total || items.length || 0);
+  } catch { samplingTodayCount.value = 0; }
+}
+
+onMounted(() => { tickNow(); tm = setInterval(tickNow, 1000); refreshAll(); loadAiBar(); loadDevicesStatus(); });
+onBeforeUnmount(() => { if (tm) clearInterval(tm); });
+
+// 统计本周（周一00:00至今）各类AI违规次数
+const periodMode = ref<'week' | '7d'>('week');
+const aiTopN = ref<number>(8);
+
+async function loadAiBar() {
+  try {
+    const sid = getCurrentSchoolId();
+    const now = new Date();
+    let start: string;
+    if (periodMode.value === '7d') {
+      const d = new Date(now);
+      d.setDate(now.getDate() - 6);
+      d.setHours(0, 0, 0, 0);
+      start = d.toISOString();
+    } else {
+      const day = now.getDay() || 7; // 周一=1, 周日=7
+      const monday = new Date(now);
+      monday.setDate(now.getDate() - (day - 1));
+      monday.setHours(0, 0, 0, 0);
+      start = monday.toISOString();
+    }
+    const end = new Date().toISOString();
+    const [types, list] = await Promise.all([
+      api.aiTypes(),
+      api.aiEventsList({ schoolId: sid, start, end, page: 1, pageSize: 1000 }),
+    ]);
+    const labelByCode = Object.fromEntries(types.map((t: any) => [t.code, t.label]));
+    const map = new Map<string, number>();
+    ((list as any)?.items || []).forEach((it: any) => {
+      const code = it.type || it.typeCode || 'UNKNOWN';
+      map.set(code, (map.get(code) || 0) + 1);
+    });
+    let items = Array.from(map.entries()).map(([code, count]) => ({ code, count, label: labelByCode[code] || code }));
+    // 无数据时也渲染柱状图（mock 一些示例数据避免空洞）
+    const total = items.reduce((s, x) => s + (Number(x.count) || 0), 0);
+    if (!items.length || total === 0) {
+      const mock: Array<{ code: string; label: string; count: number }> = [
+        { code: 'MASK', label: '未戴口罩', count: 3 },
+        { code: 'HAT', label: '未戴厨师帽', count: 2 },
+        { code: 'UNIFORM', label: '未穿工作服', count: 1 },
+      ];
+      items = mock;
+    }
+    aiBar.value = items;
   } catch {
-    tasks.value = [...defaultTasks];
+    // 失败时也保持一个空0集，避免空态
+    aiBar.value = [
+      { code: 'MASK', label: '未戴口罩', count: 3 },
+      { code: 'HAT', label: '未戴厨师帽', count: 2 },
+      { code: 'UNIFORM', label: '未穿工作服', count: 1 },
+    ] as any;
   }
+}
+
+function onAiBarClick(params: any) {
+  const name = String(params?.name || '');
+  const label = name.replace(/\s*\(.*\)$/, '');
+  const item = aiBar.value.find((x) => x.label === label);
+  if (item) {
+    router.push({ path: '/ai/events', query: { type: item.code } });
+  } else {
+    router.push('/ai/events');
+  }
+}
+
+//（空）
+
+// 设备状态列表
+const deviceList = ref<Array<{ id: string; name: string; statusText: string; statusClass: string; last: string }>>([]);
+const onlyAbnormal = ref(false);
+const sortMode = ref<'default' | 'abnormal' | 'online'>('default');
+const displayedDevices = computed(() => {
+  let arr = [...deviceList.value];
+  if (onlyAbnormal.value) arr = arr.filter((d) => d.statusClass !== 'online');
+  if (sortMode.value !== 'default') {
+    const order = (s: string) => {
+      if (sortMode.value === 'abnormal') return s === 'offline' ? 0 : s === 'fault' ? 1 : 2;
+      if (sortMode.value === 'online') return s === 'online' ? 0 : s === 'fault' ? 1 : 2;
+      return 0;
+    };
+    arr = arr.sort((a, b) => order(a.statusClass) - order(b.statusClass));
+  }
+  return arr;
 });
-watch(tasks, (v) => localStorage.setItem('fs_home_tasks', JSON.stringify(v)), { deep: true });
-watch(doneIds, (v) => localStorage.setItem('fs_home_tasks_done', JSON.stringify(v)));
+async function loadDevicesStatus() {
+  try {
+    const sid = getCurrentSchoolId();
+    const raw = await api.devicesList({ schoolId: sid || '' });
+    const fmt = (t: string) => (t ? new Date(t).toLocaleString() : '—');
+    let list = (raw || []).slice(0, 6).map((d: any) => {
+      const st = String(d.status || '').toUpperCase();
+      const statusText = st === 'ONLINE' ? '在线' : st === 'OFFLINE' ? '离线' : st === 'FAULT' ? '故障' : (d.status || '未知');
+      const statusClass = st === 'ONLINE' ? 'online' : st === 'OFFLINE' ? 'offline' : 'fault';
+      return { id: d.id, name: d.name || d.type || d.id, statusText, statusClass, last: fmt(d.lastSeen) };
+    });
+    // 如无设备数据，提供几条 mock 演示数据
+    if (!list.length) {
+      const now = new Date();
+      const ts = (mins: number) => new Date(now.getTime() - mins * 60000).toLocaleString();
+      list = [
+        { id: 'mock-1', name: 'AI晨检仪', statusText: '在线', statusClass: 'online', last: ts(5) },
+        { id: 'mock-2', name: '智能留样柜', statusText: '离线', statusClass: 'offline', last: ts(120) },
+        { id: 'mock-3', name: '农残检测仪', statusText: '故障', statusClass: 'fault', last: ts(30) },
+        { id: 'mock-4', name: '摄像头01', statusText: '在线', statusClass: 'online', last: ts(2) },
+        { id: 'mock-5', name: '摄像头02', statusText: '在线', statusClass: 'online', last: ts(8) },
+      ];
+    }
+    deviceList.value = list;
+  } catch { deviceList.value = []; }
+}
 
-// 入库/出库数据 - 从专用模块获取，确保数据一致性
-const ioTab = ref<'in' | 'out'>('in');
-const inventoryInbounds = ref<any[]>([]);
-const inventoryOutbounds = ref<any[]>([]);
+//
 
-// 卫生上报与设备
-const hygienes = ref<any[]>([]);
-const devices = ref<any[]>([]);
-const kpi = ref<any>({});
-
-// 基础信息（食堂）
-const canteen = ref<any | null>(null);
-// 图表组件使用 distCount 直接展示分布
-const aiTotal = computed(() => Number(kpi.value.ai || 0));
-const hygienePassRate = computed(() => {
-  if (!hygienes.value.length) return 100;
-  const pass = hygienes.value.filter((h) => h.result === '合格').length;
-  return Math.round((pass / hygienes.value.length) * 100);
-});
-const deviceOnlineRate = computed(() => {
-  if (!devices.value.length) return 100;
-  const on = devices.value.filter((d) => d.status === '在线').length;
-  return Math.round((on / devices.value.length) * 100);
-});
-
-// Removed AI type distribution chart
+function exportAiBar() {
+  try {
+    const rows = aiBar.value.map((x) => ({ type: x.label, count: x.count }));
+    exportCsv('AI预警类型分布', rows, { type: '预警类型', count: '数量' });
+  } catch (e) { /* no-op */ }
+}
 
 // 导出动作占位
 // 去除演示导出按钮
 
-// 格式化库存数据为概览页所需格式
-const formatInventoryData = (inventoryData: any[], type: 'in' | 'out') => {
-  return inventoryData.map((item) => {
-    // 提取产品名称、供应商名称等显示信息
-    const itemName = item.product?.name || item.productId; // 优先使用关联的产品名称
-    const supplierName = item.supplier?.name || item.supplierId || '未知供应商';
-    const purpose = item.purpose || '日常使用';
+// 移除无效的聚合刷新逻辑，首页使用 refreshAll() 提供的数据
 
-    // 构造适合概览页显示的数据结构
-    return {
-      id: item.id,
-      date: item.date || new Date().toISOString().slice(0, 10),
-      item: itemName,
-      qty: item.qty || 0,
-      supplier: type === 'in' ? supplierName : undefined,
-      purpose: type === 'out' ? purpose : undefined,
-      // 保留原始数据，便于后续扩展
-      originalData: item,
-    };
-  });
-};
-
-// 计算KPI数据 - 统一从模块数据计算
-const calculateKpi = (inbounds: any[], outbounds: any[]) => {
-  // 计算今日入库总量
-  const today = new Date().toISOString().slice(0, 10);
-  const todayInbounds = inbounds.filter((item) => item.date === today);
-  const todayOutbounds = outbounds.filter((item) => item.date === today);
-
-  const inboundSum = todayInbounds.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
-  const outboundSum = todayOutbounds.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
-  return {
-    inboundQty: Math.round(inboundSum),
-    outboundQty: Math.round(outboundSum),
-    // 其他KPI指标也可以从各模块数据中计算
-    hygienePassRate: hygienePassRate.value,
-    deviceOnlineRate: deviceOnlineRate.value,
-    ai: aiTotal.value,
-  };
-};
-
-// 优化数据获取逻辑，确保与模块数据一致性
-async function refresh() {
-  const schoolId = getCurrentSchoolId();
-  try {
-    // 并行获取各个模块的数据
-  const [
-      inventoryInboundData,
-      inventoryOutboundData,
-      hygienePage,
-      deviceData,
-      stockData,
-    ] = await Promise.all([
-      api.invInboundList(schoolId), // 使用入库模块的API
-      api.invOutboundList(schoolId), // 使用出库模块的API
-      api.schoolHygieneInspections({ schoolId, page: 1, pageSize: 10 }),
-      api.schoolDevices(schoolId),
-      api.invStock(schoolId), // 获取库存数据，用于完整性检查
-    ]);
-
-    // 格式化模块数据为概览页所需格式
-    inventoryInbounds.value = formatInventoryData(inventoryInboundData || [], 'in');
-    inventoryOutbounds.value = formatInventoryData(inventoryOutboundData || [], 'out');
-
-    // 设置其他模块数据
-    hygienes.value = (hygienePage?.items as any[]) || [];
-    devices.value = deviceData || [];
-    // 基础信息
-    try { canteen.value = await api.sysCanteenGet(); } catch {}
-
-    // 移除 AI 预警类型分布模块
-
-    // 从模块数据计算KPI指标，确保数据一致性
-    kpi.value = calculateKpi(inventoryInbounds.value, inventoryOutbounds.value);
-
-    console.log('数据刷新完成，概览页数据已与模块数据同步');
-  } catch (error) {
-    console.error('数据刷新失败:', error);
-
-    // 彻底失败时的空数据处理
-    inventoryInbounds.value = [];
-    inventoryOutbounds.value = [];
-    hygienes.value = [];
-    devices.value = [];
-    kpi.value = {};
-  }
-}
-onMounted(() => {
-  refresh();
-  window.addEventListener('school-changed', refresh as any);
-});
 </script>
 
 <style scoped>
-.kpi {
-  font-size: 22px;
-  font-weight: 700;
-  color: #303133;
+/* KPI theme variables */
+:root {
+  --kpi-bg: linear-gradient(180deg, #ffffff, #fafcff);
+  --kpi-border: #e6f0ff;
+  --kpi-shadow: rgba(17, 197, 255, 0.12);
+  --kpi-shadow-hover: rgba(17, 197, 255, 0.18);
+  --kpi-title: #1f2d3d;
+  --kpi-text: #303133;
+  --kpi-ok-bg: #eaffea;
+  --kpi-ok-border: #b8f0b8;
+  --kpi-ok-text: #1f7a1f;
+  --kpi-warn-bg: #ffefef;
+  --kpi-warn-border: #ffd1d1;
+  --kpi-warn-text: #a01a1a;
+  --kpi-primary: #2979ff;
+}
+.topbar { border: none; }
+.topbar-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.tb-item { color:#606266; }
+.tb-item .strong { color:#303133; font-weight:600; }
+.tb-item.clickable { cursor: pointer; }
+.card .core-line, .kpi-card .kpi-line { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; color: var(--kpi-text); font-size:14px }
+.kpi-card { 
+  background: var(--kpi-bg);
+  border: 1px solid var(--kpi-border);
+  box-shadow: 0 8px 20px var(--kpi-shadow);
+  border-radius: 10px;
+  height: 100%;
+}
+.kpi-card:hover { box-shadow: 0 10px 24px var(--kpi-shadow-hover); transform: translateY(-1px); transition: all .2s ease; }
+.kpi-header { display:flex; align-items:center; justify-content:space-between; }
+.kpi-title-wrap { display:flex; align-items:center; gap:6px; }
+.kpi-title { font-weight: 700; letter-spacing: .5px; color: var(--kpi-title); }
+ .kpi-badge { font-size:13px; padding: 3px 10px; border-radius: 999px; border:1px solid transparent; font-weight: 700; letter-spacing: .2px; display:inline-flex; align-items:center; }
+ .kpi-badge::before { content:''; width:8px; height:8px; border-radius:50%; margin-right:6px; background: currentColor; display:inline-block; }
+ .kpi-badge.ok { color: #1a7f1a; background: linear-gradient(90deg,#dff6df,#effbef); border-color: #86df86; box-shadow: inset 0 0 0 1px rgba(134,223,134,.15); }
+ .kpi-badge.warn { color: #b01212; background: linear-gradient(90deg,#ffe1e1,#fff0f0); border-color: #ff8f8f; box-shadow: inset 0 0 0 1px rgba(255,143,143,.18); }
+.kpi-card { --accent: var(--kpi-primary); }
+.kpi-icon { color: var(--accent); }
+.kpi-main { display:flex; align-items:baseline; gap:6px; margin: 6px 0 2px; }
+.kpi-main .num { font-size: 34px; line-height: 1; font-weight: 800; color: var(--accent); }
+.kpi-main .unit { font-size: 14px; color:#909399; font-weight:600 }
+.kpi-main.warn .num { color:#F56C6C; }
+.kpi-card.ok { border-left: 4px solid var(--kpi-ok-border); }
+.kpi-card.warn { border-left: 4px solid var(--kpi-warn-border); }
+ /* Removed bottom status row in cards; keep styles unused for compatibility */
+ .status { display:none; }
+.kpi-card b { font-size:16px; color:#303133 }
+.kpi-card b.warn { color:#F56C6C }
+/* Equal heights across the first row */
+.kpi-row :deep(.el-col) { display: flex; }
+.kpi-row :deep(.el-card.kpi-card) { flex: 1; display:flex; flex-direction: column; }
+.kpi-row :deep(.el-card.kpi-card .el-card__body) { display:flex; flex-direction: column; justify-content: space-between; min-height: 160px; }
+@media (max-width: 768px) {
+  .topbar-row { flex-direction: column; align-items: flex-start; gap:6px; }
+}
+.kpi-card.card-morning {
+  --accent: #2979ff;
+  background: linear-gradient(180deg, #eaf3ff, #f7fbff);
+  border-color: #d6e6ff;
+}
+.kpi-card.card-cert {
+  --accent: #00b38a;
+  background: linear-gradient(180deg, #eafff2, #f7fffb);
+  border-color: #c8f5e3;
+}
+.kpi-card.card-disinfection {
+  --accent: #ff9f1a;
+  background: linear-gradient(180deg, #fff4e6, #fffbf2);
+  border-color: #ffe0b3;
+}
+.kpi-card.card-alerts {
+  --accent: #ff4d4f;
+  background: linear-gradient(180deg, #ffecec, #fff6f6);
+  border-color: #ffd6d6;
+}
+/* 菜品留样卡片：浅紫主题 */
+.kpi-card.card-sampling {
+  --accent: #7a5cff;
+  background: linear-gradient(180deg, #f3eafe, #faf5ff);
+  border-color: #e6d9ff;
+}
+
+.ai-bar:deep(canvas) { border-radius: 6px; }
+
+/* Device list styles */
+.device-list { height: 260px; overflow-y: auto; display:flex; flex-direction: column; gap:6px; }
+.device-item { display:grid; grid-template-columns: 1fr 100px 160px; align-items:center; gap:8px; padding:8px 4px; border-bottom: 1px dashed var(--el-border-color); }
+.device-item:last-child { border-bottom: none; }
+.device-name { color:#303133; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.device-status { display:flex; align-items:center; gap:6px; color:#606266; justify-self: start; }
+.device-time { color:#909399; font-size: 12px; justify-self: end; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+.status-dot.online { background:#67C23A; }
+.status-dot.offline { background:#F56C6C; }
+.status-dot.fault { background:#E6A23C; }
+.empty-list { height: 220px; display:flex; align-items:center; justify-content:center; color:#909399 }
+/* 菜品留样卡片：浅紫主题 */
+.kpi-card.card-sampling {
+  --accent: #7a5cff;
+  background: linear-gradient(180deg, #f3eafe, #faf5ff);
+  border-color: #e6d9ff;
 }
 </style>
+
+watch(periodMode, () => loadAiBar());
+watch(aiTopN, () => {/* 仅影响展示数量，ECharts option 已依据 aiTopN 计算 */});

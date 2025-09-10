@@ -1,9 +1,51 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { DbService } from '../db.service';
 
 @Injectable()
-export class CertificatesRepository {
+export class CertificatesRepository implements OnModuleInit {
   constructor(private readonly db: DbService) {}
+
+  async onModuleInit() {
+    try {
+      await this.db.query(
+        `create table if not exists certificates (
+           id int primary key auto_increment,
+           school_id int not null,
+           owner varchar(255) not null,
+           type varchar(128) not null,
+           number varchar(255) not null,
+           expire_at datetime not null,
+           deleted tinyint not null default 0,
+           key idx_cert_school (school_id),
+           key idx_cert_expire (expire_at)
+         )`
+      );
+      // Align legacy schema: add missing columns if table existed without them
+      const { rows } = await this.db.query<any>(
+        'select column_name as name from information_schema.columns where table_schema = database() and table_name = ?',[
+          'certificates',
+        ],
+      );
+      const cols = new Set((rows || []).map((r: any) => (r.name || r.COLUMN_NAME || '').toString().toLowerCase()));
+      if (!cols.has('school_id')) {
+        try { await this.db.query('alter table certificates add column school_id int not null default 1'); } catch {}
+      }
+      if (!cols.has('deleted')) {
+        try { await this.db.query('alter table certificates add column deleted tinyint not null default 0'); } catch {}
+      }
+      if (!cols.has('expire_at')) {
+        try { await this.db.query('alter table certificates add column expire_at datetime null'); } catch {}
+      }
+      // Ensure types
+      try {
+        await this.db.query(
+          'alter table certificates modify column id int not null auto_increment, modify column school_id int not null',
+        );
+      } catch {}
+    } catch {
+      // best effort; real migrations handle structure in normal deployments
+    }
+  }
 
   async insert(rec: { schoolId: number; owner: string; type: string; number: string; expireAt: string; deleted?: boolean }) {
     const res = await this.db.query(

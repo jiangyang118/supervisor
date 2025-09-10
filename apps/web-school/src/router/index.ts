@@ -79,10 +79,9 @@ const routes: RouteRecordRaw[] = [
   { path: '/warnings', component: () => import('../views/Warnings.vue'), meta: { perms: ['overview.*'] } },
   { path: '/devices', component: () => import('../views/Devices.vue'), meta: { perms: ['env.*'] } },
   { path: '/analytics', component: () => import('../views/Analytics.vue'), meta: { perms: ['overview.*'] } },
-  { path: '/food-index', redirect: { path: '/overview/alerts' } },
-  { path: '/warnings', redirect: { path: '/overview/alerts' } },
+  { path: '/food-index', component: () => import('../views/FoodIndex.vue'), meta: { perms: ['overview.*'] } },
   // Overview combined
-  { path: '/overview/alerts', component: () => import('../views/AlertsOverview.vue'), meta: { perms: ['overview.*'] } },
+  { path: '/overview/alerts', component: () => import('../views/WarningOverview.vue'), meta: { perms: ['overview.*'] } },
   // Mobile H5 for risk task
   { path: '/risk/task/:id', component: () => import('../views/RiskTaskH5.vue') },
 
@@ -94,6 +93,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/system/users', component: () => import('../views/SystemUsers.vue'), meta: { perms: ['users.manage'] } },
   { path: '/system/roles', component: () => import('../views/SystemRoles.vue'), meta: { perms: ['users.manage'] } },
   { path: '/hr/staff', component: () => import('../views/StaffManagement.vue'), meta: { perms: ['hr.*'] } },
+  { path: '/hr/canteen-licenses', component: () => import('../views/CanteenLicenses.vue'), meta: { perms: ['hr.*'] } },
+  { path: '/hr/canteen-licenses/view', component: () => import('../views/CanteenLicenseView.vue'), meta: { perms: ['hr.*'] } },
 ];
 
 const router = createRouter({ history: createWebHistory(), routes });

@@ -49,8 +49,4 @@ alter table food_waste_reasons
   add column school_id int not null default 1 after id,
   add index idx_fw_reason_school (school_id);
 
--- Certificates table
-alter table certificates
-  modify column id int not null auto_increment,
-  add column school_id int not null default 1 after id,
-  add index idx_cert_school (school_id);
+

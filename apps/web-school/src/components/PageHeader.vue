@@ -4,7 +4,6 @@
       <el-breadcrumb separator="/">
         <el-breadcrumb-item v-for="(c, idx) in crumbs" :key="idx">{{ c }}</el-breadcrumb-item>
       </el-breadcrumb>
-      <div class="page-title">{{ title }}</div>
     </div>
 
   </div>
@@ -19,6 +18,6 @@ const route = useRoute();
 const title = computed(() => titleForRoute(route));
 const crumbs = computed(() => crumbsForRoute(route));
 
-
+console.log('crumbs',crumbs)
 
 </script>

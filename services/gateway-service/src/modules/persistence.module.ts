@@ -20,6 +20,7 @@ import { RolesRepository } from './repositories/roles.repository';
 import { PermissionsRepository } from './repositories/permissions.repository';
 import { PublicConfigRepository } from './repositories/public-config.repository';
 import { CanteensRepository } from './repositories/canteens.repository';
+import { CanteenLicensesRepository } from './repositories/canteen-licenses.repository';
 import { SchoolUsersRepository } from './repositories/school-users.repository';
 
 @Global()
@@ -46,6 +47,7 @@ import { SchoolUsersRepository } from './repositories/school-users.repository';
     PermissionsRepository,
     PublicConfigRepository,
     CanteensRepository,
+    CanteenLicensesRepository,
     SchoolUsersRepository,
   ],
   exports: [
@@ -70,6 +72,7 @@ import { SchoolUsersRepository } from './repositories/school-users.repository';
     PermissionsRepository,
     PublicConfigRepository,
     CanteensRepository,
+    CanteenLicensesRepository,
     SchoolUsersRepository,
   ],
 })

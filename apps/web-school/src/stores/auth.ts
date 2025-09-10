@@ -52,6 +52,37 @@ export const useAuthStore = defineStore('auth', {
     },
   },
   actions: {
+    scheduleRefresh() {
+      try {
+        if (!this.token) return;
+        const parts = this.token.split('.');
+        if (parts.length !== 3) return;
+        const payloadJson = JSON.parse(decodeURIComponent(escape(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')))));
+        const exp = Number(payloadJson?.exp || 0);
+        if (!Number.isFinite(exp) || exp <= 0) return;
+        const now = Math.floor(Date.now()/1000);
+        const skew = 5 * 60; // refresh 5 minutes before expiry
+        let delay = (exp - now - skew) * 1000;
+        if (delay < 60_000) delay = 60_000;
+        if (delay > 3_600_000) delay = 3_600_000;
+        setTimeout(() => this.refreshToken().catch(()=>{}), delay);
+      } catch {}
+    },
+    async refreshToken() {
+      if (!this.token) return;
+      try {
+        const r = await fetch('/api/auth/refresh', { method: 'POST', headers: { Authorization: `Bearer ${this.token}` } });
+        if (!r.ok) return;
+        const data = await r.json();
+        if (data?.ok && data?.token) {
+          this.token = data.token;
+          const inLocal = !!localStorage.getItem('AUTH_TOKEN');
+          if (inLocal) localStorage.setItem('AUTH_TOKEN', this.token);
+          else sessionStorage.setItem('AUTH_TOKEN', this.token);
+          this.scheduleRefresh();
+        }
+      } catch {}
+    },
     async login(username: string, password: string) {
       if (USE_MOCK) {
         const { token, user } = await mockLogin(username, password);
@@ -67,6 +98,7 @@ export const useAuthStore = defineStore('auth', {
       this.token = data.token; this.user = data.user;
       localStorage.setItem('AUTH_TOKEN', this.token);
       localStorage.setItem('AUTH_USER', JSON.stringify(this.user));
+      this.scheduleRefresh();
       try {
         const schools: Array<number> | undefined = (data?.user && Array.isArray(data.user.schools)) ? data.user.schools : undefined;
         if (schools && schools.length > 0 && schools[0] !== undefined && schools[0] !== null) {

@@ -101,16 +101,7 @@ create table if not exists public_feedback (
   key idx_pf_at (at)
 );
 
--- Certificates
-create table if not exists certificates (
-  id int(20) primary key auto_increment,
-  owner varchar(255) not null,
-  type varchar(128) not null,
-  number varchar(128) not null,
-  expire_at datetime not null,
-  deleted tinyint not null default 0,
-  key idx_cert_owner (owner)
-);
+
 
 -- Food waste
 create table if not exists food_waste_records (

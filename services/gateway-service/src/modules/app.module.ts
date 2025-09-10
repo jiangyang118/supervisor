@@ -19,7 +19,6 @@ import { TrainingController } from './training.controller';
 import { TrainingService } from './training.service';
 import { WasteController } from './waste.controller';
 import { WasteService } from './waste.service';
-import { CertificatesController } from './certificates.controller';
 import { CertificatesService } from './certificates.service';
 import { StaffCertsController } from './staff-certs.controller';
 import { StaffCertsService } from './staff-certs.service';
@@ -62,6 +61,7 @@ import { DbHealthController } from './db.controller';
 import { Module as NestModule } from '@nestjs/common';
 import { SchoolMorningCheckModule } from '../areas/school/morning-check.module';
 import { SchoolDineModule } from '../areas/school/dine.module';
+import { SchoolCanteensModule } from '../areas/school/canteens.module';
 import { RegulatorOverviewModule } from '../areas/regulator/overview.module';
 import { RegulatorLedgersModule } from '../areas/regulator/ledgers.module';
 import { InventoryModule } from '../inventory/inventory.module';
@@ -72,6 +72,7 @@ import { IotService } from './iot.service';
 import { JwtGuard } from './jwt.guard';
 import { PermissionGuard } from './permission.guard';
 import { TokenBlacklistService } from './token-blacklist.service';
+import { SchoolCertificatesController } from './school-certificates.controller';
 
 @Module({
   imports: [
@@ -79,6 +80,7 @@ import { TokenBlacklistService } from './token-blacklist.service';
     // School-side feature modules
     SchoolMorningCheckModule,
     SchoolDineModule,
+    SchoolCanteensModule,
     // Regulator-side feature modules
     RegulatorOverviewModule,
     RegulatorLedgersModule,
@@ -99,13 +101,13 @@ import { TokenBlacklistService } from './token-blacklist.service';
     DisinfectionController,
     HygieneController,
     WasteController,
-    CertificatesController,
     StaffCertsController,
     TrainingController,
     FoodWasteController,
     PublicFeedbackController,
     RegPublicFeedbackController,
     PublicConfigController,
+    SchoolCertificatesController,
     EmergencyController,
     RiskController,
     AuthController,

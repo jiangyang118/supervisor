@@ -7,7 +7,7 @@
   <!-- Default application shell -->
   <el-container v-else style="height: 100vh">
     <el-header class="app-header" style="display: flex; align-items: center; justify-content: space-between">
-      <div>学校端 • 食品安全云</div>
+      <div>学校端 • 食品安全云<span v-if="schoolName"> ｜ {{ schoolName }}</span></div>
       <div style="display:flex; align-items:center; gap:12px">
         <el-button v-if="has('overview.*')" link type="primary" @click="go('/overview')">首页</el-button>
         <el-button v-if="has('overview.*')" link @click="go('/reports')">每日报表</el-button>
@@ -28,10 +28,11 @@
       <el-aside width="240px" class="app-aside">
         <el-menu :key="openeds.join(',')" :default-active="active" :default-openeds="openeds" router unique-opened>
           <el-menu-item v-if="has('overview.*')" index="/overview">首页</el-menu-item>
+          <!-- 预警概览升为一级模块，置于首页下方展示 -->
+          <el-menu-item v-if="has('overview.*')" index="/overview/alerts">预警概览</el-menu-item>
           <el-sub-menu v-if="has('overview.*')" index="overview">
             <template #title>总览</template>
             <el-menu-item index="/analytics">数据看板</el-menu-item>
-            <el-menu-item index="/overview/alerts">预警概览</el-menu-item>
           </el-sub-menu>
 
           <el-sub-menu v-if="has('bright.*')" index="bright">
@@ -68,6 +69,7 @@
             <el-menu-item index="/certificates">人员健康证</el-menu-item>
             <el-menu-item index="/training">培训与考试</el-menu-item>
             <el-menu-item index="/hr/staff">人员管理</el-menu-item>
+            <el-menu-item index="/hr/canteen-licenses">食堂资质</el-menu-item>
           </el-sub-menu>
           <el-sub-menu v-if="has('env.*')" index="env-dev">
             <template #title>环境及设备管理</template>
@@ -129,10 +131,12 @@
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
 import { ElMessageBox, ElMessage } from 'element-plus';
 import PageHeader from './components/PageHeader.vue';
 import { useAuthStore } from './stores/auth';
+import { api } from './services/api';
+import { getCurrentSchoolId } from './utils/school';
 const route = useRoute();
 const router = useRouter();
 const isAuthPage = computed(() => route.path === '/login');
@@ -141,10 +145,7 @@ const openeds = computed(() => {
   const p = route.path;
   // 合并：AI 路由归入「明厨亮灶」分组展开
   if (p.startsWith('/ai/') || p.startsWith('/bright-kitchen/')) return ['bright'];
-  if (
-    p.startsWith('/analytics') || p.startsWith('/overview/alerts')
-  )
-    return ['overview'];
+  if (p.startsWith('/analytics')) return ['overview'];
   if (
     p.startsWith('/morning-check') ||
     p.startsWith('/sampling/') ||
@@ -175,6 +176,23 @@ const openeds = computed(() => {
 const go = (p: string) => router.push(p);
 const auth = useAuthStore();
 const has = (p: string) => auth.hasPerm(p);
+
+// School name in header
+const schoolName = ref<string>('');
+async function loadSchoolName() {
+  try {
+    const sid = getCurrentSchoolId();
+    const list = await api.regSchools();
+    const it = (list || []).find((s: any) => String(s.id) === String(sid));
+    schoolName.value = it?.name || '';
+  } catch { schoolName.value = ''; }
+}
+onMounted(() => {
+  loadSchoolName();
+  const handler = () => loadSchoolName();
+  window.addEventListener('school-changed', handler as any);
+  onBeforeUnmount(() => window.removeEventListener('school-changed', handler as any));
+});
 
 const integration = computed(() => ({
   base: (window as any).SCHOOL_INTEGRATION_BASE as string | undefined,

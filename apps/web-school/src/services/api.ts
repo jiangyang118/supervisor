@@ -856,6 +856,9 @@ export const api = {
     const { csv } = await res.json();
     return csv as string;
   },
+  // Canteen & licenses summary (school-side)
+  canteensSummary: (schoolId?: string | number) =>
+    get<any[]>(`/school/canteens/summary${schoolId ? `?schoolId=${encodeURIComponent(String(schoolId))}` : ''}`),
   invSupplierUpdate: async (id: string, body: any) => {
     const res = await fetch(`${BASE}/school/inventory/suppliers?id=${encodeURIComponent(id)}`, {
       method: 'PATCH',
@@ -899,6 +902,44 @@ export const api = {
       body: isCsv ? (payload as string) : JSON.stringify(payload),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  // Canteens & licenses
+  canteenDetail: (canteenId: number | string, schoolId?: number | string) =>
+    get<any>(`/school/canteen-detail?canteenId=${encodeURIComponent(String(canteenId))}${schoolId ? `&schoolId=${encodeURIComponent(String(schoolId))}` : ''}`),
+  canteenDetailUpdate: async (body: {
+    canteenId: number;
+    name?: string;
+    address?: string;
+    manager?: string;
+    phone?: string;
+    biz?: { id?: number; number: string; authority?: string; expireAt: string; imageUrl?: string };
+    food?: { id?: number; number: string; authority?: string; permitItems?: string; expireAt: string; imageUrl?: string };
+  }) => {
+    const res = await fetch(`${BASE}/school/canteen-detail`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
+  canteenDetailDelete: async (canteenId: number) => {
+    const res = await fetch(`${BASE}/school/canteen-detail/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify({ canteenId }),
+    });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
+  canteenCreate: async (body: { schoolId?: number; name: string; address?: string; manager?: string; phone?: string }) => {
+    const res = await fetch(`${BASE}/school/canteens`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
     return res.json();
   },
   // Public feedback
@@ -995,10 +1036,25 @@ export const api = {
     get<any>(
       `/school/analytics/dashboard${params.schoolId ? `?schoolId=${encodeURIComponent(params.schoolId)}` : ''}`,
     ),
-  analyticsFoodIndex: (schoolId?: string) =>
-    get<any>(
-      `/school/analytics/food-index${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
+  analyticsAlerts: (
+    params: { schoolId?: string; type?: string; status?: '未处理' | '已处理'; start?: string; end?: string } = {},
+  ) =>
+    get<{ items: any[]; summary: Array<{ name: string; count: number }> }>(
+      `/school/analytics/alerts?${new URLSearchParams(
+        Object.fromEntries(
+          Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null),
+        ) as any,
+      ).toString()}`,
     ),
+  analyticsAlertHandle: async (payload: { id: string; type: string; measure?: string; status?: '未处理' | '已处理' }) => {
+    const res = await fetch(`${BASE}/school/analytics/alerts/handle`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
   // Devices
   // deviceTypes/deviceStatuses defined earlier; keep single source to avoid duplicates
   devicesList: (params: { schoolId?: string; type?: string; status?: string; q?: string } = {}) =>
@@ -1404,4 +1460,37 @@ export const api = {
     return res.json();
   },
 
+};
+
+// TrustIVS raw API client (through gateway), used by TrustivsTest.vue
+export const trustivsApi = {
+  setToken(t?: string) {
+    try { localStorage.setItem('TRUSTIVS_TOKEN', t || ''); } catch {}
+  },
+  async get<T = any>(path: string, query?: Record<string, any>): Promise<T> {
+    const token = (typeof localStorage !== 'undefined' && localStorage.getItem('TRUSTIVS_TOKEN')) || '';
+    const headers: Record<string, string> = {
+      time: String(Date.now()),
+      uuid: 'web-client',
+    };
+    if (token) headers['token'] = token;
+    const qs = query
+      ? (path.includes('?') ? '&' : '?') + new URLSearchParams(Object.entries(query).filter(([, v]) => v !== undefined && v !== null && v !== '') as any).toString()
+      : '';
+    const res = await fetch(`${BASE}${path}${qs}`, { headers } as any);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as T;
+  },
+  async post<T = any>(path: string, body?: any): Promise<T> {
+    const token = (typeof localStorage !== 'undefined' && localStorage.getItem('TRUSTIVS_TOKEN')) || '';
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      time: String(Date.now()),
+      uuid: 'web-client',
+    };
+    if (token) headers['token'] = token;
+    const res = await fetch(`${BASE}${path}`, { method: 'POST', headers, body: JSON.stringify(body || {}) } as any);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return (await res.json()) as T;
+  },
 };

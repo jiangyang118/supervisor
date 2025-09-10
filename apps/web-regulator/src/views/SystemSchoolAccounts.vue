@@ -23,9 +23,7 @@
             <el-table-column prop="displayName" label="姓名" width="140" />
             <el-table-column prop="phone" label="手机号" width="140" />
             <el-table-column prop="schoolName" label="学校" width="160" />
-            <el-table-column label="角色" min-width="200">
-              <template #default="{ row }">{{ (row.roles || []).join(', ') }}</template>
-            </el-table-column>
+            
             <el-table-column label="启用" width="90">
               <template #default="{ row }">
                 <el-switch :model-value="!!row.enabled" @change="(v:boolean)=>update(row,{enabled:v})" />
@@ -133,7 +131,7 @@ async function onCreate() {
     }
     loading.value = true;
     // clear any prior state
-    const body = { schoolId: Number(form.value.schoolId), username: form.value.username.trim(), displayName: form.value.displayName?.trim(), phone: form.value.phone?.trim(), password: form.value.password?.trim(), roles: ['ADMIN'] } as any;
+    const body = { schoolId: Number(form.value.schoolId), username: form.value.username.trim(), displayName: form.value.displayName?.trim(), phone: form.value.phone?.trim(), password: form.value.password?.trim() } as any;
     await api.sysCreateSchoolAccount(body);
     ElMessage.success('创建成功');
     showCreateDialog.value = false;

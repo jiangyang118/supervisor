@@ -229,4 +229,6 @@ export class SystemController {
   @Get('news/detail') schoolNewsDetail(@Query('id') id: string) {
     return this.svc.getNews(id);
   }
+
+  // Removed: /school/system/canteen/licenses endpoint
 }

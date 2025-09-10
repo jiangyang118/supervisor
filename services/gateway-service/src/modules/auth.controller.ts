@@ -122,7 +122,20 @@ export class AuthController {
         permissions = roles.includes('ADMIN') || roles.includes('PLATFORM_SUPER') ? ['*:*'] : [];
       }
     }
-    return { ok: true, user: { id: payload.sub, name: payload.username, roles, permissions } };
+    return { ok: true, user: { id: payload.sub, name: payload.username, roles, permissions }, exp: (payload as any)?.exp };
+  }
+
+  @Post('refresh')
+  async refresh(@Req() req: Request) {
+    const auth = (req.headers['authorization'] || req.headers['Authorization'] || '') as string;
+    const token = (auth && auth.startsWith('Bearer ')) ? auth.slice(7) : '';
+    if (!token) return { ok: false, message: 'Missing token' } as any;
+    const secret = process.env.JWT_SECRET || 'dev-secret';
+    const payload: any = verifyHS256(token, secret);
+    if (!payload) return { ok: false, message: 'Invalid token' } as any;
+    // Optionally: only refresh when nearing expiry; here we always issue a fresh token
+    const newToken = signHS256({ sub: payload.sub, username: payload.username, roles: payload.roles || [], schools: payload.schools || [] }, secret, 8 * 3600);
+    return { ok: true, token: newToken } as any;
   }
 
   @Post('logout')

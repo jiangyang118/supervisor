@@ -489,6 +489,7 @@ export const api = {
       page?: number;
       pageSize?: number;
       schoolId?: number;
+      canteenId?: number;
     } = {},
   ) =>
     get<{ items: any[]; total: number; page: number; pageSize: number }>(
@@ -507,11 +508,19 @@ export const api = {
     buyer: string;
     person: string;
     schoolId?: number;
+    canteenId?: number;
   }) => {
     const res = await fetch(`${BASE}/school/waste/records`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  wasteDelete: async (id: number) => {
+    const res = await fetch(`${BASE}/school/waste/records/${encodeURIComponent(String(id))}`, {
+      method: 'DELETE',
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();

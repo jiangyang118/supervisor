@@ -35,6 +35,11 @@
       <el-table-column prop="amount" label="数量(kg)" width="140" />
       <el-table-column prop="buyer" label="收购单位" />
       <el-table-column prop="person" label="收运人" />
+      <el-table-column label="操作" width="120">
+        <template #default="{ row }">
+          <el-button type="danger" size="small" @click="deleteRow(row)">删除</el-button>
+        </template>
+      </el-table-column>
     </el-table>
   </el-card>
 
@@ -202,6 +207,13 @@ const onExportCsv = () =>
     buyer: '收购单位',
     person: '收运人',
   });
+
+async function deleteRow(row: Row) {
+  await ElMessageBox.confirm(`确认删除记录 #${row.id}？`, '提示', { type: 'warning' });
+  await api.wasteDelete(row.id);
+  ElMessage.success('已删除');
+  await applyFilters();
+}
 
 let off: any = null;
 onMounted(async () => {

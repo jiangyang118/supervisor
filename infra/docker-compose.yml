@@ -89,7 +89,7 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
-      - '80:80'
+      - '8081:80'
     depends_on: [gateway-service]
 
   # Development-only service: mount migrations and dist, auto-reload with Node 20 --watch

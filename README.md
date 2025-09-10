@@ -71,7 +71,7 @@
 
 启动成功后（浏览器访问）：
 - 网关健康检查：`http://localhost:3300/health`
-- OpenAPI 文档（经 Nginx）：`http://localhost/api/docs`
+- OpenAPI 文档（经 Nginx）：`http://localhost:8081/api/docs`
 - Kafka UI：`http://localhost:8080`
 - MinIO 控制台：`http://localhost:9001`（默认 `minioadmin/minioadmin`）
 
@@ -195,4 +195,4 @@ CI 示例：`.github/workflows/ci.yml`
 - 质量：关键页面 E2E、后端单测、Lint/Prettier/Husky/Commitlint
 
 ## OpenAPI
-- 启动网关后访问：`http://localhost/api/docs`
+- 启动网关后访问：`http://localhost:8081/api/docs`

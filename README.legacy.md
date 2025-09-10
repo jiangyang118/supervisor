@@ -59,10 +59,10 @@
 
 容器版启动成功后（浏览器访问）
 - 网关 API 健康检查：`http://localhost:3300/health`
-- OpenAPI 文档（经 Nginx 转发）：`http://localhost/api/docs`
+- OpenAPI 文档（经 Nginx 转发）：`http://localhost:8081/api/docs`
 - Kafka UI：`http://localhost:8080`
 - MinIO 控制台：`http://localhost:9001`（默认账号/密码：`minioadmin/minioadmin`，如 `.env` 未覆盖）
-- 远程访问：将 `localhost` 换为宿主机 IP，例如 `http://192.168.11.133/api/docs`
+- 远程访问：将 `localhost` 换为宿主机 IP，例如 `http://192.168.11.133:8081/api/docs`
 
 前端 Web（容器未包含，需要本地启动）
 - 学校端：`cd apps/web-school && npm i && npm run dev`（默认 `http://localhost:5173`）
@@ -126,7 +126,7 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 - 质量：关键页面 E2E、后端单测覆盖、Lint/Prettier/Husky/Commitlint。
 
 ## OpenAPI
-- API 文档：启动 gateway-service 后访问 `http://localhost/api/docs`
+- API 文档：启动 gateway-service 后访问 `http://localhost:8081/api/docs`
 
 ## 晨检对接（MEGO）说明（最新）
 重构后不再提供独立的 `services/device-mock` 服务；为保留兼容性，在 `gateway-service` 内提供心跳端点：
@@ -203,10 +203,10 @@ curl -X POST http://localhost:3300/school/morning-checks \
 
 容器版启动成功后（浏览器访问）
 - 网关 API 健康检查：`http://localhost:3300/health`
-- OpenAPI 文档（经 Nginx 转发）：`http://localhost/api/docs`
+- OpenAPI 文档（经 Nginx 转发）：`http://localhost:8081/api/docs`
 - Kafka UI：`http://localhost:8080`
 - MinIO 控制台：`http://localhost:9001`（默认账号/密码：`minioadmin/minioadmin`，如 `.env` 未覆盖）
-- 远程访问：将 `localhost` 换为宿主机 IP，例如 `http://192.168.11.133/api/docs`
+- 远程访问：将 `localhost` 换为宿主机 IP，例如 `http://192.168.11.133:8081/api/docs`
 
 前端 Web（容器未包含，需要本地启动）
 - 学校端：`cd apps/web-school && npm i && npm run dev`（默认 `http://localhost:5173`）
@@ -275,7 +275,7 @@ CI 示例：见 `.github/workflows/ci.yml`（会跑 Lint/Typecheck/E2E）。
 如需我优先接哪一块，请备注（例如先补后端 API 与数据库）。
 
 ## OpenAPI
-- API 文档：启动 gateway-service 后访问 `http://localhost/api/docs`
+- API 文档：启动 gateway-service 后访问 `http://localhost:8081/api/docs`
 
 ## 备注
 - UniApp 项目建议用 HBuilderX 打开进行运行/打包。

@@ -1,0 +1,2 @@
+-- Drop staff (personnel) table (module removed)
+-- drop table if exists school_staff;

@@ -13,8 +13,6 @@ import { SchoolsRepository } from './repositories/schools.repository';
 import { SamplingRepository } from './repositories/sampling.repository';
 import { DineRepository } from './repositories/dine.repository';
 import { DisinfectionRepository } from './repositories/disinfection.repository';
-import { StaffRepository } from './repositories/staff.repository';
-import { StaffCertsRepository } from './repositories/staff-certs.repository';
 import { UsersRepository } from './repositories/users.repository';
 import { RolesRepository } from './repositories/roles.repository';
 import { PermissionsRepository } from './repositories/permissions.repository';
@@ -22,6 +20,7 @@ import { PublicConfigRepository } from './repositories/public-config.repository'
 import { CanteensRepository } from './repositories/canteens.repository';
 import { CanteenLicensesRepository } from './repositories/canteen-licenses.repository';
 import { SchoolUsersRepository } from './repositories/school-users.repository';
+import { PersonnelRepository } from './repositories/personnel.repository';
 
 @Global()
 @Module({
@@ -40,8 +39,6 @@ import { SchoolUsersRepository } from './repositories/school-users.repository';
     SamplingRepository,
     DineRepository,
     DisinfectionRepository,
-    StaffRepository,
-    StaffCertsRepository,
     UsersRepository,
     RolesRepository,
     PermissionsRepository,
@@ -49,6 +46,7 @@ import { SchoolUsersRepository } from './repositories/school-users.repository';
     CanteensRepository,
     CanteenLicensesRepository,
     SchoolUsersRepository,
+    PersonnelRepository,
   ],
   exports: [
     DbService,
@@ -65,8 +63,6 @@ import { SchoolUsersRepository } from './repositories/school-users.repository';
     SamplingRepository,
     DineRepository,
     DisinfectionRepository,
-    StaffRepository,
-    StaffCertsRepository,
     UsersRepository,
     RolesRepository,
     PermissionsRepository,
@@ -74,6 +70,7 @@ import { SchoolUsersRepository } from './repositories/school-users.repository';
     CanteensRepository,
     CanteenLicensesRepository,
     SchoolUsersRepository,
+    PersonnelRepository,
   ],
 })
 export class PersistenceModule {}

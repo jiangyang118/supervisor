@@ -56,7 +56,9 @@ const food = ref<any>(null);
 function normalizeUrl(u?: string) {
   if (!u) return '';
   if (u.startsWith('http')) return u;
-  return `${API_BASE}${u}`;
+  if (u.startsWith('/api/')) return u;
+  if (u.startsWith('/')) return `${API_BASE}${u}`;
+  return u;
 }
 
 async function load() {

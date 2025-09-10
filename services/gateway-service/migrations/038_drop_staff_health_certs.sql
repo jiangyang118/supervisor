@@ -1,0 +1,2 @@
+-- Drop staff health certificates table (module removed)
+-- drop table if exists school_staff_certs;

@@ -35,7 +35,6 @@ const map: Record<string, string> = {
   '/inventory/additives': '添加剂使用',
   '/suppliers': '供应商管理',
   '/warehouses': '仓库信息管理',
-  '/certificates': '资质证件',
   '/food-waste': '食品浪费分析',
   '/public-feedback': '公众反馈处理',
   '/public-config': '公示内容配置',

@@ -185,8 +185,8 @@ async function onUpload(req: any, kind: 'biz' | 'food') {
     try {
       const content = (reader.result as string) || '';
       const r = await api.uploadFile(file.name, content);
-      // Ensure preview uses backend base (e.g., /api/files/view/...)
-      form.value[kind].fileUrl = `${API_BASE}${r.url}`;
+      // api.uploadFile 已返回带 BASE 的可访问 URL，直接使用
+      form.value[kind].fileUrl = r.url;
       req.onSuccess && req.onSuccess(r);
     } catch (e) {
       req.onError && req.onError(e);

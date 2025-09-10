@@ -31,7 +31,7 @@
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12" :md="12" :lg="6" :xl="6">
-        <el-card :class="['card','clickable','kpi-card','card-cert', certExpired>0 ? 'warn' : 'ok']" @click="go('/certificates')">
+        <el-card :class="['card','clickable','kpi-card','card-cert', certExpired>0 ? 'warn' : 'ok']" @click="go('/hr/staff')">
           <template #header>
             <div class="kpi-header">
               <div class="kpi-title-wrap">
@@ -49,6 +49,7 @@
           <div class="kpi-line"><span>过期：</span><b class="warn">{{ certExpired }}</b></div>
         </el-card>
       </el-col>
+      
       <el-col :xs="24" :sm="12" :md="12" :lg="6" :xl="6">
         <el-card :class="['card','clickable','kpi-card','card-disinfection', disinfectionOk ? 'ok' : 'warn']" @click="go('/disinfection')">
           <template #header>
@@ -148,7 +149,7 @@
 
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount, computed } from 'vue';
-import { CircleCheck, User, Brush, Bell } from '@element-plus/icons-vue';
+import { CircleCheck, Brush, Bell, User } from '@element-plus/icons-vue';
 import { useRouter } from 'vue-router';
 import { api } from '../services/api';
 import { exportCsv } from '../utils/export';
@@ -180,6 +181,7 @@ const morningAbnormal = ref<number>(0);
 const morningRate = computed(() => morningExpected.value ? Math.round((morningActual.value / morningExpected.value) * 100) : 100);
 const morningOk = computed(() => morningAbnormal.value === 0);
 
+// 健康证统计（基于 personnel 接口）
 const certTotal = ref<number>(0);
 const certExpiring = ref<number>(0);
 const certExpired = ref<number>(0);
@@ -278,10 +280,18 @@ function go(path: string) { router.push(path); }
 async function refreshAll() {
   const sid = getCurrentSchoolId();
   // 晨检
+  // 应检人数：使用人员资质总人数粗略估算
   try {
-    const staffRes = await api.staffList({ schoolId: sid ? Number(sid) : undefined, page: 1, pageSize: 1 });
-    morningExpected.value = Number(staffRes?.total || 0);
-  } catch { morningExpected.value = 0; }
+    const sid = getCurrentSchoolId();
+    const res = await api.personnelList({ schoolId: sid, page: 1, pageSize: 100000 });
+    const items = (res as any)?.items || [];
+    morningExpected.value = items.length || 0;
+    // 健康证 KPI
+    certTotal.value = items.length || 0;
+    const now = Date.now(); const in30 = now + 30*24*3600*1000;
+    certExpired.value = items.filter((c: any) => c.status === '过期' || (c.healthCertExpireAt && Date.parse(c.healthCertExpireAt) < now)).length;
+    certExpiring.value = items.filter((c: any) => (c.status === '临期') || (c.healthCertExpireAt && Date.parse(c.healthCertExpireAt) >= now && Date.parse(c.healthCertExpireAt) <= in30)).length;
+  } catch { morningExpected.value = 0; certTotal.value = 0; certExpired.value = 0; certExpiring.value = 0; }
   try {
     const start = new Date(); start.setHours(0,0,0,0);
     const end = new Date();
@@ -290,16 +300,7 @@ async function refreshAll() {
     morningActual.value = Number((r as any)?.total || items.length || 0);
     morningAbnormal.value = items.filter((x: any) => x.result === '异常' || x.abnormalTemp || (Array.isArray(x.handCheckResult) && x.handCheckResult.length) || (Array.isArray(x.healthAskResult) && x.healthAskResult.length)).length;
   } catch { morningActual.value = 0; morningAbnormal.value = 0; }
-  // 健康证
-  try {
-    const list = await api.certList({ schoolId: sid });
-    const items = Array.isArray(list) ? list : [];
-    certTotal.value = items.length;
-    const now = Date.now();
-    const in30 = now + 30*24*3600*1000;
-    certExpired.value = items.filter((c: any) => c.status === '过期' || (c.expireAt && Date.parse(c.expireAt) < now)).length;
-    certExpiring.value = items.filter((c: any) => c.status !== '过期' && c.expireAt && Date.parse(c.expireAt) >= now && Date.parse(c.expireAt) <= in30).length;
-  } catch { certTotal.value = 0; certExpiring.value = 0; certExpired.value = 0; }
+  // 健康证模块已移除
   // 消毒
   try {
     const start = new Date(); start.setHours(0,0,0,0);

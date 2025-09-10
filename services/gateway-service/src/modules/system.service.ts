@@ -1,5 +1,4 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { StaffRepository } from './repositories/staff.repository';
 import { UsersRepository } from './repositories/users.repository';
 import { RolesRepository } from './repositories/roles.repository';
 import { PermissionsRepository } from './repositories/permissions.repository';
@@ -67,7 +66,7 @@ export type RegulatorInfo = {
 @Injectable()
 export class SystemService {
   constructor(
-    private readonly staffRepo: StaffRepository,
+    
     private readonly usersRepo: UsersRepository,
     private readonly schoolUsers: SchoolUsersRepository,
     private readonly rolesRepo: RolesRepository,
@@ -436,69 +435,5 @@ export class SystemService {
     return this.regulator;
   }
 
-  // Staff (personnel)
-  async staffSearch(params: {
-    schoolId: number;
-    q?: string;
-    page?: number | string;
-    pageSize?: number | string;
-  }) {
-    const p = Math.max(1, parseInt(String(params.page ?? 1), 10) || 1);
-    const ps = Math.max(1, parseInt(String(params.pageSize ?? 20), 10) || 20);
-    const res = await this.staffRepo.search({ schoolId: params.schoolId, q: params.q, page: p, pageSize: ps });
-    return {
-      ...res,
-      items: res.items.map((r: any) => ({ ...r, enabled: !!r.enabled })),
-    };
-  }
-
-  async staffCreate(b: {
-    schoolId?: number;
-    name: string;
-    jobTitle?: string;
-    phone?: string;
-    healthCertNo?: string;
-    enabled?: boolean;
-  }) {
-    if (!b?.name) throw new BadRequestException('name required');
-    const schoolId = b.schoolId && Number.isFinite(Number(b.schoolId)) ? Number(b.schoolId) : 1;
-    const insertId = await this.staffRepo.insertOne({
-      schoolId,
-      name: b.name,
-      jobTitle: b.jobTitle,
-      phone: b.phone,
-      healthCertNo: b.healthCertNo,
-      enabled: b.enabled ? 1 : 0,
-    } as any);
-    return { id: insertId } as any;
-  }
-
-  async staffImport(
-    schoolId: number | undefined,
-    items: Array<{ name: string; jobTitle?: string; phone?: string; healthCertNo?: string; enabled?: boolean }>,
-  ) {
-    const sid = schoolId && Number.isFinite(Number(schoolId)) ? Number(schoolId) : 1;
-    const rows = (items || []).filter((x) => x && x.name).map((x) => ({
-      schoolId: sid,
-      name: x.name,
-      jobTitle: x.jobTitle,
-      phone: x.phone,
-      healthCertNo: x.healthCertNo,
-      enabled: x.enabled ? 1 : 0,
-    })) as any[];
-    const affected = await this.staffRepo.bulkInsert(rows as any);
-    return { ok: true, inserted: affected } as any;
-  }
-
-  async staffUpdate(id: number, patch: any) {
-    if (!id || !Number.isFinite(Number(id))) throw new BadRequestException('id required');
-    await this.staffRepo.update(Number(id), patch || {});
-    return { ok: true } as any;
-  }
-
-  async staffDelete(id: number) {
-    if (!id || !Number.isFinite(Number(id))) throw new BadRequestException('id required');
-    await this.staffRepo.remove(Number(id));
-    return { ok: true } as any;
-  }
+  // Staff (personnel) module removed
 }

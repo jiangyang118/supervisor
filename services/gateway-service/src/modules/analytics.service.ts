@@ -3,7 +3,6 @@ import { Observable, Subject } from 'rxjs';
 import { InventoryService } from '../inventory/inventory.service';
 import { HygieneRepository } from './repositories/hygiene.repository';
 import { MorningChecksRepository } from './repositories/morning-checks.repository';
-import { StaffCertsRepository } from './repositories/staff-certs.repository';
 import { CertificatesService } from './certificates.service';
 import { PesticideService } from './pesticide.service';
 import { MorningCheckService } from './morning-check.service';
@@ -17,7 +16,6 @@ export class AnalyticsService {
     private readonly inv?: InventoryService,
     private readonly hygiene?: HygieneRepository,
     private readonly morning?: MorningChecksRepository,
-    private readonly staffCerts?: StaffCertsRepository,
     private readonly certsSvc?: CertificatesService,
     private readonly pesticide?: PesticideService,
     private readonly mcSvc?: MorningCheckService,
@@ -75,17 +73,8 @@ export class AnalyticsService {
     const morningChecks = Number((mc as any).total || 0);
     const hygieneReports = Number((hy as any).total || 0);
 
-    // Staff certs
-    let canteenStaff = { total: 0, healthCertValid: 0, invalid: 0 };
-    try {
-      if (this.staffCerts && sid) {
-        const pageRes = await this.staffCerts.list({ schoolId: Number(sid), page: 1, pageSize: 1000 });
-        const items = pageRes.items || [];
-        const todayDate = new Date(todayStr + 'T00:00:00Z');
-        const valid = items.filter((c: any) => c.endAt ? new Date(c.endAt) >= todayDate : true).length;
-        canteenStaff = { total: items.length, healthCertValid: valid, invalid: Math.max(0, items.length - valid) };
-      }
-    } catch {}
+    // Staff certs (removed): keep zeros for dashboard compatibility
+    const canteenStaff = { total: 0, healthCertValid: 0, invalid: 0 };
 
     // Warnings synthesized from DB-backed sources (hygiene NG + morning abnormal)
     const warnItems: Array<{ id: string; type: string; title: string; at: string; level: string }> = [];
@@ -136,13 +125,12 @@ export class AnalyticsService {
       );
     } catch {}
 
-    // 2) 健康证到期（人员）
+    // 2) 健康证到期（人员）— 基于 school_personnel 表
     try {
-      const now = new Date();
-      const todayIso = now.toISOString();
-      const res = await this.staffCerts?.list({ schoolId: sid, page: 1, pageSize: 100000 } as any);
-      const arr = (res?.items || []).filter((r: any) => r.endAt && new Date(r.endAt) < new Date(todayIso));
-      arr.forEach((r: any) => items.push({ id: `HC-${r.id}`, type: '健康证到期', level: '中', status: '未处理', at: new Date(r.endAt).toISOString(), detail: `${r.staffName || '员工'}健康证已过期` }));
+      const q = 'select id, name, health_cert_expire_at as exp from school_personnel where school_id = ? and health_cert_expire_at is not null and health_cert_expire_at < now()';
+      const res: any = (this as any).devices?.db ? await (this as any).devices.db.query(q, [sid]) : { rows: [] };
+      const rows = res?.rows || [];
+      rows.forEach((r: any) => items.push({ id: `PER-${r.id}`, type: '健康证到期', level: '中', status: '未处理', at: r.exp, detail: `${r.name || '人员'}健康证已过期` }));
     } catch {}
 
     // 3) 日常行为AI预警

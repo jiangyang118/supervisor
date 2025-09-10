@@ -75,11 +75,11 @@ const menus = [
     { id:'store_supplier', label:'供应商管理' },
     { id:'store_warehouse', label:'仓库信息管理' },
   ]},
-  { id:'hr', label:'人事管理', children:[
+  { id:'hr', label:'资质证件管理', children:[
     { id:'hr_license', label:'人员健康证' },
     { id:'hr_training', label:'培训课程' },
     { id:'hr_exam', label:'考试管理' },
-    { id:'hr_staff', label:'人员管理' },
+    { id:'hr_staff', label:'人员资质' },
   ]},
   { id:'env', label:'环境及设备管理', children:[
     { id:'env_check', label:'隐患排查管理' },

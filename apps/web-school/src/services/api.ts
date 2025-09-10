@@ -859,6 +859,31 @@ export const api = {
   // Canteen & licenses summary (school-side)
   canteensSummary: (schoolId?: string | number) =>
     get<any[]>(`/school/canteens/summary${schoolId ? `?schoolId=${encodeURIComponent(String(schoolId))}` : ''}`),
+  canteensList: (schoolId?: string | number) => get<any[]>(`/school/canteens${schoolId ? `?schoolId=${encodeURIComponent(String(schoolId))}` : ''}`),
+  // Personnel (staff + health cert)
+  personnelList: (
+    params: { schoolId?: string | number; name?: string; phone?: string; canteenId?: number; page?: number; pageSize?: number } = {},
+  ) => get<{ items: any[]; total: number; page: number; pageSize: number }>(
+    `/school/personnel?${new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null).map(([k,v])=>[k,String(v)])) as any,
+    ).toString()}`,
+  ),
+  personnelCreate: async (body: any) => {
+    const res = await fetch(`${BASE}/school/personnel`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(body) });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
+  personnelUpdate: async (id: number, patch: any) => {
+    const res = await fetch(`${BASE}/school/personnel?id=${encodeURIComponent(String(id))}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(patch) });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
+  personnelDelete: async (id: number) => {
+    const res = await fetch(`${BASE}/school/personnel/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify({ id }) });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
+  personnelDetail: (id: number | string) => get<any>(`/school/personnel/detail?id=${encodeURIComponent(String(id))}`),
   invSupplierUpdate: async (id: string, body: any) => {
     const res = await fetch(`${BASE}/school/inventory/suppliers?id=${encodeURIComponent(id)}`, {
       method: 'PATCH',
@@ -1428,37 +1453,7 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  // Staff (personnel)
-  staffList: (params: { schoolId?: number; q?: string; page?: number; pageSize?: number } = {}) =>
-    get<{ items: any[]; total: number; page: number; pageSize: number }>(
-      `/school/system/staff?${new URLSearchParams(
-        Object.fromEntries(
-          Object.entries({ ...params })
-            .filter(([, v]) => v !== undefined && v !== '' && v !== null)
-            .map(([k, v]) => [k, String(v)]),
-        ) as any,
-      ).toString()}`,
-    ),
-  staffCreate: async (body: { schoolId?: number; name: string; jobTitle?: string; phone?: string; healthCertNo?: string; enabled?: boolean }) => {
-    const res = await fetch(`${BASE}/school/system/staff`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  staffImport: async (body: { schoolId?: number; items: Array<{ name: string; jobTitle?: string; phone?: string; healthCertNo?: string; enabled?: boolean }> }) => {
-    const res = await fetch(`${BASE}/school/system/staff/import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  staffUpdate: async (id: number, patch: any) => {
-    const res = await fetch(`${BASE}/school/system/staff/update`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, patch }) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  staffDelete: async (id: number) => {
-    const res = await fetch(`${BASE}/school/system/staff/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
+  // Staff (personnel) removed
 
 };
 

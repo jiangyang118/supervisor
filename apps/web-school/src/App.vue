@@ -66,7 +66,6 @@
           </el-sub-menu>
           <el-sub-menu v-if="has('hr.*')" index="hr">
             <template #title>人事管理</template>
-            <el-menu-item index="/certificates">人员健康证</el-menu-item>
             <el-menu-item index="/hr/staff">人员资质</el-menu-item>
             <el-menu-item index="/hr/canteen-licenses">食堂资质</el-menu-item>
           </el-sub-menu>

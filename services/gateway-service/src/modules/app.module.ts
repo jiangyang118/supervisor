@@ -18,8 +18,6 @@ import { CredentialsService } from './credentials.service';
 import { WasteController } from './waste.controller';
 import { WasteService } from './waste.service';
 import { CertificatesService } from './certificates.service';
-import { StaffCertsController } from './staff-certs.controller';
-import { StaffCertsService } from './staff-certs.service';
 import { FoodWasteController } from './food-waste.controller';
 import { FoodWasteService } from './food-waste.service';
 import { PublicFeedbackController } from './public-feedback.controller';
@@ -71,6 +69,8 @@ import { JwtGuard } from './jwt.guard';
 import { PermissionGuard } from './permission.guard';
 import { TokenBlacklistService } from './token-blacklist.service';
 import { SchoolCertificatesController } from './school-certificates.controller';
+import { PersonnelController } from './personnel.controller';
+import { PersonnelRepository } from './repositories/personnel.repository';
 
 @Module({
   imports: [
@@ -99,12 +99,12 @@ import { SchoolCertificatesController } from './school-certificates.controller';
     DisinfectionController,
     HygieneController,
     WasteController,
-    StaffCertsController,
     FoodWasteController,
     PublicFeedbackController,
     RegPublicFeedbackController,
     PublicConfigController,
     SchoolCertificatesController,
+    PersonnelController,
     EmergencyController,
     RiskController,
     AuthController,
@@ -135,7 +135,6 @@ import { SchoolCertificatesController } from './school-certificates.controller';
     
     WasteService,
     CertificatesService,
-    StaffCertsService,
     FoodWasteService,
     PublicFeedbackService,
     PublicConfigService,
@@ -152,6 +151,7 @@ import { SchoolCertificatesController } from './school-certificates.controller';
     JwtGuard,
     PermissionGuard,
     TokenBlacklistService,
+    PersonnelRepository,
   ],
 })
 export class AppModule {}

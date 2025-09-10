@@ -2,121 +2,154 @@
   <el-card>
     <template #header>
       <div style="display:flex;align-items:center;justify-content:space-between">
-        <span>人员管理</span>
-        <div>
-          <el-upload :show-file-list="false" :auto-upload="true" :http-request="onImport" accept=".csv,text/csv">
-            <el-button>导入CSV</el-button>
-          </el-upload>
-          <el-button @click="onExport">导出CSV</el-button>
-          <el-button type="primary" @click="openCreate">新增人员</el-button>
+        <span>人员资质</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <el-input v-model="filters.name" placeholder="人员姓名" style="width:180px" @keyup.enter.native="load" />
+          <el-input v-model="filters.phone" placeholder="手机号" style="width:180px" @keyup.enter.native="load" />
+          <el-button @click="load">查询</el-button>
+          <el-button type="primary" @click="openDialog()">新增人员</el-button>
         </div>
       </div>
     </template>
-    <el-form :inline="true" :model="filters" style="margin-bottom:8px">
-      <el-form-item label="关键词"><el-input v-model="filters.q" placeholder="姓名/电话/岗位/健康证" @keyup.enter.native="load" /></el-form-item>
-      <el-form-item><el-button @click="load">查询</el-button></el-form-item>
-    </el-form>
     <el-table :data="rows" size="small" border>
-      <el-table-column prop="id" label="ID" width="100" />
-      <el-table-column prop="name" label="姓名" width="140" />
-      <el-table-column prop="jobTitle" label="岗位" width="160" />
-      <el-table-column prop="phone" label="电话" width="140" />
-      <el-table-column prop="healthCertNo" label="健康证编号" width="160" />
-      <el-table-column label="状态" width="100">
-        <template #default="{ row }"><el-tag :type="row.enabled ? 'success' : 'info'" effect="plain">{{ row.enabled ? '在岗' : '停用' }}</el-tag></template>
+      <el-table-column prop="name" label="人员姓名" width="140" />
+      <el-table-column prop="canteenName" label="所属食堂" width="180" />
+      <el-table-column prop="healthCertNo" label="健康证编号" width="180" />
+      <el-table-column prop="healthCertAuthority" label="发证机构" width="200" />
+      <el-table-column prop="healthCertExpireAt" label="有效期至" width="140">
+        <template #default="{ row }">{{ (row.healthCertExpireAt||'').slice(0,10) }}</template>
       </el-table-column>
-      <el-table-column label="时间" width="180"><template #default="{ row }">{{ fmt(row.createdAt) }}</template></el-table-column>
-      <el-table-column label="操作" width="160">
+      <el-table-column prop="status" label="状态" width="100">
         <template #default="{ row }">
-          <el-button size="small" text type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button size="small" text type="danger" @click="remove(row)">删除</el-button>
+          <el-tag :type="row.status==='过期' ? 'danger' : (row.status==='临期' ? 'warning' : 'success')" effect="plain">{{ row.status }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="220" fixed="right">
+        <template #default="{ row }">
+          <el-button size="small" @click="view(row)">查看</el-button>
+          <el-button size="small" type="primary" @click="edit(row)">编辑</el-button>
+          <el-popconfirm title="确认删除该人员？" @confirm="onDelete(row)">
+            <template #reference>
+              <el-button size="small" type="danger">删除</el-button>
+            </template>
+          </el-popconfirm>
         </template>
       </el-table-column>
     </el-table>
   </el-card>
 
-  <el-dialog v-model="editVisible" :title="editForm.id ? '编辑人员' : '新增人员'" width="520px">
-    <el-form :model="editForm" label-width="96px">
-      <el-form-item label="姓名" required><el-input v-model="editForm.name" /></el-form-item>
-      <el-form-item label="岗位"><el-input v-model="editForm.jobTitle" /></el-form-item>
-      <el-form-item label="电话"><el-input v-model="editForm.phone" /></el-form-item>
-      <el-form-item label="健康证编号"><el-input v-model="editForm.healthCertNo" /></el-form-item>
-      <el-form-item label="在岗"><el-switch v-model="editForm.enabled" /></el-form-item>
+  <el-dialog v-model="visible" :title="form.id ? '编辑人员' : '新增人员'" width="720px">
+    <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
+      <el-divider content-position="left">基本信息</el-divider>
+      <el-form-item label="姓名" prop="name"><el-input v-model="form.name" /></el-form-item>
+      <el-form-item label="性别"><el-select v-model="form.gender" placeholder="请选择" style="width:120px"><el-option label="男" value="男" /><el-option label="女" value="女" /></el-select></el-form-item>
+      <el-form-item label="手机号"><el-input v-model="form.phone" /></el-form-item>
+      <el-form-item label="所属食堂" prop="canteenId">
+        <el-select v-model="form.canteenId" filterable placeholder="请选择" style="width: 240px">
+          <el-option v-for="c in canteens" :key="c.id" :value="c.id" :label="c.name" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="岗位"><el-input v-model="form.jobTitle" /></el-form-item>
+
+      <el-divider content-position="left">健康证信息</el-divider>
+      <el-form-item label="健康证编号"><el-input v-model="form.healthCertNo" /></el-form-item>
+      <el-form-item label="发证机构"><el-input v-model="form.healthCertAuthority" /></el-form-item>
+      <el-form-item label="发证日期"><el-date-picker v-model="form.healthCertIssueAt" type="date" value-format="YYYY-MM-DD" /></el-form-item>
+      <el-form-item label="有效期至" prop="healthCertExpireAt"><el-date-picker v-model="form.healthCertExpireAt" type="date" value-format="YYYY-MM-DD" /></el-form-item>
+      <el-form-item label="证件上传" required>
+        <div style="display:flex;gap:12px;align-items:center">
+          <div>
+            <div>正面</div>
+            <el-upload :show-file-list="false" :http-request="(req:any)=>onUpload(req,'front')">
+              <el-button>上传</el-button>
+            </el-upload>
+          </div>
+          <div>
+            <div>反面</div>
+            <el-upload :show-file-list="false" :http-request="(req:any)=>onUpload(req,'back')">
+              <el-button>上传</el-button>
+            </el-upload>
+          </div>
+          <el-image v-if="form.healthCertFrontUrl" :src="form.healthCertFrontUrl" style="width:120px;height:80px" fit="contain" />
+          <el-image v-if="form.healthCertBackUrl" :src="form.healthCertBackUrl" style="width:120px;height:80px" fit="contain" />
+        </div>
+      </el-form-item>
     </el-form>
     <template #footer>
-      <el-button @click="editVisible=false">取消</el-button>
-      <el-button type="primary" @click="save">保存</el-button>
+      <el-button @click="visible=false">取消</el-button>
+      <el-button type="primary" :loading="saving" @click="save">保存</el-button>
     </template>
   </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { ElMessage } from 'element-plus';
-import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
-import { getCurrentSchoolIdNum } from '../utils/school';
+import { useRouter } from 'vue-router';
+import { getCurrentSchoolId } from '../utils/school';
 
+const filters = reactive({ name: '', phone: '' });
 const rows = ref<any[]>([]);
-const filters = reactive({ q: '' });
-const editVisible = ref(false);
-const editForm = reactive<any>({ id: 0, name: '', jobTitle: '', phone: '', healthCertNo: '', enabled: true });
+const router = useRouter();
+const canteens = ref<Array<{ id: number; name: string }>>([]);
+const visible = ref(false);
+const saving = ref(false);
+const formRef = ref();
+const form = reactive<any>({ id: 0, name: '', gender: '', phone: '', canteenId: undefined, jobTitle: '', healthCertNo: '', healthCertAuthority: '', healthCertIssueAt: '', healthCertExpireAt: '', healthCertFrontUrl: '', healthCertBackUrl: '' });
+const rules = {
+  name: [{ required: true, message: '请填写姓名', trigger: 'blur' }],
+  canteenId: [{ required: true, message: '请选择所属食堂', trigger: 'change' }],
+  healthCertExpireAt: [{ required: true, message: '请选择有效期至', trigger: 'change' }],
+} as const;
 
 async function load() {
   try {
-    const res = await api.staffList({ schoolId: getCurrentSchoolIdNum(), q: filters.q, page: 1, pageSize: 200 });
-    rows.value = res.items || [];
+    const sid = getCurrentSchoolId();
+    const res = await api.personnelList({ schoolId: sid, name: filters.name || undefined, phone: filters.phone || undefined, page: 1, pageSize: 200 });
+    rows.value = (res as any)?.items || [];
   } catch { ElMessage.error('加载失败'); }
 }
-const fmt = (iso: string) => { try { return new Date(iso).toLocaleString(); } catch { return iso; } };
-
-function openCreate() {
-  Object.assign(editForm, { id: 0, name: '', jobTitle: '', phone: '', healthCertNo: '', enabled: true });
-  editVisible.value = true;
+async function loadCanteens() {
+  try { const sid = getCurrentSchoolId(); canteens.value = await api.canteensList(sid); } catch { canteens.value = []; }
 }
-function openEdit(row: any) {
-  Object.assign(editForm, row);
-  editVisible.value = true;
+function openDialog(row?: any) {
+  visible.value = true;
+  if (row) Object.assign(form, { ...row }); else Object.assign(form, { id: 0, name: '', gender: '', phone: '', canteenId: undefined, jobTitle: '', healthCertNo: '', healthCertAuthority: '', healthCertIssueAt: '', healthCertExpireAt: '', healthCertFrontUrl: '', healthCertBackUrl: '' });
+}
+function view(row: any) { router.push({ path: '/hr/staff/view', query: { id: String(row.id) } }); }
+function edit(row: any) { openDialog(row); }
+async function onUpload(req: any, kind: 'front' | 'back') {
+  const file: File = req.file;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const content = reader.result as string;
+      const r = await api.uploadFile(file.name, content);
+      const url = r.url;
+      if (kind === 'front') form.healthCertFrontUrl = url; else form.healthCertBackUrl = url;
+      req.onSuccess && req.onSuccess(r);
+    } catch (e) { req.onError && req.onError(e); }
+  };
+  reader.readAsDataURL(file);
 }
 async function save() {
+  const ok = await (formRef.value?.validate?.().catch(() => false) ?? true);
+  if (!ok) { ElMessage.error('请完善必填信息'); return; }
+  if (!form.healthCertFrontUrl || !form.healthCertBackUrl) { ElMessage.error('请上传健康证正反面'); return; }
+  saving.value = true;
   try {
-    if (!editForm.name) { ElMessage.warning('请填写姓名'); return; }
-    if (editForm.id) await api.staffUpdate(editForm.id, { name: editForm.name, jobTitle: editForm.jobTitle, phone: editForm.phone, healthCertNo: editForm.healthCertNo, enabled: !!editForm.enabled });
-    else await api.staffCreate({ schoolId: getCurrentSchoolIdNum(), name: editForm.name, jobTitle: editForm.jobTitle, phone: editForm.phone, healthCertNo: editForm.healthCertNo, enabled: !!editForm.enabled });
-    ElMessage.success('已保存'); editVisible.value = false; load();
-  } catch { ElMessage.error('保存失败'); }
+    const sid = getCurrentSchoolId();
+    if (form.id) await api.personnelUpdate(form.id, { ...form });
+    else await api.personnelCreate({ ...form, schoolId: sid });
+    ElMessage.success('已保存'); visible.value = false; load();
+  } catch { ElMessage.error('保存失败'); } finally { saving.value = false; }
 }
-async function remove(row: any) {
-  try { await api.staffDelete(row.id); ElMessage.success('已删除'); load(); } catch { ElMessage.error('删除失败'); }
+async function onDelete(row: any) {
+  try { await api.personnelDelete(row.id); ElMessage.success('已删除'); load(); } catch { ElMessage.error('删除失败'); }
 }
-async function onImport(opts: any) {
-  try {
-    const file: File = opts.file;
-    const text = await file.text();
-    // Simple CSV parse: header line: name,jobTitle,phone,healthCertNo,enabled
-    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-    if (!lines.length) return;
-    const header = lines.shift()!.split(',').map((h) => h.trim());
-    const items = lines.map((ln) => {
-      const cols = ln.split(',');
-      const obj: any = {};
-      header.forEach((h, i) => (obj[h] = (cols[i] || '').trim()));
-      obj.enabled = String(obj.enabled).toLowerCase() !== 'false';
-      return { name: obj.name, jobTitle: obj.jobTitle, phone: obj.phone, healthCertNo: obj.healthCertNo, enabled: obj.enabled };
-    }).filter((x) => x.name);
-    await api.staffImport({ schoolId: getCurrentSchoolIdNum(), items });
-    ElMessage.success('导入成功'); load();
-  } catch { ElMessage.error('导入失败'); }
-}
-function onExport() {
-  exportCsv('人员清单', rows.value, { id: 'ID', name: '姓名', jobTitle: '岗位', phone: '电话', healthCertNo: '健康证编号', enabled: '在岗', createdAt: '时间' });
-}
-onMounted(() => {
-  load();
-  const h = () => load();
-  window.addEventListener('school-changed', h as any);
-  onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
-});
+
+onMounted(() => { loadCanteens(); load(); });
 </script>
 
 <style scoped>

@@ -61,7 +61,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/inventory/additives', component: () => import('../views/InventoryAdditives.vue'), meta: { perms: ['inventory.*'] } },
   { path: '/suppliers', component: () => import('../views/Suppliers.vue'), meta: { perms: ['inventory.*'] } },
   { path: '/warehouses', component: () => import('../views/Warehouses.vue'), meta: { perms: ['inventory.*'] } },
-  { path: '/certificates', component: () => import('../views/Certificates.vue'), meta: { perms: ['hr.*'] } },
+  // removed: personnel certificates
   // Environment & devices
   { path: '/environment/status', component: () => import('../views/EnvironmentStatus.vue'), meta: { perms: ['env.*'] } },
 
@@ -90,6 +90,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/system/users', component: () => import('../views/SystemUsers.vue'), meta: { perms: ['users.manage'] } },
   { path: '/system/roles', component: () => import('../views/SystemRoles.vue'), meta: { perms: ['users.manage'] } },
   { path: '/hr/staff', component: () => import('../views/StaffManagement.vue'), meta: { perms: ['hr.*'] } },
+  { path: '/hr/staff/view', component: () => import('../views/PersonnelView.vue'), meta: { perms: ['hr.*'] } },
   { path: '/hr/canteen-licenses', component: () => import('../views/CanteenLicenses.vue'), meta: { perms: ['hr.*'] } },
   { path: '/hr/canteen-licenses/view', component: () => import('../views/CanteenLicenseView.vue'), meta: { perms: ['hr.*'] } },
 ];

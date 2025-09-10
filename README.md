@@ -198,3 +198,19 @@ CI 示例：`.github/workflows/ci.yml`
 
 ## OpenAPI
 - 启动网关后访问：`http://localhost:8081/api/docs`
+
+**端口一览表**
+- 网关服务：`3300`（容器内 `3000`，`infra/docker-compose.yml` 映射 `3300:3000`）
+- 网关热重载（dev profile）：`3301`（容器内 `3000`，映射 `3301:3000`）
+- Nginx 反向代理：`8081`（转发至网关 `/api/*`、`/iot/*`）
+- Kafka UI：`8080`
+- MinIO：`9000`（S3 API）、`9001`（Console）
+- MySQL：`3307`（映射到容器 `3306`）
+- Redis：`6379`
+- Zookeeper：`2181`
+- Kafka Broker：`9092`
+- 学校端（Vite Dev）：`4200`（Preview `4201`）
+- 监管端（Vite Dev）：`4300`（Preview `4301`）
+- 大屏（Vite Dev）：`5208`
+- 移动端-设备管理（Vite Dev）：`4210`
+- 移动端-应急管理（Vite Dev）：`4220`

@@ -1,7 +1,7 @@
 -- User credentials (salt + sha256 hash)
 
 create table if not exists user_credentials (
-  user_id int primary key,
+  user_id bigint unsigned primary key,
   salt varchar(64) not null,
   password_hash varchar(128) not null,
   updated_at datetime not null default current_timestamp on update current_timestamp,
@@ -20,4 +20,3 @@ select u.id, @salt_admin, upper(sha2(concat(@salt_admin, 'admin'), 256))
 insert ignore into user_credentials(user_id, salt, password_hash)
 select u.id, @salt_user, upper(sha2(concat(@salt_user, 'user'), 256))
   from users u where u.username = 'user' limit 1;
-

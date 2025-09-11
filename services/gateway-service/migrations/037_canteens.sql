@@ -1,7 +1,7 @@
 -- Canteens (school-side canteen master table)
 create table if not exists canteens (
-  id int primary key auto_increment,
-  school_id int not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   name varchar(255) not null,
   address varchar(255) null,
   manager varchar(128) null,
@@ -21,8 +21,8 @@ alter table canteens
 
 -- Canteen qualifications (business license, food operation permit)
 create table if not exists canteen_qualifications (
-  id int primary key auto_increment,
-  canteen_id int not null,
+  id bigint unsigned primary key auto_increment,
+  canteen_id bigint unsigned not null,
   qtype varchar(64) not null,
   number varchar(128) null,
   authority varchar(255) null,
@@ -38,4 +38,3 @@ create table if not exists canteen_qualifications (
 alter table canteen_qualifications
   add constraint fk_cq_canteen foreign key (canteen_id) references canteens(id)
   on update cascade on delete cascade;
-

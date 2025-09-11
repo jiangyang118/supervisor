@@ -1,10 +1,10 @@
--- Convert public_feedback id to INT AUTO_INCREMENT and school_id to INT
+-- Convert public_feedback id to BIGINT UNSIGNED AUTO_INCREMENT and school_id to BIGINT UNSIGNED
 SET FOREIGN_KEY_CHECKS=0;
 
 -- Adjust column types
 ALTER TABLE public_feedback
-  MODIFY COLUMN id INT NOT NULL AUTO_INCREMENT,
-  MODIFY COLUMN school_id INT NOT NULL;
+  MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  MODIFY COLUMN school_id BIGINT UNSIGNED NOT NULL;
 
 -- Add FK to schools(id) if not exists
 SET @stmt := (
@@ -24,4 +24,3 @@ ALTER TABLE public_feedback
   ADD INDEX idx_pf_status (status);
 
 SET FOREIGN_KEY_CHECKS=1;
-

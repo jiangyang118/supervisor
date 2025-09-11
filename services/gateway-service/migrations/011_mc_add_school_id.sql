@@ -1,5 +1,5 @@
 -- Add school_id to morning_checks and index for querying by school
 alter table morning_checks
-  add column school_id int(20) null after id;
+  add column school_id bigint unsigned null after id;
 
 create index idx_mc_school_time on morning_checks(school_id, check_time);

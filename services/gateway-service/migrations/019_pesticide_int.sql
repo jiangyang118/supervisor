@@ -1,8 +1,8 @@
--- Ensure pesticide_records exists and uses INT ids
+-- Ensure pesticide_records exists and uses BIGINT UNSIGNED ids
 
 create table if not exists pesticide_records (
-  id int primary key auto_increment,
-  school_id int not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   sample varchar(255) not null,
   device varchar(128) not null,
   result varchar(8) not null,
@@ -16,8 +16,7 @@ create table if not exists pesticide_records (
   key idx_pest_result_at (result, at)
 );
 
--- If table exists with BIGINT, align to INT
+-- Align columns to BIGINT UNSIGNED
 ALTER TABLE pesticide_records
-  MODIFY COLUMN id INT NOT NULL AUTO_INCREMENT,
-  MODIFY COLUMN school_id INT NOT NULL;
-
+  MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  MODIFY COLUMN school_id BIGINT UNSIGNED NOT NULL;

@@ -1,7 +1,7 @@
 -- Re-create inv_products with extended columns
 create table if not exists inv_products (
-  id int primary key auto_increment,
-  school_id int not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   name varchar(255) not null,
   unit varchar(64) not null,
   category varchar(64) null,

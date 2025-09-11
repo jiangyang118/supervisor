@@ -1,22 +1,22 @@
 -- Inventory tables
 create table if not exists inv_categories (
-  id int(20) primary key auto_increment,
-  school_id int(20) not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   name varchar(255) not null
 );
 
 create table if not exists inv_products (
-  id int(20) primary key auto_increment,
-  school_id int(20) not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   name varchar(255) not null,
   unit varchar(64) not null,
-  category_id int(20) null,
+  category_id bigint unsigned null,
   key idx_inv_products_category (category_id)
 );
 
 create table if not exists inv_suppliers (
-  id int(20) primary key auto_increment,
-  school_id int(20) not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   name varchar(255) not null,
   phone varchar(64) null,
   license varchar(128) null,
@@ -24,7 +24,7 @@ create table if not exists inv_suppliers (
   contact varchar(128) null,
   email varchar(128) null,
   enabled tinyint not null default 1,
-  rating int null,
+  rating bigint unsigned null,
   categories json null,
   license_expire_at datetime null,
   license_image_url varchar(255) null,
@@ -34,21 +34,21 @@ create table if not exists inv_suppliers (
 );
 
 create table if not exists inv_warehouses (
-  id int(20) primary key auto_increment,
-  school_id int(20) not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   name varchar(255) not null,
   location varchar(255) null,
-  capacity int null,
+  capacity bigint unsigned null,
   deleted tinyint not null default 0
 );
 
 create table if not exists inv_inbound (
-  id int(20) primary key auto_increment,
-  school_id int(20) not null,
-  product_id int(20) not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
+  product_id bigint unsigned not null,
   qty decimal(18,3) not null,
-  supplier_id int(20) null,
-  warehouse_id int(20) null,
+  supplier_id bigint unsigned null,
+  warehouse_id bigint unsigned null,
   image_url varchar(255) null,
   at datetime not null,
   source varchar(32) not null,
@@ -57,13 +57,13 @@ create table if not exists inv_inbound (
 );
 
 create table if not exists inv_outbound (
-  id int(20) primary key auto_increment,
-  school_id int(20) not null,
-  product_id int(20) not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
+  product_id bigint unsigned not null,
   qty decimal(18,3) not null,
   purpose varchar(255) null,
   by_who varchar(128) null,
-  warehouse_id int(20) null,
+  warehouse_id bigint unsigned null,
   at datetime not null,
   source varchar(32) not null,
   key idx_inv_out_school_at (school_id, at),
@@ -71,9 +71,9 @@ create table if not exists inv_outbound (
 );
 
 create table if not exists inv_tickets (
-  id int(20) primary key auto_increment,
-  school_id int(20) not null,
-  product_id int(20) not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
+  product_id bigint unsigned not null,
   type varchar(128) not null,
   image_url varchar(255) null,
   at datetime not null,
@@ -81,8 +81,8 @@ create table if not exists inv_tickets (
 );
 
 create table if not exists inv_additives (
-  id int(20) primary key auto_increment,
-  school_id int(20) not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   name varchar(128) not null,
   amount decimal(18,3) not null,
   dish varchar(128) null,
@@ -93,8 +93,8 @@ create table if not exists inv_additives (
 
 -- Public feedback
 create table if not exists public_feedback (
-  id int(20) primary key auto_increment,
-  school_id int(20) not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   type varchar(32) not null,
   content text not null,
   user varchar(128) null,
@@ -105,7 +105,7 @@ create table if not exists public_feedback (
   reply_at datetime null,
   reply_content text null,
   is_read tinyint not null default 0,
-  processing_ms int null,
+  processing_ms bigint unsigned null,
   key idx_pf_at (at)
 );
 
@@ -113,8 +113,8 @@ create table if not exists public_feedback (
 
 -- Food waste
 create table if not exists food_waste_records (
-  id int(20) primary key auto_increment,
-  school_id int(20) not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   date datetime not null,
   source varchar(32) not null,
   item_type varchar(32) not null,
@@ -127,8 +127,7 @@ create table if not exists food_waste_records (
 );
 
 create table if not exists food_waste_reasons (
-  id int(20) primary key auto_increment,
+  id bigint unsigned primary key auto_increment,
   name varchar(255) not null,
   enabled tinyint not null default 1
 );
-

@@ -1,7 +1,7 @@
 -- RBAC core tables: users, roles, permissions, user_roles, role_permissions
 
 create table if not exists roles (
-  id int primary key auto_increment,
+  id bigint unsigned primary key auto_increment,
   name varchar(64) not null unique
 );
 
@@ -11,7 +11,7 @@ create table if not exists permissions (
 );
 
 create table if not exists role_permissions (
-  role_id int not null,
+  role_id bigint unsigned not null,
   permission_key varchar(128) not null,
   primary key (role_id, permission_key),
   key idx_rp_role (role_id),
@@ -21,15 +21,15 @@ create table if not exists role_permissions (
 );
 
 create table if not exists users (
-  id int primary key auto_increment,
+  id bigint unsigned primary key auto_increment,
   username varchar(128) not null unique,
   display_name varchar(128) not null,
   enabled tinyint not null default 1
 );
 
 create table if not exists user_roles (
-  user_id int not null,
-  role_id int not null,
+  user_id bigint unsigned not null,
+  role_id bigint unsigned not null,
   primary key (user_id, role_id),
   key idx_ur_user (user_id),
   key idx_ur_role (role_id),
@@ -69,4 +69,3 @@ select u.id, r.id from users u join roles r on u.username='admin' and r.name='AD
 
 insert ignore into user_roles(user_id, role_id)
 select u.id, r.id from users u join roles r on u.username='user' and r.name='SCHOOL';
-

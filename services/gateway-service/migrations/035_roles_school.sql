@@ -5,7 +5,7 @@ set @has_school := (
   select count(1) from information_schema.columns
    where table_schema = database() and table_name = 'roles' and column_name = 'school_id'
 );
-set @sql := if(@has_school = 0, 'alter table roles add column school_id int not null default 1 after id', 'select 1');
+set @sql := if(@has_school = 0, 'alter table roles add column school_id bigint unsigned not null default 1 after id', 'select 1');
 prepare stmt from @sql; execute stmt; deallocate prepare stmt;
 
 -- created_at

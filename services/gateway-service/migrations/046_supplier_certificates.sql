@@ -1,8 +1,8 @@
 -- Supplier certificates table and supplier audit fields
 
 create table if not exists supplier_certificates (
-  id int primary key auto_increment,
-  supplier_id int not null,
+  id bigint unsigned primary key auto_increment,
+  supplier_id bigint unsigned not null,
   type varchar(64) not null,
   number varchar(128) null,
   authority varchar(255) null,

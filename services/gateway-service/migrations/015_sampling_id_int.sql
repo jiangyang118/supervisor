@@ -1,5 +1,5 @@
--- Align sampling table IDs to INT AUTO_INCREMENT and fix FK types
--- Also align FK columns to INT for consistency with schools.id (INT)
+-- Align sampling table IDs to BIGINT UNSIGNED AUTO_INCREMENT and fix FK types
+-- Also align FK columns to BIGINT UNSIGNED for consistency with schools.id
 
 SET FOREIGN_KEY_CHECKS=0;
 
@@ -27,18 +27,18 @@ PREPARE s3 FROM @stmt; EXECUTE s3; DEALLOCATE PREPARE s3;
 
 -- Adjust primary key types to INT AUTO_INCREMENT
 ALTER TABLE sampling_records
-  MODIFY COLUMN id INT NOT NULL AUTO_INCREMENT;
+  MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT;
 
 ALTER TABLE sampling_cleanups
-  MODIFY COLUMN id INT NOT NULL AUTO_INCREMENT;
+  MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT;
 
--- Align FK column types to INT
+-- Align FK column types to BIGINT UNSIGNED
 ALTER TABLE sampling_records
-  MODIFY COLUMN school_id INT NOT NULL;
+  MODIFY COLUMN school_id BIGINT UNSIGNED NOT NULL;
 
 ALTER TABLE sampling_cleanups
-  MODIFY COLUMN school_id INT NOT NULL,
-  MODIFY COLUMN sample_id INT NULL;
+  MODIFY COLUMN school_id BIGINT UNSIGNED NOT NULL,
+  MODIFY COLUMN sample_id BIGINT UNSIGNED NULL;
 
 -- Recreate foreign keys (guarded)
 SET @stmt := (SELECT IF(NOT EXISTS(

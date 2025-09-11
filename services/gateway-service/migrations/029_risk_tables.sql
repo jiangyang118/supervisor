@@ -2,7 +2,7 @@
 
 -- Catalog of risk items
 create table if not exists risk_catalog (
-  id int primary key auto_increment,
+  id bigint unsigned primary key auto_increment,
   category varchar(128) null,
   title varchar(255) not null,
   level varchar(16) not null,
@@ -13,14 +13,14 @@ create table if not exists risk_catalog (
 
 -- Risk reports (hazard reports)
 create table if not exists risk_reports (
-  id int primary key auto_increment,
-  school_id int not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   at datetime not null,
   location varchar(255) not null,
   object varchar(255) not null,
   `desc` text not null,
   images json null,
-  risk_id int null,
+  risk_id bigint unsigned null,
   status varchar(16) not null,
   measures text null,
   rectified_by varchar(128) null,
@@ -31,13 +31,13 @@ create table if not exists risk_reports (
 
 -- Risk tasks (inspection tasks)
 create table if not exists risk_tasks (
-  id int primary key auto_increment,
-  school_id int not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   created_at datetime not null,
   assignee varchar(128) not null,
   location varchar(255) not null,
   object varchar(255) not null,
-  risk_id int null,
+  risk_id bigint unsigned null,
   due_at datetime null,
   note varchar(255) null,
   status varchar(16) not null,
@@ -91,4 +91,3 @@ SET @stmt := (
   'SELECT 1')
 );
 PREPARE s4 FROM @stmt; EXECUTE s4; DEALLOCATE PREPARE s4;
-

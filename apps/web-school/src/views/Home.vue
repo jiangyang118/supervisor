@@ -86,6 +86,7 @@
         </el-card>
       </el-col>
     </el-row>
+
     <!-- 两栏布局：AI预警类型分布 | 物联网设备状态 -->
     <el-row :gutter="12" style="margin-top: 12px">
       <el-col :span="12">
@@ -139,6 +140,57 @@
             </el-table-column>
             <el-table-column prop="last" label="最后上报时间" min-width="180" show-overflow-tooltip />
           </el-table>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 下方三项：农残检测 / 设备安全检测 / 废弃物管理 数据卡片（位于 AI 与设备状态模块下方） -->
+    <el-row :gutter="12" style="margin-top: 12px">
+      <el-col :xs="24" :sm="12" :md="8" :lg="8" :xl="8">
+        <el-card :class="['card','clickable','kpi-card','card-bottom','card-pesticide']" @click="go('/pesticide-tests')">
+          <template #header>
+            <div class="kpi-header">
+              <div class="kpi-title-wrap">
+                <span class="kpi-title">农残检测数据</span>
+              </div>
+              <span :class="['kpi-badge', pesticideLast?.result === '合格' ? 'ok' : (pesticideLast ? 'warn' : 'ok')]">
+                {{ pesticideLast ? (pesticideLast.result || '—') : '—' }}
+              </span>
+            </div>
+          </template>
+          <div class="kpi-line"><span>上次农残检验日期：</span><b>{{ fmtDate(pesticideLast?.at) }}</b></div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="8" :lg="8" :xl="8">
+        <el-card :class="['card','clickable','kpi-card','card-bottom','card-device']" @click="go('/device-safety')">
+          <template #header>
+            <div class="kpi-header">
+              <div class="kpi-title-wrap">
+                <span class="kpi-title">设备安全检测数据</span>
+              </div>
+            </div>
+          </template>
+          <div class="kpi-line"><span>上次设备安全检测日期：</span><b>{{ fmtDate(deviceSafetyLastDate) }}</b></div>
+          <div class="kpi-line">
+            <span>状态：</span>
+            <b class="ok">距今天已{{ deviceSafetyDaysSince }}天</b>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :xs="24" :sm="12" :md="8" :lg="8" :xl="8">
+        <el-card :class="['card','clickable','kpi-card','card-bottom','card-waste']" @click="go('/waste')">
+          <template #header>
+            <div class="kpi-header">
+              <div class="kpi-title-wrap">
+                <span class="kpi-title">废弃物管理数据</span>
+              </div>
+            </div>
+          </template>
+          <div class="kpi-line"><span>上次废弃物处理日期：</span><b>{{ fmtDate(wasteLastDate) }}</b></div>
+          <div class="kpi-line">
+            <span>状态：</span>
+            <b class="ok">距今天已{{ wasteDaysSince }}天</b>
+          </div>
         </el-card>
       </el-col>
     </el-row>
@@ -197,6 +249,29 @@ const aiOpen = ref<number>(0);
 const disinfectionExceptions = ref<number>(0);
 const samplingTodayCount = ref<number>(0);
 const samplingOk = computed(() => samplingTodayCount.value > 0);
+
+// 下方三项数据源
+const pesticideLast = ref<{ at?: string; result?: '合格'|'不合格' } | null>(null);
+const deviceSafetyLastDate = ref<string | ''>('');
+const deviceSafetyDaysSince = ref<number>(0);
+const wasteLastDate = ref<string | ''>('');
+const wasteDaysSince = ref<number>(0);
+
+function fmtDate(iso?: string | null) {
+  if (!iso) return '—';
+  try { return new Date(iso).toISOString().slice(0,10); } catch { return String(iso); }
+}
+function daysSince(dateStr?: string | null): number {
+  if (!dateStr) return 0;
+  try {
+    const d = new Date(dateStr);
+    const today = new Date();
+    const one = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const two = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const diff = Math.floor((two.getTime() - one.getTime()) / (24 * 3600 * 1000));
+    return diff >= 0 ? diff : 0;
+  } catch { return 0; }
+}
 
 // AI本周类型分布（水平条形图）
 type AiBarItem = { code: string; label: string; count: number };
@@ -328,6 +403,30 @@ async function refreshAll() {
     const items = (r as any)?.items || [];
     samplingTodayCount.value = Number((r as any)?.total || items.length || 0);
   } catch { samplingTodayCount.value = 0; }
+
+  // 农残检测（取最近一条）
+  try {
+    const sidNum = getCurrentSchoolId();
+    const res = await api.pesticideList({ schoolId: sidNum ? Number(sidNum) : undefined, page: 1, pageSize: 1 } as any);
+    const it = (res as any)?.items?.[0];
+    pesticideLast.value = it ? { at: it.at, result: it.result } : null;
+  } catch { pesticideLast.value = null; }
+  // 设备安全检测（取最近一条）
+  try {
+    const sidNum = getCurrentSchoolId();
+    const r = await api.deviceSafetyList({ schoolId: sidNum ? Number(sidNum) : undefined, page: 1, pageSize: 1 } as any);
+    const it = (r as any)?.items?.[0];
+    deviceSafetyLastDate.value = it?.checkDate || '';
+    deviceSafetyDaysSince.value = daysSince(deviceSafetyLastDate.value);
+  } catch { deviceSafetyLastDate.value = ''; deviceSafetyDaysSince.value = 0; }
+  // 废弃物管理（取最近一条）
+  try {
+    const sidNum = getCurrentSchoolId();
+    const r = await api.wasteList({ schoolId: sidNum ? Number(sidNum) : undefined, page: 1, pageSize: 1 } as any);
+    const it = (r as any)?.items?.[0];
+    wasteLastDate.value = it?.date || '';
+    wasteDaysSince.value = daysSince(wasteLastDate.value);
+  } catch { wasteLastDate.value = ''; wasteDaysSince.value = 0; }
 }
 
 onMounted(() => { tickNow(); tm = setInterval(tickNow, 1000); refreshAll(); loadAiBar(); loadDevicesStatus(); });
@@ -542,6 +641,28 @@ function exportAiBar() {
   --accent: #7a5cff;
   background: linear-gradient(180deg, #f3eafe, #faf5ff);
   border-color: #e6d9ff;
+}
+
+/* simple ok/warn color helpers for status text */
+.ok { color: #67C23A; }
+.warn { color: #F56C6C; }
+
+/* Bottom summary cards theme */
+.kpi-card.card-bottom { min-height: 128px; }
+.kpi-card.card-pesticide {
+  --accent: #34c759;
+  background: linear-gradient(180deg, #eafff2, #f7fffb);
+  border-color: #c8f5e3;
+}
+.kpi-card.card-device {
+  --accent: #2db7f5;
+  background: linear-gradient(180deg, #eaf6ff, #f7fbff);
+  border-color: #cfe8ff;
+}
+.kpi-card.card-waste {
+  --accent: #67c23a;
+  background: linear-gradient(180deg, #f0ffe8, #fbfff7);
+  border-color: #d9f5c8;
 }
 
 .ai-bar:deep(canvas) { border-radius: 6px; }

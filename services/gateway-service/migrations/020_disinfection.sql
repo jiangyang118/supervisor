@@ -1,10 +1,10 @@
 -- Disinfection records table
 
 create table if not exists disinfection_records (
-  id int primary key auto_increment,
-  school_id int not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   method varchar(16) not null,
-  duration_minutes int not null,
+  duration_minutes bigint unsigned not null,
   items varchar(255) not null,
   image_url varchar(255) null,
   at datetime not null,
@@ -16,4 +16,3 @@ create table if not exists disinfection_records (
   key idx_df_method (method),
   key idx_df_exception (exception)
 );
-

@@ -1,12 +1,12 @@
 -- Sampling domain tables
 
 create table if not exists sampling_records (
-  id int primary key auto_increment,
-  school_id int not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   sample varchar(255) not null,
   weight decimal(10,2) not null,
   image_url varchar(255) null,
-  duration_hours int not null,
+  duration_hours bigint unsigned not null,
   by_who varchar(128) not null,
   cabinet varchar(64) null,
   at datetime not null,
@@ -21,9 +21,9 @@ create table if not exists sampling_records (
 );
 
 create table if not exists sampling_cleanups (
-  id int primary key auto_increment,
-  school_id int not null,
-  sample_id int null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
+  sample_id bigint unsigned null,
   sample varchar(255) not null,
   weight decimal(10,2) not null,
   image_url varchar(255) null,

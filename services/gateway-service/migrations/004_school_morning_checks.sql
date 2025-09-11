@@ -1,6 +1,6 @@
 create table if not exists school_morning_checks (
-  id int(20) primary key auto_increment,
-  school_id int(20) not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   staff varchar(128) not null,
   temp decimal(4,1) not null,
   result varchar(8) not null,

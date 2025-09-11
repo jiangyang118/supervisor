@@ -1,4 +1,4 @@
--- Robustly fix sampling_cleanups primary key/type to INT AUTO_INCREMENT
+-- Robustly fix sampling_cleanups primary key/type to BIGINT UNSIGNED AUTO_INCREMENT
 -- Use dynamic SQL to drop/add FKs only when they exist/missing
 
 SET FOREIGN_KEY_CHECKS=0;
@@ -21,11 +21,11 @@ PREPARE s2 FROM @stmt; EXECUTE s2; DEALLOCATE PREPARE s2;
 -- Normalize bad values before type changes
 UPDATE sampling_cleanups SET sample_id = NULL WHERE sample_id = '' OR sample_id = 0;
 
--- Ensure PK and FK column types are INT and auto-increment
+-- Ensure PK and FK column types are BIGINT UNSIGNED and auto-increment
 ALTER TABLE sampling_cleanups
-  MODIFY COLUMN id INT NOT NULL AUTO_INCREMENT,
-  MODIFY COLUMN school_id INT NOT NULL,
-  MODIFY COLUMN sample_id INT NULL;
+  MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  MODIFY COLUMN school_id BIGINT UNSIGNED NOT NULL,
+  MODIFY COLUMN sample_id BIGINT UNSIGNED NULL;
 
 -- Recreate FKs if missing
 SET @stmt := (SELECT IF(NOT EXISTS(
@@ -43,4 +43,3 @@ SET @stmt := (SELECT IF(NOT EXISTS(
 PREPARE s4 FROM @stmt; EXECUTE s4; DEALLOCATE PREPARE s4;
 
 SET FOREIGN_KEY_CHECKS=1;
-

@@ -1,5 +1,5 @@
 create table if not exists morning_checks (
-  id int primary key auto_increment,
+  id bigint unsigned primary key auto_increment,
   equipment_code varchar(128) not null,
   user_id varchar(128) not null,
   check_time datetime not null,

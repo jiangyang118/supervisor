@@ -16,7 +16,7 @@ where mc.school_id is not null and s.id is null;
 -- 3) Add FK (idempotent attempt):
 -- Ensure column type matches schools.id (int)
 alter table morning_checks
-  modify column school_id int(20) null;
+  modify column school_id bigint unsigned null;
 
 -- Skip strict FK add to maximize compatibility across existing schemas.
 -- If needed, add FK manually once column types are confirmed identical:

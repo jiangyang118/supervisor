@@ -17,7 +17,7 @@ SET @has_cid := (
    WHERE table_schema = DATABASE() AND table_name = 'inv_inbound' AND column_name = 'canteen_id'
 );
 SET @stmt := (SELECT IF(@has_cid = 0,
-  'ALTER TABLE inv_inbound ADD COLUMN canteen_id int NULL AFTER school_id',
+  'ALTER TABLE inv_inbound ADD COLUMN canteen_id bigint unsigned NULL AFTER school_id',
   'SELECT 1'));
 PREPARE s2 FROM @stmt; EXECUTE s2; DEALLOCATE PREPARE s2;
 
@@ -47,7 +47,7 @@ SET @has_shelf := (
    WHERE table_schema = DATABASE() AND table_name = 'inv_inbound' AND column_name = 'shelf_life_days'
 );
 SET @stmt := (SELECT IF(@has_shelf = 0,
-  'ALTER TABLE inv_inbound ADD COLUMN shelf_life_days int NULL AFTER prod_date',
+  'ALTER TABLE inv_inbound ADD COLUMN shelf_life_days bigint unsigned NULL AFTER prod_date',
   'SELECT 1'));
 PREPARE s5 FROM @stmt; EXECUTE s5; DEALLOCATE PREPARE s5;
 
@@ -80,4 +80,3 @@ SET @stmt := (SELECT IF(@has_idx_at = 0,
   'CREATE INDEX idx_inv_in_at ON inv_inbound(at)',
   'SELECT 1'));
 PREPARE s8 FROM @stmt; EXECUTE s8; DEALLOCATE PREPARE s8;
-

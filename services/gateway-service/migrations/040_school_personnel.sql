@@ -1,8 +1,8 @@
 -- Table: school_personnel (personnel with health certificates)
 create table if not exists school_personnel (
-  id int primary key auto_increment,
-  school_id int not null,
-  canteen_id int null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
+  canteen_id bigint unsigned null,
   name varchar(128) not null,
   gender varchar(8) null,
   phone varchar(32) null,
@@ -20,4 +20,3 @@ create table if not exists school_personnel (
   key idx_personnel_canteen (canteen_id),
   key idx_personnel_expire (health_cert_expire_at)
 );
-

@@ -4,7 +4,7 @@ SET @has_cid := (
    WHERE table_schema = DATABASE() AND table_name = 'disinfection_records' AND column_name = 'canteen_id'
 );
 SET @stmt := (SELECT IF(@has_cid = 0,
-  'ALTER TABLE disinfection_records ADD COLUMN canteen_id int NULL AFTER school_id',
+  'ALTER TABLE disinfection_records ADD COLUMN canteen_id bigint unsigned NULL AFTER school_id',
   'SELECT 1'));
 PREPARE s1 FROM @stmt; EXECUTE s1; DEALLOCATE PREPARE s1;
 
@@ -25,4 +25,3 @@ SET @stmt := (SELECT IF(@has_resp = 0,
   'ALTER TABLE disinfection_records ADD COLUMN responsible varchar(128) NULL AFTER temperature_c',
   'SELECT 1'));
 PREPARE s3 FROM @stmt; EXECUTE s3; DEALLOCATE PREPARE s3;
-

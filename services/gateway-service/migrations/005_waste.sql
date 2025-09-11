@@ -1,7 +1,7 @@
 -- Waste domain tables
 
 create table if not exists waste_categories (
-  id int(20) not null primary key auto_increment,
+  id bigint unsigned not null primary key auto_increment,
   name varchar(255) not null,
   enabled tinyint(1) not null default 1,
   created_at datetime not null default current_timestamp,
@@ -9,8 +9,8 @@ create table if not exists waste_categories (
 );
 
 create table if not exists waste_records (
-  id int not null primary key auto_increment,
-  school_id int not null,
+  id bigint unsigned not null primary key auto_increment,
+  school_id bigint unsigned not null,
   date date not null,
   category varchar(255) not null,
   amount decimal(18,3) not null default 0,

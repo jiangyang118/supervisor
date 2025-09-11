@@ -1,8 +1,8 @@
 -- Dine records table
 
 create table if not exists dine_records (
-  id int primary key auto_increment,
-  school_id int not null,
+  id bigint unsigned primary key auto_increment,
+  school_id bigint unsigned not null,
   meal_key varchar(32) not null,
   meal varchar(16) not null,
   people text null,
@@ -17,4 +17,3 @@ create table if not exists dine_records (
   key idx_dr_meal (meal_key),
   key idx_dr_exception (exception)
 );
-

@@ -1,12 +1,12 @@
--- Fix waste_records.id to be INT AUTO_INCREMENT if schema drifted (e.g., VARCHAR PK '')
+-- Fix waste_records.id to be BIGINT UNSIGNED AUTO_INCREMENT if schema drifted (e.g., VARCHAR PK '')
 
 SET FOREIGN_KEY_CHECKS=0;
 
--- Only run fix when id column is not INT
+-- Only run fix when id column is not BIGINT
 SET @needs_fix := (
   SELECT IF(EXISTS(
     SELECT 1 FROM information_schema.columns
-    WHERE table_schema = DATABASE() AND table_name = 'waste_records' AND column_name = 'id' AND data_type <> 'int'
+    WHERE table_schema = DATABASE() AND table_name = 'waste_records' AND column_name = 'id' AND data_type <> 'bigint'
   ), 1, 0)
 );
 
@@ -14,8 +14,8 @@ SET @needs_fix := (
 SET @stmt := (
   SELECT IF(@needs_fix = 1,
     'CREATE TABLE IF NOT EXISTS waste_records_new (
-       id INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-       school_id INT NOT NULL,
+       id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+       school_id BIGINT UNSIGNED NOT NULL,
        date DATE NOT NULL,
        category VARCHAR(255) NOT NULL,
        amount DECIMAL(18,3) NOT NULL DEFAULT 0,
@@ -55,9 +55,9 @@ PREPARE s4 FROM @stmt; EXECUTE s4; DEALLOCATE PREPARE s4;
 SET @stmt := (SELECT IF(@needs_fix = 1, 'DROP TABLE IF EXISTS waste_records_old', 'SELECT 1'));
 PREPARE s5 FROM @stmt; EXECUTE s5; DEALLOCATE PREPARE s5;
 
--- Ensure id and school_id types are INT (idempotent)
+-- Ensure id and school_id types are BIGINT UNSIGNED (idempotent)
 ALTER TABLE waste_records
-  MODIFY COLUMN id INT NOT NULL AUTO_INCREMENT,
-  MODIFY COLUMN school_id INT NOT NULL;
+  MODIFY COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  MODIFY COLUMN school_id BIGINT UNSIGNED NOT NULL;
 
 SET FOREIGN_KEY_CHECKS=1;

@@ -46,7 +46,7 @@
         <el-col :span="12">
           <el-card>
             <template #header>今日入库食材</template>
-            <el-table :data="inbound.items" size="small" border>
+            <el-table :data="inbound.items"  border>
               <el-table-column prop="name" label="名称" />
               <el-table-column prop="qty" label="数量" width="120" />
             </el-table>
@@ -55,7 +55,7 @@
         <el-col :span="12">
           <el-card>
             <template #header>今日出库食材</template>
-            <el-table :data="outbound.items" size="small" border>
+            <el-table :data="outbound.items"  border>
               <el-table-column prop="name" label="名称" />
               <el-table-column prop="qty" label="数量" width="120" />
             </el-table>
@@ -74,7 +74,7 @@
         <el-col :span="12">
           <el-card>
             <template #header>预警信息</template>
-            <el-table :data="warnings" size="small" border>
+            <el-table :data="warnings"  border>
               <el-table-column prop="type" label="类型" width="100" />
               <el-table-column prop="title" label="标题" />
               <el-table-column prop="level" label="等级" width="100" />

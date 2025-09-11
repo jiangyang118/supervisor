@@ -7,7 +7,7 @@
       <el-divider direction="vertical" />
       <el-button type="primary" @click="openCreate">新增角色</el-button>
     </div>
-    <el-table :data="roleRows" size="small" border>
+    <el-table :data="roleRows"  border>
       <el-table-column prop="name" label="角色名称" width="220" />
       <el-table-column prop="remark" label="备注" />
       <el-table-column label="创建时间" width="140">
@@ -18,10 +18,10 @@
       </el-table-column>
       <el-table-column label="操作" width="160">
         <template #default="{ row }">
-          <el-button text size="small" @click="edit(row)">编辑</el-button>
+          <el-button text  @click="edit(row)">编辑</el-button>
           <el-popconfirm title="确认删除该角色？" @confirm="remove(row)">
             <template #reference>
-              <el-button text type="danger" size="small">删除</el-button>
+              <el-button text type="danger" >删除</el-button>
             </template>
           </el-popconfirm>
         </template>

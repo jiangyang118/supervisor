@@ -25,7 +25,7 @@
           <span style="font-weight: 500">AI抓拍统计</span>
           <el-radio-group
             v-model="statisticsDimension"
-            size="small"
+            
             style="border-radius: 4px; overflow: hidden; border: 1px solid #dcdfe6"
             @change="onDimensionChange"
           >
@@ -229,7 +229,7 @@
             style="width: 180px; margin-right: 8px; transition: all 0.3s"
           />
           <el-button
-            size="small"
+            
             type="primary"
             style="margin-right: 4px; transition: all 0.3s"
             @click="handle(row)"
@@ -237,7 +237,7 @@
           >
           <el-button
             v-if="row.status === 'OPEN'"
-            size="small"
+            
             style="transition: all 0.3s"
             @click="ack(row)"
             >确认</el-button

@@ -1,7 +1,7 @@
 <template>
   <div style="padding: 12px">
     <h3>排查任务</h3>
-    <el-descriptions v-if="task" :column="1" size="small" border>
+    <el-descriptions v-if="task" :column="1"  border>
       <el-descriptions-item label="任务ID">{{ task.id }}</el-descriptions-item>
       <el-descriptions-item label="检查人员">{{ task.assignee }}</el-descriptions-item>
       <el-descriptions-item label="地点">{{ task.location }}</el-descriptions-item>

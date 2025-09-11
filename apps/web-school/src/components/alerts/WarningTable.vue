@@ -22,7 +22,7 @@
       </el-table-column>
       <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" :type="row.status === '未处理' ? 'primary' : 'default'" @click="handleOne(row)">
+          <el-button  :type="row.status === '未处理' ? 'primary' : 'default'" @click="handleOne(row)">
             {{ row.status === '未处理' ? '处理' : '查看' }}
           </el-button>
         </template>

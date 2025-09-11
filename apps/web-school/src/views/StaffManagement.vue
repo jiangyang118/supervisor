@@ -11,7 +11,7 @@
         </div>
       </div>
     </template>
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column prop="name" label="人员姓名" width="140" />
       <el-table-column prop="canteenName" label="所属食堂" width="180" />
       <el-table-column prop="healthCertNo" label="健康证编号" width="180" />
@@ -26,11 +26,11 @@
       </el-table-column>
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" @click="view(row)">查看</el-button>
-          <el-button size="small" type="primary" @click="edit(row)">编辑</el-button>
+          <el-button  @click="view(row)">查看</el-button>
+          <el-button  type="primary" @click="edit(row)">编辑</el-button>
           <el-popconfirm title="确认删除该人员？" @confirm="onDelete(row)">
             <template #reference>
-              <el-button size="small" type="danger">删除</el-button>
+              <el-button  type="danger">删除</el-button>
             </template>
           </el-popconfirm>
         </template>

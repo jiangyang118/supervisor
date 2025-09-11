@@ -35,7 +35,7 @@
         <el-button @click="applyFilters">查询</el-button>
       </el-form-item>
     </el-form>
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column label="消毒日期" width="140"><template #default="{ row }">{{ String(row.at||'').slice(0,10) }}</template></el-table-column>
       <el-table-column label="食堂" min-width="160"><template #default="{ row }">{{ canteenName(row.canteenId) }}</template></el-table-column>
       <el-table-column prop="items" label="消毒区域/物品" min-width="200" />
@@ -50,9 +50,9 @@
       <el-table-column prop="responsible" label="责任人" width="140" />
       <el-table-column label="操作" width="220">
         <template #default="{ row }">
-          <el-button size="small" @click="viewDetail(row)">查看详情</el-button>
-          <el-button size="small" @click="onExportOne(row)">导出</el-button>
-          <el-button v-if="row.exception" size="small" type="warning" @click="openMeasure(row)">异常处置</el-button>
+          <el-button  @click="viewDetail(row)">查看详情</el-button>
+          <el-button  @click="onExportOne(row)">导出</el-button>
+          <el-button v-if="row.exception"  type="warning" @click="openMeasure(row)">异常处置</el-button>
         </template>
       </el-table-column>
     </el-table>

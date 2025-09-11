@@ -21,7 +21,7 @@
     </el-form>
   </el-card>
   <el-dialog v-model="auditDlg" title="变更历史" width="680px">
-    <el-table :data="auditRows" size="small" border>
+    <el-table :data="auditRows"  border>
       <el-table-column prop="id" label="ID" width="120" />
       <el-table-column prop="by" label="操作人" width="120" />
       <el-table-column label="时间" width="180">

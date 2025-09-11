@@ -25,8 +25,8 @@
       <el-table-column prop="operator" label="操作人" width="140" />
       <el-table-column label="操作" width="260">
         <template #default="{ row }">
-          <el-button size="small" @click="openDetail(row)">查看详情</el-button>
-          <el-button size="small" @click="onExportDoc(row)">导出</el-button>
+          <el-button  @click="openDetail(row)">查看详情</el-button>
+          <el-button  @click="onExportDoc(row)">导出</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -34,7 +34,7 @@
 
   <el-drawer v-model="detailVisible" title="入库详情" size="60%">
     <div v-if="detail.head">
-      <el-descriptions :column="2" size="small" border>
+      <el-descriptions :column="2"  border>
         <el-descriptions-item label="入库单号">{{ detail.head.docNo }}</el-descriptions-item>
         <el-descriptions-item label="入库日期">{{ String(detail.head.date||'').slice(0,10) }}</el-descriptions-item>
         <el-descriptions-item label="食堂">{{ canteenName(detail.head.canteenId) }}</el-descriptions-item>
@@ -42,7 +42,7 @@
         <el-descriptions-item label="操作人">{{ detail.head.operator || '-' }}</el-descriptions-item>
       </el-descriptions>
       <el-divider content-position="left">商品明细</el-divider>
-      <el-table :data="detail.items" border size="small">
+      <el-table :data="detail.items" border >
         <el-table-column prop="productName" label="商品" />
         <el-table-column prop="qty" label="数量" width="120" />
         <el-table-column prop="unitPrice" label="单价(元)" width="140" />
@@ -91,7 +91,7 @@
       <div style="margin-bottom:8px">
         <el-button type="primary" text @click="addItem">+ 添加商品</el-button>
       </div>
-      <el-table :data="form.items" border size="small" show-summary :summary-method="itemsSummary">
+      <el-table :data="form.items" border  show-summary :summary-method="itemsSummary">
         <el-table-column label="商品" min-width="220">
           <template #default="{ row }">
             <el-select v-model="row.productId" filterable placeholder="选择商品" style="width:100%">

@@ -20,6 +20,7 @@ export class TrustivsConfigService {
   private refreshTimer: NodeJS.Timeout | null = null;
 
   constructor() {
+    console.log('999',process.env.ylt_baseurl )
     this.baseURL = process.env.ylt_baseurl || process.env.TRUSTIVS_BASE || 'http://127.0.0.1:9086';
     // Warm up token in background and schedule refresh to avoid per-request fetching
     this.ensureToken().catch(() => {});

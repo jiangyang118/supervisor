@@ -4,7 +4,7 @@
       <div class="header">
         <span>陪餐管理</span>
         <div class="actions">
-          <el-tag :type="sseConnected ? 'success' : 'warning'" effect="plain" size="small"
+          <el-tag :type="sseConnected ? 'success' : 'warning'" effect="plain" 
             >摄像头 {{ sseConnected ? '已连接' : '连接中' }}</el-tag
           >
           <el-button @click="generateQr">生成陪餐二维码</el-button>
@@ -42,7 +42,7 @@
         <el-button @click="applyFilters">查询</el-button>
       </el-form-item>
     </el-form>
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="meal" label="餐次" width="120" />
       <el-table-column label="人员">
@@ -78,7 +78,7 @@
       </el-table-column>
       <el-table-column label="操作" width="180">
         <template #default="{ row }">
-          <el-button v-if="row.exception" size="small" @click="openMeasure(row)"
+          <el-button v-if="row.exception"  @click="openMeasure(row)"
             >处理措施</el-button
           >
         </template>

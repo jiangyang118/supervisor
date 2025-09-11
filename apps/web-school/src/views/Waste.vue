@@ -33,7 +33,7 @@
         <el-button @click="applyFilters">查询</el-button>
       </el-form-item>
     </el-form>
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="date" label="日期" width="120" />
       <el-table-column prop="canteenName" label="所属食堂" min-width="160" />
@@ -43,7 +43,7 @@
       <el-table-column prop="person" label="收运人" />
       <el-table-column label="操作" width="120">
         <template #default="{ row }">
-          <el-button type="danger" size="small" @click="deleteRow(row)">删除</el-button>
+          <el-button type="danger"  @click="deleteRow(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -93,7 +93,7 @@
       />
       <el-button type="primary" @click="addCategory">添加</el-button>
     </div>
-    <el-table :data="categories as any" size="small" border>
+    <el-table :data="categories as any"  border>
       <el-table-column label="名称" prop="name" />
       <el-table-column label="启用" width="120">
         <template #default="{ row }">
@@ -102,7 +102,7 @@
       </el-table-column>
       <el-table-column label="操作" width="140">
         <template #default="{ row }">
-          <el-button type="danger" size="small" @click="deleteCategory(row)">删除</el-button>
+          <el-button type="danger"  @click="deleteCategory(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>

@@ -85,7 +85,7 @@
       <el-table-column prop="at" label="时间" width="200" />
       <el-table-column label="操作" width="120" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" :type="row.status === '未处理' ? 'primary' : 'default'" @click="handleOne(row)">
+          <el-button  :type="row.status === '未处理' ? 'primary' : 'default'" @click="handleOne(row)">
             {{ row.status === '未处理' ? '处理' : '查看' }}
           </el-button>
         </template>

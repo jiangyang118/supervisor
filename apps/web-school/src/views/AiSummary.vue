@@ -42,7 +42,7 @@
           <div class="stat-title">{{ row.type }}</div>
           <div class="stat-count">{{ row.count }}</div>
           <div class="stat-status">
-            <el-tag :type="row.status === 'OPEN' ? 'danger' : 'success'" size="small">
+            <el-tag :type="row.status === 'OPEN' ? 'danger' : 'success'" >
               {{ row.status === 'OPEN' ? '未处理' : '已处理' }}
             </el-tag>
           </div>
@@ -57,7 +57,7 @@
         <el-table-column prop="count" label="违规数量" min-width="80" align="right" />
         <el-table-column prop="status" label="状态" min-width="80" align="center">
           <template #default="scope">
-            <el-tag :type="scope.row.status === 'OPEN' ? 'danger' : 'success'" size="small">
+            <el-tag :type="scope.row.status === 'OPEN' ? 'danger' : 'success'" >
               {{ scope.row.status === 'OPEN' ? '未处理' : '已处理' }}
             </el-tag>
           </template>

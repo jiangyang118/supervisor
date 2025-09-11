@@ -13,7 +13,7 @@
         </div>
       </div>
     </template>
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column prop="id" label="商品编号" width="120" />
       <el-table-column prop="name" label="商品名称" min-width="180" />
       <el-table-column prop="category" label="分类" width="140" />
@@ -23,11 +23,11 @@
       </el-table-column>
       <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" @click="edit(row)">编辑</el-button>
-          <el-button size="small" @click="setCategory(row)">设置分类</el-button>
+          <el-button  @click="edit(row)">编辑</el-button>
+          <el-button  @click="setCategory(row)">设置分类</el-button>
           <el-popconfirm title="确认删除该商品？" @confirm="remove(row)">
             <template #reference>
-              <el-button size="small" type="danger">删除</el-button>
+              <el-button  type="danger">删除</el-button>
             </template>
           </el-popconfirm>
         </template>

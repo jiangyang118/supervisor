@@ -1,7 +1,7 @@
 <template>
   <el-card>
     <template #header>消毒记录详情</template>
-    <el-descriptions :column="2" border size="small">
+    <el-descriptions :column="2" border >
       <el-descriptions-item label="记录编号">{{ detail?.id }}</el-descriptions-item>
       <el-descriptions-item label="消毒日期">{{ (detail?.at||'').slice(0,10) }}</el-descriptions-item>
       <el-descriptions-item label="食堂">{{ canteenName(detail?.canteenId) }}</el-descriptions-item>

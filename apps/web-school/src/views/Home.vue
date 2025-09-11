@@ -94,12 +94,12 @@
             <div style="display:flex; align-items:center; justify-content:space-between">
               <span style="font-weight:600">AI预警类型分布</span>
               <div style="display:flex; align-items:center; gap:8px">
-                <el-tag size="small" effect="plain">Top {{ aiTopN }}</el-tag>
-                <el-select v-model="periodMode" size="small" style="width: 120px">
+                <el-tag  effect="plain">Top {{ aiTopN }}</el-tag>
+                <el-select v-model="periodMode"  style="width: 120px">
                   <el-option label="本周" value="week" />
                   <el-option label="最近7天" value="7d" />
                 </el-select>
-                <el-button size="small" type="text" @click.stop="exportAiBar">导出</el-button>
+                <el-button  type="text" @click.stop="exportAiBar">导出</el-button>
               </div>
             </div>
           </template>
@@ -112,20 +112,20 @@
             <div style="display:flex; align-items:center; justify-content:space-between">
               <span style="font-weight:600">物联网设备状态</span>
               <div style="display:flex; align-items:center; gap:8px">
-                <el-select v-model="sortMode" size="small" style="width: 120px">
+                <el-select v-model="sortMode"  style="width: 120px">
                   <el-option label="默认排序" value="default" />
                   <el-option label="异常优先" value="abnormal" />
                   <el-option label="在线优先" value="online" />
                 </el-select>
-                <el-switch v-model="onlyAbnormal" size="small" />
+                <el-switch v-model="onlyAbnormal"  />
                 <span style="font-size:12px;color:#909399">仅看异常</span>
-                <el-button size="small" type="text" @click="go('/devices')">查看全部</el-button>
+                <el-button  type="text" @click="go('/devices')">查看全部</el-button>
               </div>
             </div>
           </template>
           <el-table
             :data="displayedDevices"
-            size="small"
+            
             border
             height="260"
             empty-text="暂无设备数据"

@@ -5,13 +5,13 @@
     <div class="bar">
       <span class="name">{{ title }}</span>
       <div class="spacer" />
-      <el-button size="small" text @click="togglePlay">{{ isPlaying ? '暂停' : '播放' }}</el-button>
-      <el-button size="small" text @click="toggleMute">{{ muted ? '静音开' : '静音关' }}</el-button>
-      <el-button size="small" text @click="snapshot">截图</el-button>
-      <el-button size="small" text @click="fullscreen">全屏</el-button>
+      <el-button  text @click="togglePlay">{{ isPlaying ? '暂停' : '播放' }}</el-button>
+      <el-button  text @click="toggleMute">{{ muted ? '静音开' : '静音关' }}</el-button>
+      <el-button  text @click="snapshot">截图</el-button>
+      <el-button  text @click="fullscreen">全屏</el-button>
       <el-button
         v-if="canSwitch"
-        size="small"
+        
         text
         @click="switchMode"
       >切换为 {{ mode === 'hls' ? 'FLV' : 'HLS' }}</el-button>

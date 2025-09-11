@@ -43,7 +43,7 @@
 
       <el-divider content-position="left">商品明细</el-divider>
       <div style="margin-bottom:8px"><el-button type="primary" text @click="addItem">+ 添加商品</el-button></div>
-      <el-table :data="form.items" border size="small">
+      <el-table :data="form.items" border >
         <el-table-column label="商品" min-width="220">
           <template #default="{ row }">
             <el-select v-model="row.productId" filterable placeholder="选择商品(仅显示有库存)" style="width:100%" @change="() => loadBatches(row)">

@@ -13,7 +13,7 @@
       <div class="sub" v-if="infoStr">{{ infoStr }}</div>
     </template>
 
-    <el-table :data="tableRows" size="small" border>
+    <el-table :data="tableRows"  border>
       <el-table-column prop="name" label="姓名" width="140" />
       <el-table-column label="检测时间" width="180">
         <template #default="{ row }">{{ row.at ? formatTime(row.at) : '-' }}</template>
@@ -43,7 +43,7 @@
       </el-table-column>
       <el-table-column label="操作" min-width="200">
         <template #default="{ row }">
-          <el-button v-if="row.result==='异常' && !row.handle" size="small" @click="openHandle(row)">处理</el-button>
+          <el-button v-if="row.result==='异常' && !row.handle"  @click="openHandle(row)">处理</el-button>
         </template>
       </el-table-column>
     </el-table>

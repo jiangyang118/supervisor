@@ -12,7 +12,7 @@
           <div class="theme-toggle">
             <el-switch
               v-model="isLightCard"
-              size="small"
+              
               inline-prompt
               :active-icon="Sunny"
               :inactive-icon="Moon"

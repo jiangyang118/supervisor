@@ -14,7 +14,7 @@
       <el-date-picker v-model="range" type="datetimerange" />
       <el-button @click="load">查询</el-button>
     </div>
-    <el-table :data="snaps" size="small" border>
+    <el-table :data="snaps"  border>
       <el-table-column prop="id" label="快照ID" width="120" />
       <el-table-column prop="cameraId" label="通道" />
       <el-table-column prop="at" label="时间" width="180" />

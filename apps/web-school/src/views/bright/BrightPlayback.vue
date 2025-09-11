@@ -12,7 +12,7 @@
       /></el-form-item>
       <el-form-item><el-button type="primary" @click="search">查询</el-button></el-form-item>
     </el-form>
-    <el-table v-if="segments.length" :data="segments" size="small" border>
+    <el-table v-if="segments.length" :data="segments"  border>
       <el-table-column prop="start" label="开始" width="180" />
       <el-table-column prop="end" label="结束" width="180" />
       <el-table-column label="播放">
@@ -23,7 +23,7 @@
       </el-table-column>
       <el-table-column label="下载" width="120">
         <template #default="{ row }">
-          <el-button size="small" @click="downloadSeg(row)">下载</el-button>
+          <el-button  @click="downloadSeg(row)">下载</el-button>
         </template>
       </el-table-column>
     </el-table>

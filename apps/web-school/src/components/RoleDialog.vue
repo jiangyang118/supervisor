@@ -1,6 +1,6 @@
 <template>
   <el-dialog :model-value="visible" title="新增角色" width="520px" @close="$emit('cancel')">
-    <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" size="small">
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="80px" >
       <el-form-item label="角色名称" prop="name">
         <el-input v-model="form.name" placeholder="请输入角色名称" maxlength="32" show-word-limit />
       </el-form-item>

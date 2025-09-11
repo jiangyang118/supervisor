@@ -9,7 +9,7 @@
         </div>
       </div>
     </template>
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="name" label="添加剂" />
       <el-table-column prop="amount" label="用量(g)" width="120" />

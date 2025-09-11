@@ -24,7 +24,7 @@
         <el-button @click="applyFilters">查询</el-button>
       </el-form-item>
     </el-form>
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="result" label="结果" width="120">
         <template #default="{ row }"

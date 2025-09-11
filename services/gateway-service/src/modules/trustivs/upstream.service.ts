@@ -14,13 +14,13 @@ export class TrustivsUpstreamService {
   private now() { return Date.now(); }
   private getEnvToken() { return process.env.TRUSTIVS_TOKEN; }
 
-  private async ensureToken(): Promise<string | undefined> {
+  private async ensureToken(force = false): Promise<string | undefined> {
     // Prefer cached
-    if (TrustivsUpstreamService.tokenCache && (TrustivsUpstreamService.tokenCache.expiresAt || 0) > this.now()) {
+    if (!force && TrustivsUpstreamService.tokenCache && (TrustivsUpstreamService.tokenCache.expiresAt || 0) > this.now()) {
       return TrustivsUpstreamService.tokenCache.token;
     }
     const envToken = this.getEnvToken();
-    if (envToken) return envToken;
+    if (!force && envToken) return envToken;
     // Build from ylt_* or TRUSTIVS_* env
     const acc = process.env.ylt_account || process.env.TRUSTIVS_ACCOUNT || 'STANDTRUST';
     const pwdMd5Env = process.env.ylt_password_md5 || process.env.TRUSTIVS_PASSWORD_MD5 || '';
@@ -76,7 +76,28 @@ export class TrustivsUpstreamService {
       const resHeaders = (() => { try { return Object.fromEntries((res.headers as any).entries()); } catch { return {}; } })();
       // Log full response
       logInfo('trustivs.response', { url, status: res.status, tookMs, headers: resHeaders, body: text });
-      try { return JSON.parse(text); } catch { return { code: res.ok ? '1':'0', message: text } as any; }
+      try {
+        const json = JSON.parse(text);
+        // Handle token expired code ('405') by refreshing token and retrying once
+        if (autoAuth && json && String(json.code) === '405') {
+          try {
+            // Invalidate cache and force refresh
+            TrustivsUpstreamService.tokenCache = undefined;
+            const newToken = await this.ensureToken(true);
+            const hdr2 = await this.headers(opts?.headers, autoAuth);
+            if (newToken) hdr2['token'] = newToken;
+            const res2 = await fetch(url, { method: method.toUpperCase(), headers: hdr2 as any, body });
+            const text2 = await res2.text();
+            logInfo('trustivs.response', { url, status: res2.status, tookMs: Date.now() - started, headers: (()=>{ try { return Object.fromEntries((res2.headers as any).entries()); } catch { return {}; } })(), body: text2, retry: true });
+            try { return JSON.parse(text2); } catch { return { code: res2.ok ? '1':'0', message: text2 } as any; }
+          } catch (e) {
+            // fall through to original json
+          }
+        }
+        return json;
+      } catch {
+        return { code: res.ok ? '1':'0', message: text } as any;
+      }
     } catch (e: any) {
       const tookMs = Date.now() - started;
       logError('trustivs.error', { url, method: method.toUpperCase(), tookMs, error: e?.message || String(e) });

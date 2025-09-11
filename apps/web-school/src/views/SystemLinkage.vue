@@ -8,7 +8,7 @@
       <el-form-item><el-button type="primary" @click="submit">提交申请</el-button></el-form-item>
     </el-form>
     <el-divider />
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="org" label="监管单位" />
       <el-table-column prop="status" label="状态" width="120" />
@@ -17,14 +17,14 @@
         ><template #default="{ row }">
           <el-button
             v-if="row.status === 'PENDING'"
-            size="small"
+            
             type="success"
             @click="review(row, 'APPROVED')"
             >同意</el-button
           >
           <el-button
             v-if="row.status === 'PENDING'"
-            size="small"
+            
             type="danger"
             @click="review(row, 'REJECTED')"
             >拒绝</el-button

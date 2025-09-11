@@ -18,7 +18,7 @@
       <el-button :loading="loading" @click="load">查询</el-button>
     </div>
 
-    <el-table :data="rows" border size="small">
+    <el-table :data="rows" border >
       <el-table-column prop="checkDate" label="检查日期" width="160">
         <template #default="{ row }">{{ fmt(row.checkDate) }}</template>
       </el-table-column>
@@ -34,8 +34,8 @@
       <el-table-column prop="handler" label="检查人" width="140" />
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <el-button size="small" @click="viewDetail(row)">查看详情</el-button>
-          <el-button size="small" text @click="exportOne(row)">导出</el-button>
+          <el-button  @click="viewDetail(row)">查看详情</el-button>
+          <el-button  text @click="exportOne(row)">导出</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -85,7 +85,7 @@
         <div>
           <canvas ref="sigCanvas" width="400" height="120" style="border:1px solid #ccc; border-radius:4px; touch-action:none"></canvas>
           <div style="margin-top:4px">
-            <el-button size="small" @click="clearSig">清除</el-button>
+            <el-button  @click="clearSig">清除</el-button>
           </div>
         </div>
       </el-form-item>
@@ -98,7 +98,7 @@
 
   <!-- 详情弹窗 -->
   <el-dialog v-model="detailVisible" title="检查详情" width="640px">
-    <el-descriptions :column="1" size="small" border>
+    <el-descriptions :column="1"  border>
       <el-descriptions-item label="检查日期">{{ fmt(detail?.checkDate) }}</el-descriptions-item>
       <el-descriptions-item label="食堂">{{ canteenName(detail?.canteenId) }}</el-descriptions-item>
       <el-descriptions-item label="设备">{{ detail?.deviceName }}</el-descriptions-item>

@@ -62,7 +62,7 @@
             <!-- 仓库信息管理已下线 -->
           </el-sub-menu>
           <el-sub-menu v-if="has('hr.*') || has('inventory.*')" index="hr">
-            <template #title>人事管理</template>
+            <template #title>资质证件管理</template>
             <el-menu-item v-if="has('hr.*')" index="/hr/staff">人员资质</el-menu-item>
             <el-menu-item v-if="has('hr.*')" index="/hr/canteen-licenses">食堂资质</el-menu-item>
             <el-menu-item index="/suppliers">供应商资质</el-menu-item>
@@ -102,8 +102,8 @@
             </template>
             <template #default>
               候选域名：{{ integration.candidates || '未配置' }}
-              <el-button size="small" type="primary" text @click="testHealth">测试连接</el-button>
-              <el-button size="small" text @click="openConfig">设置</el-button>
+              <el-button  type="primary" text @click="testHealth">测试连接</el-button>
+              <el-button  text @click="openConfig">设置</el-button>
               <span v-if="healthOk === true" style="color:#67c23a">已连接</span>
               <span v-else-if="healthOk === false" style="color:#f56c6c">连接失败</span>
             </template>

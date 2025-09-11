@@ -21,7 +21,7 @@
         <el-button type="success" @click="drawerVisible = true">新增设备（米果晨检仪）</el-button>
       </div>
     </template>
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column prop="id" label="设备ID" width="140" />
       <el-table-column prop="name" label="名称" />
       <el-table-column prop="type" label="类型" width="120">
@@ -89,7 +89,7 @@
       <template v-if="employees.length">
         <el-divider />
         <div style="font-weight: 600; margin-bottom: 6px">员工缓存（前 10 条）</div>
-        <el-table :data="employees.slice(0,10)" size="small" border>
+        <el-table :data="employees.slice(0,10)"  border>
           <el-table-column prop="userId" label="工号" width="120" />
           <el-table-column prop="name" label="姓名" width="120" />
           <el-table-column prop="healthStartTime" label="健康证开始" width="140" />

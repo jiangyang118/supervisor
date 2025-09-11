@@ -58,7 +58,7 @@
         <el-col :span="12">
           <el-card shadow="never">
             <template #header>供应商品</template>
-            <el-table :data="summary.products" size="small" border>
+            <el-table :data="summary.products"  border>
               <el-table-column prop="name" label="名称" />
               <el-table-column prop="unit" label="单位" width="120" />
             </el-table>
@@ -67,7 +67,7 @@
         <el-col :span="12">
           <el-card shadow="never">
             <template #header>历史入库记录（最近200条）</template>
-            <el-table :data="summary.inbound" size="small" border>
+            <el-table :data="summary.inbound"  border>
               <el-table-column prop="productId" label="商品ID" width="120" />
               <el-table-column prop="qty" label="数量" width="120" />
               <el-table-column prop="at" label="时间" />

@@ -4,7 +4,7 @@
       <el-input
         v-model="store.query"
         placeholder="搜索摄像头/通道"
-        size="small"
+        
         clearable
         style="margin-bottom: 8px"
       />
@@ -40,7 +40,7 @@
             <VideoPlayer :hls-url="store.sources[store.selected[i]]?.hlsUrl" :flv-url="store.sources[store.selected[i]]?.flvUrl" :title="titleFor(store.selected[i])" @net="(d:any) => onNet(i, d)" />
             <div class="tools">
               <span>{{ titleFor(store.selected[i]) }}</span>
-              <el-button size="small" text @click="remove(store.selected[i])">移除</el-button>
+              <el-button  text @click="remove(store.selected[i])">移除</el-button>
             </div>
             <div v-if="showInfo" class="overlay-br">{{ titleFor(store.selected[i]) }} · {{ nowStr }}</div>
           </div>
@@ -55,7 +55,7 @@
         <span>接收: {{ rxMbps.toFixed(3) }} Mbps</span>
         <span style="margin-left:12px">发送: {{ txMbps.toFixed(3) }} Mbps</span>
         <el-dropdown>
-          <el-button size="small" type="primary" text>布局/叠加选项</el-button>
+          <el-button  type="primary" text>布局/叠加选项</el-button>
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item @click="setGrid(1)">单屏</el-dropdown-item>

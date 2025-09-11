@@ -11,7 +11,7 @@
       </div>
     </template>
 
-    <el-table :data="batches" size="small" border>
+    <el-table :data="batches"  border>
       <el-table-column prop="date" label="留样日期" width="140" />
       <el-table-column prop="meal" label="餐次" width="100" />
       <el-table-column prop="canteen" label="食堂" width="160" />
@@ -19,8 +19,8 @@
       <el-table-column prop="linkedCount" label="关联菜品数" width="120" />
       <el-table-column label="操作" min-width="220">
         <template #default="{ row }">
-          <el-button size="small" @click="viewBatch(row)">查看详情</el-button>
-          <el-button size="small" @click="exportBatch(row)">导出</el-button>
+          <el-button  @click="viewBatch(row)">查看详情</el-button>
+          <el-button  @click="exportBatch(row)">导出</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -73,7 +73,7 @@
       <div class="kv"><b>留样人：</b>{{ current.by }}</div>
       <el-divider />
       <div v-if="current.items && current.items.length">
-        <el-table :data="current.items" size="small" border>
+        <el-table :data="current.items"  border>
           <el-table-column prop="sample" label="样品/菜品" />
           <el-table-column prop="weight" label="重量(g)" width="100" />
           <el-table-column label="图片" width="120">

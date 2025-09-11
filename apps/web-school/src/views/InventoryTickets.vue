@@ -9,7 +9,7 @@
         </div>
       </div>
     </template>
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column label="商品"><template #default="{ row }">{{ productName(row.productId) }}</template></el-table-column>
       <el-table-column prop="type" label="类型" width="140" />

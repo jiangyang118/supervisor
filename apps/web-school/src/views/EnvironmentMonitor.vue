@@ -31,7 +31,7 @@
             <el-tag :type="it.alert ? 'danger' : 'success'" effect="plain">{{ it.alert ? '报警' : '正常' }}</el-tag>
           </div>
           <div class="actions">
-            <el-button size="small" @click="openHistory(it)">查看历史</el-button>
+            <el-button  @click="openHistory(it)">查看历史</el-button>
           </div>
         </div>
       </div>
@@ -55,7 +55,7 @@
             <el-tag :type="it.alert ? 'danger' : 'success'" effect="plain">{{ it.alert ? '报警' : '正常' }}</el-tag>
           </div>
           <div class="actions">
-            <el-button size="small" @click="openHistory(it)">查看历史</el-button>
+            <el-button  @click="openHistory(it)">查看历史</el-button>
           </div>
         </div>
       </div>
@@ -79,7 +79,7 @@
             <el-tag :type="it.alert ? 'danger' : 'success'" effect="plain">{{ it.alert ? '报警' : '正常' }}</el-tag>
           </div>
           <div class="actions">
-            <el-button size="small" @click="openHistory(it)">查看历史</el-button>
+            <el-button  @click="openHistory(it)">查看历史</el-button>
           </div>
         </div>
       </div>

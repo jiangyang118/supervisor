@@ -33,7 +33,7 @@
         <el-col :span="6"><el-button @click="refresh">查询</el-button></el-col>
       </el-row>
     </slot>
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="name" :label="mainCol" />
       <el-table-column prop="status" label="状态" width="120" />

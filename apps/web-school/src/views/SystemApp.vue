@@ -1,14 +1,14 @@
 <template>
   <el-card>
     <template #header>移动端扫码</template>
-    <el-table :data="apps" size="small" border>
+    <el-table :data="apps"  border>
       <el-table-column prop="platform" label="平台" width="140" />
       <el-table-column prop="version" label="版本" width="120" />
       <el-table-column prop="url" label="下载链接" />
       <el-table-column label="操作" width="260"
         ><template #default="{ row }">
           <a :href="row.url" target="_blank"
-            ><el-button size="small" type="primary">下载</el-button></a
+            ><el-button  type="primary">下载</el-button></a
           >
           <img
             :src="qr(row.url)"

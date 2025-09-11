@@ -5,12 +5,12 @@
         <span>食安资讯发布</span>
       </div></template
     >
-    <el-table :data="rows" size="small" border height="calc(100vh - 260px)">
+    <el-table :data="rows"  border height="calc(100vh - 260px)">
       <el-table-column prop="title" label="标题" />
       <el-table-column prop="at" label="发布时间" width="200" />
       <el-table-column label="操作" width="140"
         ><template #default="{ row }"
-          ><el-button size="small" @click="view(row)">查看</el-button></template
+          ><el-button  @click="view(row)">查看</el-button></template
         ></el-table-column
       >
     </el-table>

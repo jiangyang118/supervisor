@@ -18,7 +18,7 @@
       <el-form-item><el-button type="primary" @click="save">发布</el-button></el-form-item>
     </el-form>
     <el-divider />
-    <el-table :data="rows" size="small" border>
+    <el-table :data="rows"  border>
       <el-table-column prop="id" label="ID" width="120" />
       <el-table-column prop="title" label="标题" />
       <el-table-column prop="at" label="时间" width="180" />

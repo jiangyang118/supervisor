@@ -16,7 +16,7 @@
       </div>
     </template>
 
-    <el-table :data="tasksToday" size="small" border>
+    <el-table :data="tasksToday"  border>
       <el-table-column prop="date" label="日期" width="140" />
       <el-table-column prop="canteen" label="食堂名称" width="180" />
       <el-table-column label="应检/实检/异常" width="200">
@@ -30,9 +30,9 @@
       </el-table-column>
       <el-table-column label="操作" min-width="280">
         <template #default="{ row }">
-          <el-button size="small" @click="view(row)">查看详情</el-button>
-          <el-button v-if="statusLabel(row)==='进行中'" size="small" @click="view(row)">手动登记</el-button>
-          <el-button size="small" @click="exportRow(row)">导出</el-button>
+          <el-button  @click="view(row)">查看详情</el-button>
+          <el-button v-if="statusLabel(row)==='进行中'"  @click="view(row)">手动登记</el-button>
+          <el-button  @click="exportRow(row)">导出</el-button>
         </template>
       </el-table-column>
     </el-table>

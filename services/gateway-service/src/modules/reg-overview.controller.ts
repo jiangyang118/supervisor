@@ -6,7 +6,6 @@ import { PesticideService } from './pesticide.service';
 import { DineService } from './dine.service';
 import { WasteService } from './waste.service';
 import { DevicesService } from './devices.service';
-import { PublicFeedbackService } from './public-feedback.service';
 import { SchoolsRepository } from './repositories/schools.repository';
 import { JwtGuard } from './jwt.guard';
 import { PermissionGuard } from './permission.guard';
@@ -23,7 +22,7 @@ export class RegOverviewController {
     private readonly dine: DineService,
     private readonly waste: WasteService,
     private readonly devices: DevicesService,
-    private readonly feedback: PublicFeedbackService,
+    // feedback module removed
     private readonly schoolsRepo: SchoolsRepository,
   ) {}
   private numId(id: string | number | undefined) {
@@ -77,21 +76,7 @@ export class RegOverviewController {
       return { day: s.slice(5, 10), count: cntRes.total };
     }));
     // 投诉待处理 Top（学校）
-    const pending = (await this.feedback.list({ status: '待处理', page: 1, pageSize: 100000 }))
-      .items as any[];
-    const bySchool = new Map<string, number>();
-    pending.forEach((r) =>
-      bySchool.set(r.schoolId || '-', (bySchool.get(r.schoolId || '-') || 0) + 1),
-    );
-    const schoolsArr = await this.schools();
-    const topWarnings = Array.from(bySchool.entries())
-      .map(([id, warnings]) => ({
-        school: schoolsArr.find((s: any) => s.id === id)?.name || id,
-        warnings,
-      }))
-      .sort((a, b) => b.warnings - a.warnings)
-      .slice(0, 5)
-      .map((x, i) => ({ rank: i + 1, ...x }));
+    const topWarnings: any[] = [];
     // 证件临期占位（后续接入证件服务到期扫描）
     const expiringCerts: any[] = [];
     return {

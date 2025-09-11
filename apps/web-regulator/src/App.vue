@@ -46,8 +46,7 @@
           </el-sub-menu>
           <el-menu-item index="/certificates">资质证件监管</el-menu-item>
           <el-menu-item index="/training">培训考试监管</el-menu-item>
-          <el-menu-item index="/food-waste">食品浪费监管</el-menu-item>
-          <el-menu-item index="/public">公示监管</el-menu-item>
+          <!-- 公示与反馈模块已下线：食品浪费监管、公示监管入口移除 -->
           <el-sub-menu index="inspections">
             <template #title>监督检查</template>
             <el-menu-item index="/inspections">任务管理</el-menu-item>

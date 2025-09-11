@@ -29,8 +29,7 @@ const routes: RouteRecordRaw[] = [
   { path: '/ledgers/waste', component: () => import('../views/LedgerWaste.vue') },
   { path: '/ledgers/inventory', component: () => import('../views/LedgerInventory.vue') },
   { path: '/certificates', component: () => import('../views/Certificates.vue') },
-  { path: '/food-waste', component: () => import('../views/FoodWaste.vue') },
-  { path: '/public', component: () => import('../views/PublicOversight.vue') },
+  // 公示与反馈相关已下线
   { path: '/inspections', component: () => import('../views/Inspections.vue') },
   { path: '/inspections/inspectors', component: () => import('../views/Inspectors.vue') },
   { path: '/inspections/config', component: () => import('../views/InspectionsConfig.vue') },

@@ -147,7 +147,14 @@ export class InventoryService {
     const enabled = params?.enabled ? params.enabled === 'true' : undefined;
     const expired = params?.expired === 'true' ? true : params?.expired === 'false' ? false : undefined;
     const res = await this.repo!.listSuppliers({ schoolId: params?.schoolId, q: params?.q, enabled, expired, expireStart: params?.expireStart, expireEnd: params?.expireEnd, page: p, pageSize: ps });
-    const items = res.items.map((s: any) => ({ ...s, licenseExpireAt: s.licenseExpireAt ? this.fmtSeconds(s.licenseExpireAt) : undefined, expired: this.isExpired(s.licenseExpireAt) }));
+    const items = res.items.map((s: any) => ({
+      ...s,
+      licenseExpireAt: s.licenseExpireAt ? this.fmtDay(s.licenseExpireAt) : undefined,
+      foodLicenseExpireAt: s.foodLicenseExpireAt ? this.fmtDay(s.foodLicenseExpireAt) : undefined,
+      qcExpireAt: s.qcExpireAt ? this.fmtDay(s.qcExpireAt) : undefined,
+      animalExpireAt: s.animalExpireAt ? this.fmtDay(s.animalExpireAt) : undefined,
+      expired: this.isExpired(s.licenseExpireAt),
+    }));
     return { ...res, items };
   }
   private isExpired(dateISO?: string) {
@@ -346,7 +353,17 @@ export class InventoryService {
 
   // Inbound / Outbound
   async listInbound(schoolId?: number | string) { return this.repo!.listInbound(schoolId); }
+  async listInboundDocs(schoolId?: number | string) { return this.repo!.listInboundDocs(schoolId); }
+  async getInboundDocDetail(docNo: string) { return this.repo!.getInboundDocDetail(docNo); }
   async listOutbound(schoolId?: number | string) { return this.repo!.listOutbound(schoolId); }
+  async listOutboundBatches(params: { schoolId: number | string; productId: number | string; canteenId?: number | string }) {
+    if (!params?.schoolId || !params?.productId) throw new BadRequestException('schoolId/productId required');
+    return this.repo!.listInboundFifoBatches(params);
+  }
+  async clearOutbound(schoolId?: number | string) {
+    const deleted = await this.repo!.clearOutbound(schoolId);
+    return { deleted } as any;
+  }
   createInbound(b: {
     schoolId?: number | string;
     productId: string;
@@ -374,6 +391,29 @@ export class InventoryService {
       return rec;
     });
   }
+  async createInboundDoc(b: { schoolId?: number | string; canteenId?: number; supplierId?: number | string; date: string; operator?: string; items: Array<{ productId: string; qty: number; unitPrice?: number; prodDate?: string; shelfLifeDays?: number }>; tickets: Array<{ type: 'ticket_quarantine'|'ticket_invoice'|'ticket_receipt'; imageUrl: string }>; images?: string[] }) {
+    if (!b?.date) throw new BadRequestException('date required');
+    if (!Array.isArray(b?.items) || !b.items.length) throw new BadRequestException('items required');
+    const sid = b.schoolId !== undefined && b.schoolId !== null && String(b.schoolId).trim() !== '' ? Number(b.schoolId) : 1;
+    const docNo = `IN-${Date.now()}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+    // Require tickets: quarantine + invoice/receipt at least one each
+    const types = new Set((b.tickets || []).map((t) => t.type));
+    if (!types.has('ticket_quarantine') || !(types.has('ticket_invoice') || types.has('ticket_receipt'))) {
+      throw new BadRequestException('tickets required: quarantine and invoice/receipt');
+    }
+    await this.repo!.insertInboundDoc({
+      schoolId: sid,
+      docNo,
+      canteenId: b.canteenId,
+      supplierId: b.supplierId,
+      date: b.date,
+      operator: b.operator,
+      items: b.items.map((it) => ({ productId: it.productId, qty: Number(it.qty || 0), unitPrice: it.unitPrice, prodDate: it.prodDate, shelfLifeDays: it.shelfLifeDays })),
+      tickets: b.tickets,
+      images: b.images || [],
+    });
+    return { ok: true, docNo };
+  }
   scaleInbound(b: {
     schoolId?: number | string;
     productId: string;
@@ -397,11 +437,29 @@ export class InventoryService {
     qty: number;
     purpose?: string;
     by?: string;
+    receiver?: string;
+    canteenId?: number;
+    date?: string;
     warehouseId?: string;
   }) {
     if (!b?.productId) throw new BadRequestException('productId required');
     if (!b?.qty || Number(b.qty) <= 0) throw new BadRequestException('qty must be > 0');
     const sid = b.schoolId !== undefined && b.schoolId !== null && String(b.schoolId).trim() !== '' ? Number(b.schoolId) : 1;
+    // Normalize date to YYYY-MM-DD (date-only)
+    const at = (() => {
+      if (b.date) {
+        const d = new Date(b.date);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      }
+      const d = new Date();
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    })();
     const r: Outbound = {
       id: 0 as any,
       productId: b.productId,
@@ -409,13 +467,18 @@ export class InventoryService {
       purpose: b.purpose,
       by: b.by,
       warehouseId: b.warehouseId,
-      at: this.now(),
+      at: at,
       source: 'manual',
     };
-    return this.repo!.insertOutbound({ schoolId: sid, ...r }).then((insertId) => {
-      const rec = { ...r, id: insertId };
-      this.emit('out-created', rec);
-      return rec;
+    // Server-side guard: ensure enough stock remains (FIFO-based)
+    return this.listOutboundBatches({ schoolId: sid, productId: b.productId, canteenId: b.canteenId }).then((batches) => {
+      const totalRemain = (batches as any[]).reduce((s, it) => s + Number(it.remain || 0), 0);
+      if (r.qty > totalRemain) throw new BadRequestException('insufficient stock');
+      return this.repo!.insertOutbound({ schoolId: sid, canteenId: b.canteenId, receiver: b.receiver, ...r }).then((insertId) => {
+        const rec = { ...r, id: insertId };
+        this.emit('out-created', rec);
+        return rec;
+      });
     });
   }
   scaleOutbound(b: {
@@ -424,6 +487,8 @@ export class InventoryService {
     weight: number;
     purpose?: string;
     by?: string;
+    receiver?: string;
+    canteenId?: number;
     warehouseId?: string;
   }) {
     return this.createOutbound({
@@ -432,6 +497,8 @@ export class InventoryService {
       qty: b.weight,
       purpose: b.purpose,
       by: b.by,
+      receiver: b.receiver,
+      canteenId: b.canteenId,
       warehouseId: b.warehouseId,
     });
   }
@@ -450,6 +517,12 @@ export class InventoryService {
       ':' + pad(dt.getSeconds())
     );
   }
+  private fmtDay(d?: Date | string | null) {
+    if (!d) return '';
+    const dt = typeof d === 'string' ? new Date(d) : d;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return dt.getFullYear() + '-' + pad(dt.getMonth() + 1) + '-' + pad(dt.getDate());
+  }
   async getStock(schoolId?: number | string): Promise<Stock[]> {
     const list = await this.repo!.getStock(schoolId);
     return list.map((s: any) => ({ productId: s.productId, qty: Number(s.qty || 0), updatedAt: this.fmtSeconds(s.updatedAt) }));
@@ -461,6 +534,63 @@ export class InventoryService {
     if (diff > 0) await this.createInbound({ schoolId: adj.schoolId, productId: adj.productId, qty: diff });
     else await this.createOutbound({ schoolId: adj.schoolId, productId: adj.productId, qty: -diff });
     return { ok: true };
+  }
+
+  // Batch-level stock listing with status and expiry
+  private addDays(dateISO?: string, days?: number) {
+    if (!dateISO || !Number.isFinite(Number(days))) return undefined as any;
+    const d = new Date(dateISO);
+    d.setDate(d.getDate() + Number(days));
+    return d;
+  }
+  private statusByExpire(expireAt?: Date) {
+    if (!expireAt) return '正常';
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const diffDays = Math.ceil((expireAt.getTime() - today.getTime())/86400000);
+    if (diffDays < 0) return '过期';
+    if (diffDays <= 7) return '临期';
+    return '正常';
+  }
+  async listBatchStock(params: { schoolId: number | string; near?: 'true'|'false' }) {
+    const sid = params.schoolId !== undefined && params.schoolId !== null && String(params.schoolId).trim() !== '' ? Number(params.schoolId) : 1;
+    const list = await this.repo!.listBatchStock(sid);
+    const mapped = list.map((r: any) => {
+      const expireDate = this.addDays(r.prodDate ? String(r.prodDate) : undefined, r.shelfLifeDays ?? undefined);
+      const expire = expireDate ? this.fmtDay(expireDate) : undefined;
+      const status = this.statusByExpire(expireDate as any);
+      return {
+        productId: r.productId,
+        productName: r.productName,
+        unit: r.unit || '',
+        batchNo: r.docNo || `IN-${r.inboundId}`,
+        inboundId: r.inboundId,
+        qty: Number(r.qty || 0),
+        prodDate: r.prodDate ? this.fmtDay(r.prodDate) : undefined,
+        expireAt: expire,
+        status,
+      };
+    });
+    const filtered = params.near === 'true' ? mapped.filter((x: any) => x.status === '临期') : mapped;
+    return filtered;
+  }
+  async stocktakeBatch(b: { schoolId?: number | string; inboundId: number | string; actualQty: number; operator?: string }) {
+    if (!b?.inboundId || !Number.isFinite(Number(b.inboundId))) throw new BadRequestException('inboundId required');
+    const inbound = await this.repo!.getInboundById(b.inboundId);
+    if (!inbound) throw new BadRequestException('batch not found');
+    const sid = b.schoolId !== undefined && b.schoolId !== null && String(b.schoolId).trim() !== '' ? Number(b.schoolId) : Number(inbound.schoolId || 1);
+    // Compute current remain for this inbound via FIFO
+    const fifo = await this.repo!.listInboundFifoBatches({ schoolId: sid, productId: inbound.productId });
+    const found = (fifo as any[]).find((x) => Number(x.inboundId) === Number(b.inboundId));
+    const prevRemain = Number(found?.remain || 0);
+    const actual = Number(b.actualQty);
+    const diff = actual - prevRemain;
+    if (diff === 0) return { ok: true, unchanged: true } as any;
+    const newQty = Number(inbound.qty || 0) + diff;
+    if (newQty < 0) throw new BadRequestException('invalid stocktake adjustment');
+    await this.repo!.updateInboundQty(b.inboundId, newQty);
+    await this.repo!.insertStocktake({ schoolId: sid, inboundId: Number(b.inboundId), productId: Number(inbound.productId), prevQty: prevRemain, actualQty: actual, diff, operator: b.operator });
+    return { ok: true, diff } as any;
   }
 
   // Tickets

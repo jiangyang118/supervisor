@@ -17,19 +17,35 @@ export class SystemController {
 
   // Announcements
   @Get('announcements') listAnnouncements(
+    @Req() req: any,
     @Query('page') page = '1',
     @Query('pageSize') pageSize = '20',
+    @Query('schoolId') qSchoolId?: string,
   ) {
-    return this.svc.listAnnouncements({ page, pageSize });
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sidParam = qSchoolId && String(qSchoolId).trim() !== '' ? Number(qSchoolId) : undefined;
+    const sid = sidParam && schools.includes(Number(sidParam)) ? Number(sidParam) : (schools.length ? Number(schools[0]) : undefined);
+    return this.svc.listAnnouncements({ page, pageSize, schoolId: sid });
   }
-  @Post('announcements') createAnnouncement(@Body() b: { title: string; content: string }) {
-    return this.svc.createAnnouncement(b);
+  @Post('announcements') createAnnouncement(@Req() req: any, @Body() b: { title: string; content: string }) {
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sid = schools.length ? Number(schools[0]) : undefined;
+    return this.svc.createAnnouncement(b, Number(sid));
   }
-  @Get('announcements/detail') announcementDetail(@Query('id') id: string) {
-    return this.svc.getAnnouncement(id);
+  @Get('announcements/detail') announcementDetail(@Req() req: any, @Query('id') id: string, @Query('schoolId') qSchoolId?: string) {
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sidParam = qSchoolId && String(qSchoolId).trim() !== '' ? Number(qSchoolId) : undefined;
+    const sid = sidParam && schools.includes(Number(sidParam)) ? Number(sidParam) : (schools.length ? Number(schools[0]) : undefined);
+    return this.svc.getAnnouncement(id, sid);
   }
-  @Post('announcements/attach') attach(@Body() b: { id: string; name: string; url: string }) {
-    return this.svc.addAnnouncementAttachment(b.id, { name: b.name, url: b.url });
+  @Post('announcements/attach') attach(@Req() req: any, @Body() b: { id: string; name: string; url: string; schoolId?: number }) {
+    const tokenUser = (req?.user || {}) as { schools?: number[] };
+    const schools = Array.isArray(tokenUser.schools) ? tokenUser.schools.map(Number) : [];
+    const sid = (b.schoolId && schools.includes(Number(b.schoolId))) ? Number(b.schoolId) : (schools.length ? Number(schools[0]) : undefined);
+    return this.svc.addAnnouncementAttachment(b.id, { name: b.name, url: b.url }, sid);
   }
 
   // Canteen

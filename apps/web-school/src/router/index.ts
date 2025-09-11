@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
-
 const Home = () => import('../views/Home.vue');
 const Reports = () => import('../views/Reports.vue');
 
@@ -19,6 +18,7 @@ const routes: RouteRecordRaw[] = [
     component: Reports,
     meta: { title: '每日报表', actions: ['export-pdf', 'export-csv'], perms: ['overview.*'] },
   },
+  
 
   // AI & Bright Kitchen
   { path: '/ai/events', component: () => import('../views/AiEvents.vue'), meta: { perms: ['bright.*'] } },
@@ -43,14 +43,17 @@ const routes: RouteRecordRaw[] = [
 
   // Operational ledgers
   { path: '/morning-check', component: () => import('../views/MorningCheck.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/morning-check/detail', component: () => import('../views/MorningCheckDetail.vue'), meta: { perms: ['daily.*'] } },
   { path: '/sampling/records', component: () => import('../views/SamplingRecords.vue'), meta: { perms: ['daily.*'] } },
   { path: '/dine-with', component: () => import('../views/DineWith.vue'), meta: { perms: ['daily.*'] } },
   { path: '/pesticide-tests', component: () => import('../views/PesticideTests.vue'), meta: { perms: ['daily.*'] } },
   { path: '/disinfection', component: () => import('../views/Disinfection.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/disinfection/detail', component: () => import('../views/DisinfectionDetail.vue'), meta: { perms: ['daily.*'] } },
   { path: '/waste', component: () => import('../views/Waste.vue'), meta: { perms: ['daily.*'] } },
-  { path: '/hygiene/inspections', component: () => import('../views/HygieneInspections.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/device-safety', component: () => import('../views/DeviceSafety.vue'), meta: { perms: ['daily.*'] } },
+  // 卫生管理模块已下线
   { path: '/system/news', component: () => import('../views/SystemNews.vue'), meta: { perms: ['public.*'] } },
-  { path: '/hygiene/assets', component: () => import('../views/AssetMaintenance.vue'), meta: { perms: ['env.*'] } },
+  
 
   // Inventory & suppliers
   { path: '/inventory/items', component: () => import('../views/InventoryItems.vue'), meta: { perms: ['inventory.*'] } },
@@ -62,25 +65,23 @@ const routes: RouteRecordRaw[] = [
   { path: '/suppliers', component: () => import('../views/Suppliers.vue'), meta: { perms: ['inventory.*'] } },
   { path: '/suppliers/new', component: () => import('../views/SupplierEdit.vue'), meta: { perms: ['inventory.*'] } },
   { path: '/suppliers/edit', component: () => import('../views/SupplierEdit.vue'), meta: { perms: ['inventory.*'] } },
-  { path: '/warehouses', component: () => import('../views/Warehouses.vue'), meta: { perms: ['inventory.*'] } },
+  // removed: warehouses management
   // removed: personnel certificates
   // Environment & devices
-  { path: '/environment/status', component: () => import('../views/EnvironmentStatus.vue'), meta: { perms: ['env.*'] } },
+  
+  { path: '/environment/monitor', component: () => import('../views/EnvironmentMonitor.vue'), meta: { perms: ['daily.*'] } },
 
   // Public & waste
-  { path: '/food-waste', component: () => import('../views/FoodWaste.vue'), meta: { perms: ['public.*'] } },
-  { path: '/public-feedback', component: () => import('../views/PublicFeedback.vue'), meta: { perms: ['public.*'] } },
-  { path: '/public-config', component: () => import('../views/PublicConfig.vue'), meta: { perms: ['public.*'] } },
+  { path: '/public-config', component: () => import('../views/PublicConfig.vue'), meta: { perms: ['system.*'] } },
 
 
   // Risk & warnings & devices & analytics
-  { path: '/risks', component: () => import('../views/Risks.vue'), meta: { perms: ['env.*'] } },
   { path: '/warnings', component: () => import('../views/Warnings.vue'), meta: { perms: ['overview.*'] } },
-  { path: '/devices', component: () => import('../views/Devices.vue'), meta: { perms: ['env.*'] } },
+  { path: '/devices', component: () => import('../views/Devices.vue'), meta: { perms: ['system.*'] } },
   { path: '/analytics', component: () => import('../views/Analytics.vue'), meta: { perms: ['overview.*'] } },
   { path: '/food-index', component: () => import('../views/FoodIndex.vue'), meta: { perms: ['overview.*'] } },
   // Overview combined
-  { path: '/overview/alerts', component: () => import('../views/WarningOverview.vue'), meta: { perms: ['overview.*'] } },
+  { path: '/overview/alerts', component: () => import('../views/AlertsOverview.vue'), meta: { perms: ['overview.*'] } },
   // Mobile H5 for risk task
   { path: '/risk/task/:id', component: () => import('../views/RiskTaskH5.vue') },
 

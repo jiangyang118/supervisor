@@ -16,9 +16,10 @@ export class CanteensController {
 
   // Canteens CRUD
   @Get('canteens')
-  async listCanteens(@Query('schoolId') schoolId?: string) {
+  async listCanteens(@Query('schoolId') schoolId?: string, @Query('enabled') enabled?: 'true'|'false'|'all') {
     const sid = schoolId && String(schoolId).trim() !== '' ? Number(schoolId) : undefined;
-    return this.canteens.list(sid) as any;
+    const en = enabled === 'all' ? 'all' : enabled === 'false' ? false : true; // default only enabled
+    return this.canteens.list(sid, en) as any;
   }
 
   // Aggregated list for canteen + licenses summary (for list page)
@@ -65,23 +66,18 @@ export class CanteensController {
   }
 
   @Post('canteens')
-  async createCanteen(@Body() b: { schoolId?: number; name: string; address?: string; manager?: string; phone?: string }) {
+  async createCanteen(@Body() b: { schoolId?: number; name: string; code?: string; address?: string; manager?: string; phone?: string; enabled?: boolean }) {
     const sid = Number(b.schoolId ?? 1) || 1;
     if (!b?.name) throw new BadRequestException('name required');
-    const id = await this.canteens.create({ schoolId: sid, name: b.name, address: b.address, licenseExpireAt: undefined, licenseNo: undefined, licenseImageUrl: undefined } as any);
-    // update manager & phone if present
-    const sets: string[] = []; const args: any[] = [];
-    if (b.manager !== undefined) { sets.push('manager = ?'); args.push(b.manager); }
-    if (b.phone !== undefined) { sets.push('phone = ?'); args.push(b.phone); }
-    if (sets.length) { args.push(id); await (this.canteens as any).db.query(`update canteens set ${sets.join(', ')} where id = ?`, args); }
-    return { id, schoolId: sid, name: b.name, address: b.address || '', manager: b.manager || '', phone: b.phone || '' } as any;
+    const id = await this.canteens.create({ schoolId: sid, name: b.name, code: b.code, address: b.address, manager: b.manager, phone: b.phone, enabled: b.enabled, licenseExpireAt: undefined, licenseNo: undefined, licenseImageUrl: undefined } as any);
+    return { id, schoolId: sid, name: b.name, code: b.code || '', address: b.address || '', manager: b.manager || '', phone: b.phone || '', enabled: (b.enabled ?? true) } as any;
   }
 
   @Patch('canteens')
-  async updateCanteen(@Query('id') id: string, @Body() patch: { name?: string; address?: string; manager?: string; phone?: string }) {
+  async updateCanteen(@Query('id') id: string, @Body() patch: { name?: string; code?: string; address?: string; manager?: string; phone?: string; enabled?: boolean }) {
     if (!id) throw new BadRequestException('id required');
     const sets: string[] = []; const args: any[] = [];
-    const map: Record<string, string> = { name: 'name', address: 'address', manager: 'manager', phone: 'phone' };
+    const map: Record<string, string> = { name: 'name', code: 'code', address: 'address', manager: 'manager', phone: 'phone', enabled: 'enabled' };
     for (const k of Object.keys(patch || {})) { const col = map[k]; if (col) { sets.push(`${col} = ?`); args.push((patch as any)[k]); } }
     if (!sets.length) return { ok: true } as any;
     args.push(Number(id));

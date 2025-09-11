@@ -16,8 +16,9 @@ export class AnalyticsController {
     @Query('status') status?: '未处理' | '已处理',
     @Query('start') start?: string,
     @Query('end') end?: string,
+    @Query('canteenId') canteenId?: string,
   ) {
-    return this.svc.alertsOverview({ schoolId, type, status, start, end });
+    return this.svc.alertsOverview({ schoolId, type, status, start, end, canteenId });
   }
 
   @Post('alerts/handle')

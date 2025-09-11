@@ -42,7 +42,7 @@ const defaultMenus: MenuNode[] = [
     { id: 'check_ai', label: 'AI 违规抓拍明细' },
     { id: 'check_stat', label: '行为统计与导出' },
   ]},
-  { id: 'video', label: '明厨亮灶管理', children: [
+  { id: 'video', label: '互联网+明厨亮灶', children: [
     { id: 'video_live', label: '实时视频' },
     { id: 'video_replay', label: '视频回放' },
     { id: 'video_snapshot', label: '快照留存' },
@@ -71,12 +71,7 @@ const defaultMenus: MenuNode[] = [
     { id: 'hr_exam', label: '考试管理' },
     { id: 'hr_staff', label: '人员管理' },
   ]},
-  { id: 'env', label: '环境及设备管理', children: [
-    { id: 'env_check', label: '隐患排查管理' },
-    { id: 'env_asset', label: '固定资产维护记录' },
-    { id: 'env_status', label: '环境状态' },
-    { id: 'env_device', label: '智能终端设备管理' },
-  ]},
+  
   { id: 'public', label: '公示与反馈', children: [
     { id: 'public_feedback', label: '公众反馈处理' },
     { id: 'public_config', label: '公示内容配置' },
@@ -169,4 +164,3 @@ watch(() => props.modelValue, (v) => {
   border-radius: 6px;
 }
 </style>
-

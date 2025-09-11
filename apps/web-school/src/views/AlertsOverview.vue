@@ -1,38 +1,53 @@
 <template>
   <el-card>
-    <template #header>预警概览9</template>
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-      <!-- 食堂（学校）选择 -->
-      <el-select v-model="schoolId" placeholder="食堂（学校）" clearable filterable style="width: 240px">
-        <el-option v-for="s in schools" :key="String(s.id)" :label="s.name" :value="String(s.id)" />
-      </el-select>
+    <template #header>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div>预警概览</div>
+        <div style="display:flex;align-items:center;gap:16px;font-size:13px;color:#666">
+          <div>今日预警总数：<b style="font-size:16px;color:#d03050">{{ todayTotal }}</b> 条</div>
+          <div>当前时间：{{ nowText }}</div>
+        </div>
+      </div>
+    </template>
+    <el-form :inline="true" label-width="84px" style="margin-bottom:12px">
 
-      <!-- 预警类型（枚举） -->
-      <el-select v-model="typeLabel" placeholder="预警类型" clearable style="width: 320px">
-        <el-option v-for="opt in TYPE_ENUM" :key="opt.label" :label="opt.label" :value="opt.label" />
-      </el-select>
+      <el-form-item label="食堂">
+        <el-select v-model="canteenId" placeholder="全部食堂" clearable filterable style="width: 220px">
+          <el-option v-for="c in canteens" :key="String(c.id)" :label="c.name" :value="Number(c.id)" />
+        </el-select>
+      </el-form-item>
 
-      <!-- 状态（枚举） -->
-      <el-select v-model="statusLabel" placeholder="状态" clearable style="width: 160px">
-        <el-option v-for="opt in STATUS_ENUM" :key="String(opt.label)" :label="opt.label" :value="opt.label" />
-      </el-select>
+      <el-form-item label="预警类型">
+        <el-select v-model="typeLabels" placeholder="选择类型" multiple collapse-tags collapse-tags-tooltip clearable style="width: 420px">
+          <el-option v-for="opt in TYPE_ENUM" :key="opt.label" :label="opt.label" :value="opt.label" />
+        </el-select>
+      </el-form-item>
 
-      <!-- 时间范围：固定枚举 + 自定义 -->
-      <el-select v-model="datePreset" placeholder="时间" style="width: 160px">
-        <el-option v-for="opt in DATE_ENUM" :key="String(opt.value)" :label="opt.label" :value="opt.value" />
-      </el-select>
-      <el-date-picker
-        v-if="datePreset === 'custom'"
-        v-model="customRange"
-        type="daterange"
-        start-placeholder="开始日期"
-        end-placeholder="结束日期"
-        value-format="YYYY-MM-DD"
-      />
+      <el-form-item label="状态">
+        <el-select v-model="statusLabel" placeholder="全部" clearable style="width: 160px">
+          <el-option v-for="opt in STATUS_ENUM" :key="String(opt.label)" :label="opt.label" :value="opt.label" />
+        </el-select>
+      </el-form-item>
 
-      <el-button type="primary" :loading="loading" @click="load">查询</el-button>
-      <el-button @click="resetFilters">重置</el-button>
-    </div>
+      <el-form-item label="时间范围">
+        <el-date-picker
+          v-model="customRange"
+          type="daterange"
+          unlink-panels
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          value-format="YYYY-MM-DD"
+          :shortcuts="dateShortcuts"
+          style="width: 320px"
+        />
+      </el-form-item>
+
+      <el-form-item>
+        <el-button type="primary" :loading="loading" @click="load">查询</el-button>
+        <el-button @click="resetFilters">重置</el-button>
+      </el-form-item>
+    </el-form>
 
     <el-row :gutter="8" style="margin-bottom:8px">
       <el-col v-for="s in summary" :key="s.name" :span="6">
@@ -40,20 +55,63 @@
       </el-col>
     </el-row>
 
-    <el-table :data="warnRows" size="small" border>
-      <el-table-column prop="id" label="ID" width="160" />
-      <el-table-column prop="type" label="类型" width="220" />
-      <el-table-column prop="level" label="等级" width="120" />
-      <el-table-column prop="status" label="状态" width="120" />
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0">
+      <div>
+        <el-button type="success" :disabled="!selectedIds.length" @click="batchMark">批量标记已处理</el-button>
+      </div>
+      <div>
+        <el-button @click="doExport">导出 CSV</el-button>
+      </div>
+    </div>
+
+    <el-table :data="pagedRows" border @selection-change="onSel" :empty-text="loading ? '加载中…' : '暂无数据'">
+      <el-table-column type="selection" width="48" />
+      <el-table-column prop="type" label="类型" width="200">
+        <template #default="{ row }">
+          <el-tag type="info">{{ row.type }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="等级" width="120">
+        <template #default="{ row }">
+          <el-tag :type="levelTagType(row.level)">{{ row.level }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column label="状态" width="120">
+        <template #default="{ row }">
+          <el-tag :type="row.status === '未处理' ? 'danger' : 'success'">{{ row.status }}</el-tag>
+        </template>
+      </el-table-column>
+      <el-table-column prop="detail" label="描述" min-width="260" show-overflow-tooltip />
       <el-table-column prop="at" label="时间" width="200" />
+      <el-table-column label="操作" width="120" fixed="right">
+        <template #default="{ row }">
+          <el-button size="small" :type="row.status === '未处理' ? 'primary' : 'default'" @click="handleOne(row)">
+            {{ row.status === '未处理' ? '处理' : '查看' }}
+          </el-button>
+        </template>
+      </el-table-column>
     </el-table>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:8px">
+      <el-pagination
+        background
+        layout="total, sizes, prev, pager, next, jumper"
+        :page-sizes="[10,20,50,100]"
+        :page-size="pageSize"
+        :current-page="page"
+        :total="warnRows.length"
+        @size-change="(s:number)=>{ pageSize=s; page=1; }"
+        @current-change="(p:number)=>{ page=p; }"
+      />
+    </div>
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import { api } from '../services/api';
 import { getCurrentSchoolId } from '../utils/school';
+import { exportCsv } from '../utils/export';
 
 // 枚举定义
 const TYPE_ENUM = [
@@ -72,49 +130,110 @@ const STATUS_ENUM = [
   { label: '未处理', value: '未处理' },
   { label: '已处理', value: '已处理' },
 ] as const;
-const DATE_ENUM = [
-  { label: '今天', value: 'today' },
-  { label: '近7天', value: '7d' },
-  { label: '近30天', value: '30d' },
-  { label: '自定义', value: 'custom' },
-] as const;
-
-const warnRows = ref<Array<{ id: string; type: string; level: string; status: string; at: string }>>([]);
+const warnRows = ref<Array<{ id: string; type: string; level: string; status: string; at: string; detail?: string; canteenId?: number }>>([]);
 const summary = ref<Array<{ name: string; count: number }>>([]);
 const loading = ref(false);
 const schoolId = ref<string | undefined>(getCurrentSchoolId());
-const schools = ref<Array<{ id: number | string; name: string }>>([]);
-const typeLabel = ref<string | undefined>('');
+const typeLabels = ref<string[] | undefined>(undefined);
 const statusLabel = ref<string | undefined>('');
-const datePreset = ref<'today' | '7d' | '30d' | 'custom'>('today');
 const customRange = ref<[string, string] | null>(null);
+const canteenId = ref<number | undefined>(undefined);
+const canteens = ref<Array<{ id: number | string; name: string }>>([]);
+const page = ref(1);
+const pageSize = ref(20);
+const selectedIds = ref<string[]>([]);
+const pagedRows = computed(() => warnRows.value.slice((page.value - 1) * pageSize.value, (page.value - 1) * pageSize.value + pageSize.value));
+
+function fmt(iso?: string) {
+  try {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch { return String(iso || ''); }
+}
+
+const nowText = ref('');
+const todayTotal = ref(0);
+let timer: any;
+function tickNow() {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  nowText.value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function levelTagType(level?: string) {
+  if (!level) return 'info';
+  if (level.includes('高')) return 'danger';
+  if (level.includes('中')) return 'warning';
+  return 'info';
+}
+function onSel(rows: any[]) { selectedIds.value = rows.map((r) => r.id); }
+async function batchMark() {
+  const ids = new Set(selectedIds.value);
+  const tasks = warnRows.value.filter((r) => ids.has(r.id) && r.status === '未处理')
+    .map((r) => api.analyticsAlertHandle({ id: r.id, type: r.type, measure: '已处理' }).catch(() => null));
+  await Promise.all(tasks);
+  warnRows.value = warnRows.value.map((r) => (ids.has(r.id) ? { ...r, status: '已处理' } : r));
+}
+async function handleOne(row: any) {
+  if (row.status === '未处理') {
+    try { await api.analyticsAlertHandle({ id: row.id, type: row.type, measure: '已处理' }); row.status = '已处理'; } catch {}
+  }
+}
+function doExport() {
+  const rows = warnRows.value.map((r) => ({ id: r.id, type: r.type, detail: r.detail || '', at: fmt(r.at), status: r.status }));
+  exportCsv('预警概览', rows, { id: 'ID', type: '类型', detail: '描述', at: '时间', status: '状态' });
+}
+
+const dateShortcuts = [
+  {
+    text: '今天',
+    value: () => {
+      const d = new Date();
+      const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const e = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      return [s, e] as [Date, Date];
+    },
+  },
+  {
+    text: '近7天',
+    value: () => {
+      const d = new Date();
+      const e = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const s = new Date(e); s.setDate(s.getDate() - 6);
+      return [s, e] as [Date, Date];
+    },
+  },
+  {
+    text: '近30天',
+    value: () => {
+      const d = new Date();
+      const e = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      const s = new Date(e); s.setDate(s.getDate() - 29);
+      return [s, e] as [Date, Date];
+    },
+  },
+] as any;
 
 function resolveDateRange(): { start?: string; end?: string } {
-  const now = new Date();
-  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const toISO = (d: Date) => d.toISOString();
-  if (datePreset.value === 'today') {
-    const s = startOfDay;
-    const e = new Date(startOfDay); e.setDate(e.getDate() + 1);
-    return { start: toISO(s), end: toISO(e) };
-  }
-  if (datePreset.value === '7d') {
-    const s = new Date(startOfDay); s.setDate(s.getDate() - 6);
-    const e = new Date(startOfDay); e.setDate(e.getDate() + 1);
-    return { start: toISO(s), end: toISO(e) };
-  }
-  if (datePreset.value === '30d') {
-    const s = new Date(startOfDay); s.setDate(s.getDate() - 29);
-    const e = new Date(startOfDay); e.setDate(e.getDate() + 1);
-    return { start: toISO(s), end: toISO(e) };
-  }
-  if (datePreset.value === 'custom' && customRange.value && customRange.value.length === 2) {
+  if (customRange.value && customRange.value.length === 2) {
     const [startStr, endStr] = customRange.value;
     const s = new Date(startStr + 'T00:00:00');
     const e = new Date(endStr + 'T23:59:59');
     return { start: toISO(s), end: toISO(e) };
   }
-  return {};
+  // 默认：今天
+  const d = new Date();
+  const s = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const e = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+  return { start: toISO(s), end: toISO(e) };
+}
+
+function recomputeSummary(rows: Array<{ type: string }>) {
+  const map = new Map<string, number>();
+  rows.forEach((r) => map.set(r.type, (map.get(r.type) || 0) + 1));
+  summary.value = Array.from(map.entries()).map(([name, count]) => ({ name, count }));
 }
 
 async function load() {
@@ -124,12 +243,23 @@ async function load() {
 
     const alerts = await api.analyticsAlerts({
       schoolId: schoolId.value,
-      type: (TYPE_ENUM.find((t) => t.label === typeLabel.value)?.value) || undefined,
+      // 多选类型：后端仅支持单选，先取全量后前端过滤
       status: (STATUS_ENUM.find((s) => s.label === statusLabel.value)?.value) as any,
       start, end,
-    });
-    warnRows.value = alerts.items || [];
-    summary.value = alerts.summary || [];
+      canteenId: canteenId.value,
+    } as any);
+    let rows = (alerts.items || []) as Array<any>;
+    if (Array.isArray(typeLabels.value) && typeLabels.value.length) {
+      const selValues = typeLabels.value
+        .map((lab) => TYPE_ENUM.find((t) => t.label === lab)?.value)
+        .filter(Boolean);
+      rows = rows.filter((r) => selValues.includes(r.type));
+    }
+    if (canteenId.value) rows = rows.filter((r) => !('canteenId' in r) || r.canteenId === canteenId.value);
+    warnRows.value = rows as any;
+    recomputeSummary(rows as any);
+    const today = new Date().toISOString().slice(0,10);
+    todayTotal.value = warnRows.value.filter((x) => String(x.at||'').slice(0,10) === today).length;
   } finally {
     loading.value = false;
   }
@@ -137,18 +267,29 @@ async function load() {
 
 onMounted(() => {
   load();
+  tickNow();
+  timer = setInterval(tickNow, 30000);
   const h = () => { schoolId.value = getCurrentSchoolId(); load(); };
   window.addEventListener('school-changed', h as any);
   onBeforeUnmount(() => window.removeEventListener('school-changed', h as any));
-  // 加载学校（食堂）下拉
-  api.regSchools().then((list) => { schools.value = list || []; }).catch(() => { schools.value = []; });
+  // 学校由登录上下文确定，移除学校下拉；仅按当前学校加载食堂
+  // 加载食堂列表
+  if (schoolId.value) api.canteensList(String(schoolId.value)).then((list)=> { canteens.value = list || []; }).catch(()=> { canteens.value = []; });
 });
 
 function resetFilters() {
-  typeLabel.value = '';
+  typeLabels.value = undefined;
   statusLabel.value = '';
-  datePreset.value = 'today';
   customRange.value = null;
+  canteenId.value = undefined;
   load();
 }
+
+watch(schoolId, (v) => {
+  canteens.value = [];
+  canteenId.value = undefined;
+  if (v) api.canteensList(String(v)).then((list)=> { canteens.value = list || []; }).catch(()=> { canteens.value = []; });
+});
+
+onBeforeUnmount(() => { if (timer) clearInterval(timer); });
 </script>

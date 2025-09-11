@@ -11,8 +11,11 @@ export class PesticideRepository implements OnModuleInit {
         `create table if not exists pesticide_records (
            id int primary key auto_increment,
            school_id int not null,
+           canteen_id int null,
            sample varchar(255) not null,
            device varchar(128) not null,
+           tester varchar(128) null,
+           detect_value decimal(18,3) null,
            result varchar(8) not null,
            image_url varchar(255) null,
            remark varchar(255) null,
@@ -34,11 +37,12 @@ export class PesticideRepository implements OnModuleInit {
   }
 
   async list(filters: {
-    schoolId?: number; q?: string; result?: '合格'|'不合格'; start?: string; end?: string; page: number; pageSize: number;
+    schoolId?: number; canteenId?: number; q?: string; result?: '合格'|'不合格'; start?: string; end?: string; page: number; pageSize: number;
   }) {
     const where: string[] = [];
     const params: any[] = [];
     if (filters.schoolId !== undefined && filters.schoolId !== null) { where.push('school_id = ?'); params.push(filters.schoolId); }
+    if (filters.canteenId !== undefined && filters.canteenId !== null) { where.push('canteen_id = ?'); params.push(filters.canteenId); }
     if (filters.q) { where.push('(sample like ? or device like ?)'); params.push(`%${filters.q}%`, `%${filters.q}%`); }
     if (filters.result) { where.push('result = ?'); params.push(filters.result); }
     if (filters.start) { where.push('at >= ?'); params.push(new Date(filters.start)); }
@@ -47,7 +51,7 @@ export class PesticideRepository implements OnModuleInit {
     const totalRows = await this.db.query<any>(`select count(1) as c ${base}`, params);
     const total = Number(totalRows.rows[0]?.c || 0);
     const rows = await this.db.query<any>(
-      `select id, school_id as schoolId, sample, device, result, image_url as imageUrl, remark, at, source, exception, measure ${base}
+      `select id, school_id as schoolId, canteen_id as canteenId, sample, device, tester, detect_value as \`value\`, result, image_url as imageUrl, remark, at, source, exception, measure ${base}
        order by at desc limit ? offset ?`,
       [...params, filters.pageSize, (filters.page - 1) * filters.pageSize],
     );
@@ -55,12 +59,12 @@ export class PesticideRepository implements OnModuleInit {
   }
 
   async insert(rec: {
-    schoolId: number; sample: string; device: string; result: '合格'|'不合格'; imageUrl?: string; remark?: string; at: string; source: 'manual'|'device'; exception: boolean; measure?: string;
+    schoolId: number; canteenId?: number; sample: string; device: string; tester?: string; value?: number; result: '合格'|'不合格'; imageUrl?: string; remark?: string; at: string; source: 'manual'|'device'; exception: boolean; measure?: string;
   }): Promise<number> {
     const res = await this.db.query(
-      `insert into pesticide_records(school_id, sample, device, result, image_url, remark, at, source, exception, measure)
-       values(?,?,?,?,?,?,?,?,?,?)`,
-      [rec.schoolId, rec.sample, rec.device, rec.result, rec.imageUrl || null, rec.remark || null, new Date(rec.at), rec.source, rec.exception ? 1 : 0, rec.measure || null],
+      `insert into pesticide_records(school_id, canteen_id, sample, device, tester, detect_value, result, image_url, remark, at, source, exception, measure)
+       values(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      [rec.schoolId, rec.canteenId || null, rec.sample, rec.device, rec.tester || null, rec.value ?? null, rec.result, rec.imageUrl || null, rec.remark || null, new Date(rec.at), rec.source, rec.exception ? 1 : 0, rec.measure || null],
     );
     return res.insertId || 0;
   }

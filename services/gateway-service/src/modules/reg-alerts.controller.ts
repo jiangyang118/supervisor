@@ -6,7 +6,6 @@ import { Perm } from './perm.decorator';
 import { DevicesService } from './devices.service';
 import { PesticideService } from './pesticide.service';
 import { MorningCheckService } from './morning-check.service';
-import { PublicFeedbackService } from './public-feedback.service';
 import { SchoolsRepository } from './repositories/schools.repository';
 import { Observable, Subject } from 'rxjs';
 
@@ -44,7 +43,7 @@ export class RegAlertsController {
     private readonly devices: DevicesService,
     private readonly pesticide: PesticideService,
     private readonly morning: MorningCheckService,
-    private readonly feedback: PublicFeedbackService,
+    // feedback module removed
     private readonly schoolsRepo: SchoolsRepository,
   ) {}
 
@@ -82,11 +81,7 @@ export class RegAlertsController {
       noReport += res.total === 0 ? 1 : 0;
     }
     // 投诉待处理
-    const pendingFeedback = (await this.feedback.list({
-      status: '待处理',
-      page: 1,
-      pageSize: 100000,
-    })).total;
+    const pendingFeedback = 0;
 
     return {
       stats: [

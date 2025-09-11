@@ -4,12 +4,9 @@
       <div style="display: flex; align-items: center; justify-content: space-between">
         <span>消毒管理</span>
         <div>
-          <el-tag :type="sseConnected ? 'success' : 'warning'" effect="plain" size="small"
-            >设备 {{ sseConnected ? '已连接' : '连接中' }}</el-tag
-          >
-          <el-button type="primary" @click="openCreate">新建</el-button>
-          <el-button @click="onExportCsv">导出记录</el-button>
-          <el-button @click="onExportExceptions">导出异常</el-button>
+          <el-button @click="onDeviceConnect">设备接入</el-button>
+          <el-button type="primary" @click="openCreate">手动录入</el-button>
+          <el-button @click="showExceptions">异常处置</el-button>
         </div>
       </div>
     </template>
@@ -39,37 +36,23 @@
       </el-form-item>
     </el-form>
     <el-table :data="rows" size="small" border>
-      <el-table-column prop="id" label="ID" width="160" />
-      <el-table-column prop="method" label="方式" width="120" />
-      <el-table-column prop="duration" label="时长(分钟)" width="120" />
-      <el-table-column prop="items" label="物品/区域" />
-      <el-table-column label="图片" width="120">
+      <el-table-column label="消毒日期" width="140"><template #default="{ row }">{{ String(row.at||'').slice(0,10) }}</template></el-table-column>
+      <el-table-column label="食堂" min-width="160"><template #default="{ row }">{{ canteenName(row.canteenId) }}</template></el-table-column>
+      <el-table-column prop="items" label="消毒区域/物品" min-width="200" />
+      <el-table-column prop="method" label="消毒方式" width="120" />
+      <el-table-column label="时长/温度（是否达标）" min-width="220">
         <template #default="{ row }">
-          <el-image
-            v-if="row.imageUrl"
-            :src="row.imageUrl"
-            :preview-src-list="[row.imageUrl]"
-            style="width: 64px; height: 48px; object-fit: cover"
-          />
-          <span v-else>-</span>
+          <span>{{ row.duration }} 分钟 / {{ row.temperature ?? '-' }} ℃（
+            <span :style="{ color: row.exception ? '#F56C6C' : '#67C23A' }">{{ row.exception ? '未达标' : '达标' }}</span>
+          ）</span>
         </template>
       </el-table-column>
-      <el-table-column label="状态" width="120">
+      <el-table-column prop="responsible" label="责任人" width="140" />
+      <el-table-column label="操作" width="220">
         <template #default="{ row }">
-          <el-tag :type="row.exception ? 'danger' : 'success'" effect="plain">{{
-            row.exception ? '异常' : '正常'
-          }}</el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="时间" width="180">
-        <template #default="{ row }">{{ formatTime(row.at) }}</template>
-      </el-table-column>
-      <el-table-column prop="measure" label="处理措施" />
-      <el-table-column label="操作" width="160">
-        <template #default="{ row }">
-          <el-button v-if="row.exception" size="small" @click="openMeasure(row)"
-            >处理措施</el-button
-          >
+          <el-button size="small" @click="viewDetail(row)">查看详情</el-button>
+          <el-button size="small" @click="onExportOne(row)">导出</el-button>
+          <el-button v-if="row.exception" size="small" type="warning" @click="openMeasure(row)">异常处置</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -77,6 +60,11 @@
 
   <el-dialog v-model="createVisible" title="新建消毒记录" width="520px">
     <el-form :model="form" label-width="96px">
+      <el-form-item label="食堂">
+        <el-select v-model="form.canteenId" placeholder="请选择" style="width: 260px">
+          <el-option v-for="c in canteens" :key="c.id" :label="c.name" :value="Number(c.id)" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="方式">
         <el-select v-model="form.method" placeholder="请选择">
           <el-option label="酒精" value="酒精" />
@@ -87,9 +75,11 @@
       <el-form-item label="时长(分钟)">
         <el-input-number v-model="form.duration" :min="1" />
       </el-form-item>
+      <el-form-item label="温度(℃)"><el-input-number v-model="form.temperature" :min="0" :precision="2" /></el-form-item>
       <el-form-item label="物品/区域">
         <el-input v-model="form.items" />
       </el-form-item>
+      <el-form-item label="责任人"><el-input v-model="form.responsible" placeholder="可选" /></el-form-item>
       <el-form-item label="图片URL">
         <el-input v-model="form.imageUrl" placeholder="http(s)://..." />
       </el-form-item>
@@ -112,11 +102,13 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
+import { useRouter } from 'vue-router';
 import { api, API_BASE } from '../services/api';
 import { getCurrentSchoolId } from '../utils/school';
 import { ElMessage } from 'element-plus';
 
 const rows = ref<any[]>([]);
+const canteens = ref<any[]>([]);
 const sseConnected = ref(false);
 let es: EventSource | null = null;
 
@@ -145,11 +137,14 @@ function applyFilters() {
 }
 
 const createVisible = ref(false);
-const form = reactive({ method: '酒精', duration: 30, items: '', imageUrl: '' });
+const form = reactive<any>({ canteenId: undefined as number|undefined, method: '酒精', duration: 30, temperature: undefined as number|undefined, items: '', responsible: '', imageUrl: '' });
 const openCreate = () => {
+  form.canteenId = canteens.value[0]?.id ? Number(canteens.value[0].id) : undefined;
   form.method = '酒精';
   form.duration = 30;
+  form.temperature = undefined as any;
   form.items = '';
+  form.responsible = '';
   form.imageUrl = '';
   createVisible.value = true;
 };
@@ -161,9 +156,12 @@ async function save() {
   try {
     await api.disinfectionCreate({
       schoolId: getCurrentSchoolId(),
+      canteenId: form.canteenId,
       method: form.method,
       duration: form.duration,
+      temperature: form.temperature,
       items: form.items,
+      responsible: form.responsible || undefined,
       imageUrl: form.imageUrl || undefined,
     });
     ElMessage.success('已上报');
@@ -204,25 +202,26 @@ function connectSSE() {
 
 const onExportCsv = () =>
   exportCsv('消毒记录', rows.value, {
-    id: 'ID',
-    method: '方式',
-    duration: '时长',
-    items: '物品',
-    imageUrl: '图片',
-    exception: '是否异常',
-    measure: '处理措施',
-    at: '时间',
+    at: '消毒日期',
+    canteenId: '食堂',
+    items: '消毒区域/物品',
+    method: '消毒方式',
+    duration: '时长(分钟)',
+    temperature: '温度(℃)',
+    exception: '是否达标(0达标/1未达标)',
+    responsible: '责任人',
   });
 const onExportExceptions = () => {
   const ex = rows.value.filter((r: any) => r.exception);
   exportCsv('消毒异常', ex, {
-    id: 'ID',
-    method: '方式',
-    duration: '时长',
-    items: '物品',
-    at: '时间',
+    at: '消毒日期',
+    canteenId: '食堂',
+    items: '消毒区域/物品',
+    method: '消毒方式',
+    duration: '时长(分钟)',
+    temperature: '温度(℃)',
     exceptionReason: '异常原因',
-    measure: '处理措施',
+    responsible: '责任人',
   });
 };
 
@@ -234,9 +233,21 @@ function formatTime(iso: string) {
   }
 }
 
+function canteenName(id?: number) {
+  return canteens.value.find((c:any)=> Number(c.id)===Number(id))?.name || '-';
+}
+function onExportOne(row: any) {
+  exportCsv(`消毒-${row.id}`, [row], { at:'消毒日期', canteenId:'食堂', items:'消毒区域/物品', method:'消毒方式', duration:'时长(分钟)', temperature:'温度(℃)', responsible:'责任人' });
+}
+const router = useRouter();
+function viewDetail(row: any) { router.push({ path: '/disinfection/detail', query: { id: row.id } }); }
+function onDeviceConnect() { connectSSE(); ElMessage.success('已尝试连接设备'); }
+function showExceptions() { filters.exception = 'true' as any; applyFilters(); }
+
 let off: any = null;
 onMounted(() => {
   load();
+  api.canteensList(getCurrentSchoolId() as any).then((list)=> canteens.value = list || []).catch(()=> (canteens.value=[]));
   connectSSE();
   const h = () => load();
   window.addEventListener('school-changed', h as any);

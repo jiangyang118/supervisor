@@ -30,13 +30,9 @@
           <el-menu-item v-if="has('overview.*')" index="/overview">首页</el-menu-item>
           <!-- 预警概览升为一级模块，置于首页下方展示 -->
           <el-menu-item v-if="has('overview.*')" index="/overview/alerts">预警概览</el-menu-item>
-          <el-sub-menu v-if="has('overview.*')" index="overview">
-            <template #title>总览</template>
-            <el-menu-item index="/analytics">数据看板</el-menu-item>
-          </el-sub-menu>
 
           <el-sub-menu v-if="has('bright.*')" index="bright">
-            <template #title>明厨亮灶管理</template>
+            <template #title>互联网+明厨亮灶</template>
             <el-menu-item index="/bright-kitchen/live">实时视频</el-menu-item>
             <el-menu-item index="/bright-kitchen/playback">视频回放</el-menu-item>
             <el-menu-item index="/bright-kitchen/snapshots">快照留存</el-menu-item>
@@ -49,19 +45,21 @@
             <template #title>日常运营管理</template>
             <el-menu-item index="/morning-check">晨检管理</el-menu-item>
             <el-menu-item index="/sampling/records">留样管理</el-menu-item>
-            <el-menu-item index="/pesticide-tests">农残快检管理</el-menu-item>
             <el-menu-item index="/disinfection">消毒管理</el-menu-item>
+            <el-menu-item index="/environment/monitor">环境监测管理</el-menu-item>
+            <el-menu-item index="/pesticide-tests">农残快检管理</el-menu-item>
             <el-menu-item index="/waste">废弃物管理</el-menu-item>
-            <el-menu-item index="/hygiene/inspections">卫生管理</el-menu-item>
+            <el-menu-item index="/device-safety">设备安全管理</el-menu-item>
+    
           </el-sub-menu>
           <el-sub-menu v-if="has('inventory.*')" index="inventory">
             <template #title>出入库管理</template>
             <el-menu-item index="/inventory/items">商品管理</el-menu-item>
             <el-menu-item index="/inventory/inbound">入库登记</el-menu-item>
             <el-menu-item index="/inventory/outbound">出库登记</el-menu-item>
-            <el-menu-item index="/inventory/stock">库存与盘点</el-menu-item>
+            <el-menu-item index="/inventory/stock">库存记录</el-menu-item>
             <el-menu-item index="/inventory/tickets">索票索证管理</el-menu-item>
-            <el-menu-item index="/warehouses">仓库信息管理</el-menu-item>
+            <!-- 仓库信息管理已下线 -->
           </el-sub-menu>
           <el-sub-menu v-if="has('hr.*') || has('inventory.*')" index="hr">
             <template #title>人事管理</template>
@@ -69,30 +67,21 @@
             <el-menu-item v-if="has('hr.*')" index="/hr/canteen-licenses">食堂资质</el-menu-item>
             <el-menu-item index="/suppliers">供应商资质</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu v-if="has('env.*')" index="env-dev">
-            <template #title>环境及设备管理</template>
-            <el-menu-item index="/risks">隐患排查管理</el-menu-item>
-            <el-menu-item index="/hygiene/assets">固定资产维护记录</el-menu-item>
-            <el-menu-item index="/environment/status">环境状态</el-menu-item>
-            <el-menu-item index="/devices">智能终端设备管理</el-menu-item>
-          </el-sub-menu>
-          <el-sub-menu v-if="has('public.*')" index="pub-feed">
-            <template #title>公示与反馈</template>
-            <el-menu-item index="/public-feedback">公众反馈处理</el-menu-item>
-            <el-menu-item index="/public-config">公示内容配置</el-menu-item>
-            <el-menu-item index="/system/news">食安资讯发布</el-menu-item>
-            <el-menu-item index="/system/announcements">公告公文管理</el-menu-item>
-            <el-menu-item index="/food-waste">食品浪费分析</el-menu-item>
-          </el-sub-menu>
+          
+          <!-- 公示与反馈模块已下线：相关入口已移除 -->
           
           <el-sub-menu v-if="has('system.*') || has('users.manage')" index="system">
             <template #title>系统配置</template>
-            <el-menu-item index="/system/canteen">食堂信息维护+食堂资质</el-menu-item>
-            <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item>
-            <el-menu-item index="/system/app-download">移动端扫码</el-menu-item>
-            <el-menu-item index="/system/trustivs-test">TrustIVS 测试</el-menu-item>
+            <el-menu-item index="/system/canteen">食堂信息维护</el-menu-item>
             <el-menu-item v-if="has('users.manage')" index="/system/users">用户管理</el-menu-item>
             <el-menu-item v-if="has('users.manage')" index="/system/roles">角色管理</el-menu-item>
+            <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item>
+            <el-menu-item index="/public-config">公示内容配置</el-menu-item>
+            <el-menu-item index="/system/announcements">公告公文管理</el-menu-item>
+            <el-menu-item index="/system/app-download">移动端扫码</el-menu-item>
+            <el-menu-item index="/devices">智能终端设备管理</el-menu-item>
+            <el-menu-item index="/system/trustivs-test">TrustIVS 测试</el-menu-item>
+          
           </el-sub-menu>
         </el-menu>
       </el-aside>
@@ -158,9 +147,7 @@ function mapPrimaryMenu(path: string): string {
     '/inventory/stock': '/inventory/stock',
     '/inventory/tickets': '/inventory/tickets',
     '/inventory/additives': '/inventory/additives',
-    // Public/food waste
-    '/food-waste': '/food-waste',
-    '/public-feedback': '/public-feedback',
+    // Public module removed
     '/public-config': '/public-config',
     // System
     '/system/canteen': '/system/canteen',
@@ -187,24 +174,17 @@ const openeds = computed(() => {
     p.startsWith('/pesticide-tests') ||
     p.startsWith('/disinfection') ||
     p.startsWith('/waste') ||
-    p.startsWith('/hygiene/')
+    p.startsWith('/environment/monitor')
   )
     return ['daily'];
   if (
-    p.startsWith('/inventory/') ||
-    p === '/warehouses'
+    p.startsWith('/inventory/')
   )
     return ['inventory'];
   if (p.startsWith('/certificates') || p.startsWith('/hr/') || p.startsWith('/suppliers')) return ['hr'];
-  if (
-    p.startsWith('/public-') ||
-    p.startsWith('/system/news') ||
-    p.startsWith('/system/announcements') ||
-    p === '/food-waste'
-  )
-    return ['pub-feed'];
-  if (p.startsWith('/environment/') || p === '/devices' || p.startsWith('/risks')) return ['env-dev'];
-  if (p.startsWith('/system/')) return ['system'];
+  if (p === '/public-config') return ['system'];
+  
+  if (p === '/devices' || p.startsWith('/system/')) return ['system'];
   return [] as string[];
 });
 const go = (p: string) => router.push(p);

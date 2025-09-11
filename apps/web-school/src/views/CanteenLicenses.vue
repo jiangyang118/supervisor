@@ -36,7 +36,11 @@
     <el-dialog v-model="visible" title="食堂资质" width="720px">
       <el-form :model="form" :rules="rules" ref="formRef" label-width="150px">
         <el-divider content-position="left">食堂基本信息</el-divider>
-        <el-form-item label="食堂名称" prop="canteenName"><el-input v-model="form.canteenName" /></el-form-item>
+        <el-form-item label="食堂名称" prop="_id">
+          <el-select v-model="form._id" filterable placeholder="请选择食堂" style="width: 360px" @change="onCanteenSelect">
+            <el-option v-for="c in canteens" :key="c.id" :label="c.name" :value="c.id" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="地址"><el-input v-model="form.address" /></el-form-item>
         <el-form-item label="负责人"><el-input v-model="form.manager" /></el-form-item>
         <el-form-item label="联系电话"><el-input v-model="form.phone" /></el-form-item>
@@ -89,14 +93,15 @@ const loading = ref(false);
 const saving = ref(false);
 const visible = ref(false);
 const form = ref<any>({
+  _id: undefined as number | undefined,
   canteenName: '', address: '', manager: '', phone: '',
   biz: { number: '', authority: '', expireAt: '', fileUrl: '' },
   food: { number: '', authority: '', items: '', expireAt: '', fileUrl: '' },
 });
 const formRef = ref();
 const rules = {
-  canteenName: [
-    { required: true, message: '请填写食堂名称', trigger: 'blur' },
+  _id: [
+    { required: true, message: '请选择食堂名称', trigger: 'change' },
   ],
   'biz.number': [
     { required: true, message: '请填写营业执照编号', trigger: 'blur' },
@@ -138,6 +143,11 @@ async function load() {
     loading.value = false;
   }
 }
+// load canteens for selection (仅启用)
+const canteens = ref<Array<{ id: number; name: string; address?: string; manager?: string; phone?: string }>>([]);
+async function loadCanteens() {
+  try { canteens.value = await api.canteensList(getCurrentSchoolId() as any); } catch { canteens.value = []; }
+}
 const router = useRouter();
 function view(row: Row) {
   if (row.canteenId) router.push({ path: '/hr/canteen-licenses/view', query: { id: String(row.canteenId) } });
@@ -146,6 +156,7 @@ function view(row: Row) {
 }
 async function openDialog(init?: Partial<Row>) {
   visible.value = true;
+  await loadCanteens();
   if (init?.canteenId) {
     const sid = getCurrentSchoolId();
     const d = await api.canteenDetail(Number(init.canteenId), sid);
@@ -173,7 +184,7 @@ async function openDialog(init?: Partial<Row>) {
       },
     } as any;
   } else {
-    form.value = { canteenName: '', address: '', manager: '', phone: '', biz: { number: '', authority: '', expireAt: '', fileUrl: '' }, food: { number: '', authority: '', items: '', expireAt: '', fileUrl: '' } };
+    form.value = { _id: undefined, canteenName: '', address: '', manager: '', phone: '', biz: { number: '', authority: '', expireAt: '', fileUrl: '' }, food: { number: '', authority: '', items: '', expireAt: '', fileUrl: '' } };
   }
 }
 function edit(row: Row) { openDialog(row); }
@@ -202,11 +213,8 @@ async function save() {
   saving.value = true;
   try {
     const sid = getCurrentSchoolId();
-    let canteenId = Number((form.value as any)._id || 0);
-    if (!Number.isFinite(canteenId) || canteenId <= 0) {
-      const created = await api.canteenCreate({ schoolId: sid ? Number(sid) : undefined as any, name: form.value.canteenName, address: form.value.address, manager: form.value.manager, phone: form.value.phone });
-      canteenId = Number(created?.id || 0);
-    }
+    const canteenId = Number((form.value as any)._id || 0);
+    if (!Number.isFinite(canteenId) || canteenId <= 0) { ElMessage.error('请选择食堂'); return; }
     await api.canteenDetailUpdate({
       canteenId,
       name: form.value.canteenName,
@@ -225,4 +233,14 @@ async function onDelete(row: Row) {
   await load();
 }
   onMounted(load);
+
+function onCanteenSelect(id: number) {
+  const c = (canteens.value || []).find((x) => Number(x.id) === Number(id));
+  if (!c) return;
+  // Always sync canteen basic info upon selection switch
+  form.value.canteenName = c.name || '';
+  form.value.address = c.address || '';
+  form.value.manager = c.manager || '';
+  form.value.phone = c.phone || '';
+}
 </script>

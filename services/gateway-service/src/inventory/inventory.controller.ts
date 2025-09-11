@@ -164,6 +164,9 @@ export class InventoryController {
   @Get('inbound') listInbound(@Query('schoolId')  schoolId?: number) {
     return this.svc.listInbound(schoolId);
   }
+  @Get('inbound/docs') listInboundDocs(@Query('schoolId') schoolId?: number) {
+    return this.svc.listInboundDocs(schoolId);
+  }
   @Post('inbound') createInbound(
     @Body()
     b: {
@@ -176,6 +179,22 @@ export class InventoryController {
     },
   ) {
     return this.svc.createInbound(b);
+  }
+  @Post('inbound/doc') createInboundDoc(
+    @Body()
+    b: {
+       schoolId?: number;
+       canteenId?: number;
+       supplierId?: number | string;
+       date: string;
+       operator?: string;
+       items: Array<{ productId: string; qty: number; unitPrice?: number; prodDate?: string; shelfLifeDays?: number }>;
+       tickets: Array<{ type: 'ticket_quarantine'|'ticket_invoice'|'ticket_receipt'; imageUrl: string }>;
+       images?: string[];
+    },
+  ) { return this.svc.createInboundDoc(b as any); }
+  @Get('inbound/doc') inboundDocDetail(@Query('docNo') docNo: string) {
+    return this.svc.getInboundDocDetail(docNo);
   }
   @Post('inbound/scale') scaleInbound(
     @Body()
@@ -201,7 +220,10 @@ export class InventoryController {
       productId: string;
       qty: number;
       purpose?: string;
-      by?: string;
+      by?: string; // 出库人
+      receiver?: string; // 领用人（可选）
+      canteenId?: number; // 食堂
+      date?: string; // 出库日期 YYYY-MM-DD
       warehouseId?: string;
     },
   ) {
@@ -215,10 +237,28 @@ export class InventoryController {
       weight: number;
       purpose?: string;
       by?: string;
+      receiver?: string;
+      canteenId?: number;
       warehouseId?: string;
     },
   ) {
     return this.svc.scaleOutbound(b);
+  }
+
+  // Maintenance: clear outbound records (optionally by school)
+  @Post('outbound/clear')
+  clearOutbound(@Body() b: { schoolId?: number }) {
+    return this.svc.clearOutbound(b?.schoolId);
+  }
+
+  // FIFO batches for outbound selection
+  @Get('outbound/batches')
+  outboundBatches(
+    @Query('schoolId') schoolId?: string | number,
+    @Query('productId') productId?: string | number,
+    @Query('canteenId') canteenId?: string | number,
+  ) {
+    return this.svc.listOutboundBatches({ schoolId: Number(schoolId), productId: Number(productId), canteenId: canteenId !== undefined && canteenId !== null && String(canteenId).trim() !== '' ? Number(canteenId) : undefined });
   }
 
   // Stock
@@ -227,6 +267,17 @@ export class InventoryController {
   }
   @Post('stock/stocktake') stocktake(@Body() b: {  schoolId?: number; productId: string; qty: number }) {
     return this.svc.stocktake(b);
+  }
+  @Get('stock/batches') stockBatches(
+    @Query('schoolId') schoolId?: number | string,
+    @Query('near') near?: 'true' | 'false',
+  ) {
+    return this.svc.listBatchStock({ schoolId: schoolId as any, near });
+  }
+  @Post('stock/stocktake-batch') stocktakeBatch(
+    @Body() b: { schoolId?: number; inboundId: number; actualQty: number; operator?: string },
+  ) {
+    return this.svc.stocktakeBatch(b);
   }
 
   // Tickets

@@ -6,7 +6,7 @@ import { SamplingService } from '../../modules/sampling.service';
 import { DisinfectionService } from '../../modules/disinfection.service';
 import { WasteService } from '../../modules/waste.service';
 import { DevicesService } from '../../modules/devices.service';
-import { PublicFeedbackService } from '../../modules/public-feedback.service';
+
 import { PesticideService } from '../../modules/pesticide.service';
 
 @Module({
@@ -23,7 +23,6 @@ import { PesticideService } from '../../modules/pesticide.service';
     PesticideService,
     WasteService,
     DevicesService,
-    PublicFeedbackService,
   ],
 })
 export class RegulatorOverviewModule {}

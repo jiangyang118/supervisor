@@ -26,7 +26,7 @@ const menus = [
     { id:'check_ai', label:'AI 违规抓拍明细' },
     { id:'check_stat', label:'行为统计与导出' },
   ]},
-  { id:'video', label:'明厨亮灶管理', children:[
+  { id:'video', label:'互联网+明厨亮灶', children:[
     { id:'video_live', label:'实时视频' },
     { id:'video_replay', label:'视频回放' },
     { id:'video_snapshot', label:'快照留存' },

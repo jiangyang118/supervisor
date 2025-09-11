@@ -105,11 +105,14 @@ export class AnalyticsService {
 
   // removed: foodIndex() — 食安指数不再在“预警概览”模块展示
 
-  async alertsOverview(params?: { schoolId?: string; type?: string; status?: '未处理' | '已处理'; start?: string; end?: string }) {
+  async alertsOverview(params?: { schoolId?: string; type?: string; status?: '未处理' | '已处理'; start?: string; end?: string; canteenId?: string }) {
     const sidInput = params?.schoolId;
     const sidNum = sidInput !== undefined && sidInput !== null && String(sidInput).trim() !== '' ? Number(sidInput) : NaN;
     const sid = Number.isFinite(sidNum) && Number.isInteger(sidNum) ? sidNum : 1;
-    const items: Array<{ id: string; type: string; level: string; status: '未处理' | '已处理'; at: string; detail?: string; school?: string }> = [];
+    const items: Array<{ id: string; type: string; level: string; status: '未处理' | '已处理'; at: string; detail?: string; school?: string; canteenId?: number }> = [];
+    const cidInput = params?.canteenId;
+    const cidNum = cidInput !== undefined && cidInput !== null && String(cidInput).trim() !== '' ? Number(cidInput) : NaN;
+    const cid = Number.isFinite(cidNum) && Number.isInteger(cidNum) ? cidNum : undefined;
 
     // 1) 证件过期（学校/供应商等）
     try {
@@ -163,9 +166,9 @@ export class AnalyticsService {
 
     // 5) 农残检测（不合格）
     try {
-      const bad = await this.pesticide?.list({ schoolId: sid, result: '不合格', page: 1, pageSize: 100000 });
+      const bad = await this.pesticide?.list({ schoolId: sid, canteenId: cid, result: '不合格', page: 1, pageSize: 100000 });
       (bad?.items || []).forEach((r: any) =>
-        items.push({ id: `PE-${r.id}`, type: '农残检测', level: '高', status: r.measure ? '已处理' : '未处理', at: r.at, detail: `${r.sample}不合格` }),
+        items.push({ id: `PE-${r.id}`, type: '农残检测', level: '高', status: r.measure ? '已处理' : '未处理', at: r.at, detail: `${r.sample}不合格`, canteenId: r.canteenId ?? undefined }),
       );
     } catch {}
 
@@ -181,9 +184,9 @@ export class AnalyticsService {
     try {
       const today = new Date();
       const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-      const df = await this.disinfection?.list({ schoolId: `sch-${String(sid).padStart(3, '0')}`, start: dayStart, page: 1, pageSize: 1 });
+      const df = await this.disinfection?.list({ schoolId: `sch-${String(sid).padStart(3, '0')}`, canteenId: cid, start: dayStart, page: 1, pageSize: 1 });
       if ((df?.total || 0) === 0)
-        items.push({ id: `DS-NONE-${dayStart.slice(0,10)}`, type: '消毒管理', level: '中', status: '未处理', at: new Date().toISOString(), detail: '当日未提交消毒记录' });
+        items.push({ id: `DS-NONE-${dayStart.slice(0,10)}`, type: '消毒管理', level: '中', status: '未处理', at: new Date().toISOString(), detail: '当日未提交消毒记录', canteenId: cid });
     } catch {}
 
     // 8) 食材过期预警（占位：暂无数据来源）

@@ -454,6 +454,17 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
+  disinfectionDetail: (id: string) => get<any>(`/school/disinfection/records/${encodeURIComponent(id)}`),
+  disinfectionImport: async (payload: { items: any[] } | string) => {
+    const isCsv = typeof payload === 'string';
+    const res = await fetch(`${BASE}/school/disinfection/records/import`, {
+      method: 'POST',
+      headers: isCsv ? { 'Content-Type': 'text/plain;charset=utf-8' } : { 'Content-Type': 'application/json' },
+      body: isCsv ? (payload as string) : JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
   // Waste (废弃物管理)
   wasteCategories: () => get<any[]>(`/school/waste/categories`),
   wasteCategoryCreate: async (name: string) => {
@@ -719,6 +730,10 @@ export const api = {
     get<any[]>(
       `/school/inventory/inbound${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
     ),
+  invInboundDocs: (schoolId?: string) =>
+    get<any[]>(
+      `/school/inventory/inbound/docs${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
+    ),
   invInboundCreate: async (body: {
     productId: string;
     qty: number;
@@ -735,15 +750,39 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
+  invInboundDocDetail: (docNo: string) =>
+    get<any>(`/school/inventory/inbound/doc?docNo=${encodeURIComponent(docNo)}`),
+  invInboundCreateDoc: async (body: any) => {
+    const res = await fetch(`${BASE}/school/inventory/inbound/doc`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
   invOutboundList: (schoolId?: string) =>
     get<any[]>(
       `/school/inventory/outbound${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
+    ),
+  invOutboundBatches: (params: { schoolId?: string | number; productId: string | number; canteenId?: string | number }) =>
+    get<any[]>(
+      `/school/inventory/outbound/batches?${new URLSearchParams(
+        Object.fromEntries(
+          Object.entries(params)
+            .filter(([, v]) => v !== undefined && v !== null && v !== '')
+            .map(([k, v]) => [k, String(v)]),
+        ) as any,
+      ).toString()}`,
     ),
   invOutboundCreate: async (body: {
     productId: string;
     qty: number;
     purpose?: string;
     by?: string;
+    receiver?: string;
+    canteenId?: number;
+    date?: string;
     warehouseId?: string;
     schoolId?: string;
   }) => {
@@ -759,6 +798,25 @@ export const api = {
     get<any[]>(
       `/school/inventory/stock${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
     ),
+  invStockBatches: (params: { schoolId?: string | number; near?: 'true' | 'false' } = {}) =>
+    get<any[]>(
+      `/school/inventory/stock/batches?${new URLSearchParams(
+        Object.fromEntries(
+          Object.entries(params)
+            .filter(([, v]) => v !== undefined && v !== null && v !== '')
+            .map(([k, v]) => [k, String(v)]),
+        ) as any,
+      ).toString()}`,
+    ),
+  invStocktakeBatch: async (body: { schoolId?: string | number; inboundId: number | string; actualQty: number; operator?: string }) => {
+    const res = await fetch(`${BASE}/school/inventory/stock/stocktake-batch`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
   invStocktake: async (body: { productId: string; qty: number; schoolId?: string }) => {
     const res = await fetch(`${BASE}/school/inventory/stock/stocktake`, {
       method: 'POST',
@@ -864,7 +922,37 @@ export const api = {
   // Canteen & licenses summary (school-side)
   canteensSummary: (schoolId?: string | number) =>
     get<any[]>(`/school/canteens/summary${schoolId ? `?schoolId=${encodeURIComponent(String(schoolId))}` : ''}`),
-  canteensList: (schoolId?: string | number) => get<any[]>(`/school/canteens${schoolId ? `?schoolId=${encodeURIComponent(String(schoolId))}` : ''}`),
+  canteensList: async (schoolId?: string | number) => {
+    const res = await fetch(`${BASE}/school/canteens${schoolId ? `?schoolId=${encodeURIComponent(String(schoolId))}` : ''}`, { headers: { ...authHeaders() } });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
+  canteensAll: async (schoolId?: string | number) => {
+    const qs = new URLSearchParams(Object.fromEntries(Object.entries({ schoolId, enabled: 'all' }).filter(([,v])=> v!==undefined && v!==null)) as any).toString();
+    const res = await fetch(`${BASE}/school/canteens?${qs}`, { headers: { ...authHeaders() } });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
+  canteensByStatus: async (schoolId?: string | number, enabled: 'all' | 'true' | 'false' = 'all') => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(
+        Object.entries({ schoolId, enabled }).filter(([,v])=> v!==undefined && v!==null)
+      ) as any,
+    ).toString();
+    const res = await fetch(`${BASE}/school/canteens?${qs}`, { headers: { ...authHeaders() } });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
+  canteenCreateSimple: async (body: { schoolId?: number; name: string; code?: string; address?: string; manager?: string; phone?: string; enabled?: boolean }) => {
+    const res = await fetch(`${BASE}/school/canteens`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(body) });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
+  canteenUpdateSimple: async (id: number, patch: { name?: string; code?: string; address?: string; manager?: string; phone?: string; enabled?: boolean }) => {
+    const res = await fetch(`${BASE}/school/canteens?id=${encodeURIComponent(String(id))}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json', ...authHeaders() }, body: JSON.stringify(patch) });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
   // Personnel (staff + health cert)
   personnelList: (
     params: { schoolId?: string | number; name?: string; phone?: string; canteenId?: number; page?: number; pageSize?: number } = {},
@@ -988,51 +1076,6 @@ export const api = {
     if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
     return res.json();
   },
-  // Public feedback
-  publicFeedbackList: (
-    params: {
-      type?: '投诉' | '建议' | '表扬' | '评论';
-      status?: '待处理' | '已回复';
-      start?: string;
-      end?: string;
-      page?: number;
-      pageSize?: number;
-      schoolId?: string;
-    } = {},
-  ) =>
-    get<{ items: any[]; total: number; page: number; pageSize: number }>(
-      `/school/public/feedback/list?${new URLSearchParams(
-        Object.fromEntries(
-          Object.entries({ ...params })
-            .filter(([, v]) => v !== undefined && v !== '' && v !== null)
-            .map(([k, v]) => [k, String(v)]),
-        ) as any,
-      ).toString()}`,
-    ),
-  publicFeedbackCreate: async (body: {
-    type: '投诉' | '建议' | '表扬' | '评论';
-    content: string;
-    user?: string;
-    contact?: string;
-    schoolId?: string;
-  }) => {
-    const res = await fetch(`${BASE}/school/public/feedback/create`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  publicFeedbackReply: async (id: string, replyContent: string, replyBy?: string) => {
-    const res = await fetch(`${BASE}/school/public/feedback/reply`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, replyContent, replyBy }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
   // Public config
   publicConfigGet: (schoolId?: string) => get<any>(`/school/public/config${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`),
   publicConfigUpdate: async (cfg: any & { schoolId?: string }) => {
@@ -1045,45 +1088,13 @@ export const api = {
     return res.json();
   },
   publicConfigAudit: (schoolId?: string) => get<any[]>(`/school/public/config/audit${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`),
-  publicFeedbackExportCsv: async (params: any = {}) => {
-    const res = await fetch(
-      `${BASE}/school/public/feedback/export.csv?${new URLSearchParams(
-        Object.fromEntries(
-          Object.entries({ ...params })
-            .filter(([, v]) => v !== undefined && v !== '' && v !== null)
-            .map(([k, v]) => [k, String(v)]),
-        ) as any,
-      ).toString()}`,
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const { csv } = await res.json();
-    return csv as string;
-  },
-  publicFeedbackBatchReply: async (ids: string[], replyContent: string, replyBy?: string) => {
-    const res = await fetch(`${BASE}/school/public/feedback/reply/batch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids, replyContent, replyBy }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  publicFeedbackMarkRead: async (id: string, read: boolean) => {
-    const res = await fetch(`${BASE}/school/public/feedback/read`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, read }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
   // Analytics
   analyticsDashboard: (params: { schoolId?: string } = {}) =>
     get<any>(
       `/school/analytics/dashboard${params.schoolId ? `?schoolId=${encodeURIComponent(params.schoolId)}` : ''}`,
     ),
   analyticsAlerts: (
-    params: { schoolId?: string; type?: string; status?: '未处理' | '已处理'; start?: string; end?: string } = {},
+    params: { schoolId?: string; type?: string; status?: '未处理' | '已处理'; start?: string; end?: string; canteenId?: number } = {},
   ) =>
     get<{ items: any[]; summary: Array<{ name: string; count: number }> }>(
       `/school/analytics/alerts?${new URLSearchParams(
@@ -1127,6 +1138,37 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
+  // Device safety checks
+  deviceSafetyList: (
+    params: { schoolId?: number | string; canteenId?: number; start?: string; end?: string; page?: number; pageSize?: number } = {},
+  ) =>
+    get<{ items: any[]; total: number; page: number; pageSize: number }>(
+      `/school/device-safety?${new URLSearchParams(
+        Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined && v !== '' && v !== null).map(([k,v])=>[k,String(v)])) as any,
+      ).toString()}`,
+    ),
+  deviceSafetyCreate: async (body: {
+    schoolId?: number | string;
+    canteenId?: number | string;
+    deviceName: string;
+    items: string[];
+    result: '正常' | '异常';
+    description?: string;
+    measures?: string;
+    handler?: string;
+    imageUrl?: string;
+    signatureData?: string;
+    checkDate: string;
+  }) => {
+    const res = await fetch(`${BASE}/school/device-safety`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
+  deviceSafetyDetail: (id: number | string) => get<any>(`/school/device-safety/detail?id=${encodeURIComponent(String(id))}`),
   riskCatalogUpdate: async (id: string, body: any) => {
     const res = await fetch(`${BASE}/school/risk/catalog?id=${encodeURIComponent(id)}`, {
       method: 'PATCH',
@@ -1268,20 +1310,24 @@ export const api = {
   sysAnnouncementCreate: async (body: { title: string; content: string }) => {
     const res = await fetch(`${BASE}/school/system/announcements`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(body),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  sysCanteenGet: () => get<any>(`/school/system/canteen`),
+  sysCanteenGet: async () => {
+    const r = await fetch(`${BASE}/school/system/canteen`, { headers: { ...authHeaders() } });
+    if (!r.ok) { handleUnauthorized(r.status); throw new Error(`HTTP ${r.status}`); }
+    return r.json();
+  },
   sysCanteenSave: async (body: any) => {
     const r = await fetch(`${BASE}/school/system/canteen`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(body),
     });
-    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    if (!r.ok) { handleUnauthorized(r.status); throw new Error(`HTTP ${r.status}`); }
     return r.json();
   },
   sysLinkageList: (status?: 'PENDING' | 'APPROVED' | 'REJECTED') =>
@@ -1289,7 +1335,7 @@ export const api = {
   sysLinkageApply: async (body: { org: string; contact?: string; remark?: string }) => {
     const r = await fetch(`${BASE}/school/system/linkage/apply`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -1298,7 +1344,7 @@ export const api = {
   sysLinkageReview: async (id: string, status: 'APPROVED' | 'REJECTED', comment?: string) => {
     const r = await fetch(`${BASE}/school/system/linkage/review?id=${encodeURIComponent(id)}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ status, comment }),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
@@ -1391,88 +1437,11 @@ export const api = {
   sysAnnouncementAttach: async (id: string, att: { name: string; url: string }) => {
     const r = await fetch(`${BASE}/school/system/announcements/attach`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
       body: JSON.stringify({ id, ...att }),
     });
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     return r.json();
-  },
-  // Food waste (食品浪费)
-  foodWasteSummary: (params: { schoolId?: string; start?: string; end?: string } = {}) =>
-    get<any>(
-      `/school/food-waste/summary?${new URLSearchParams(
-        Object.fromEntries(
-          Object.entries({ ...params })
-            .filter(([, v]) => v !== undefined && v !== '' && v !== null)
-            .map(([k, v]) => [k, String(v)]),
-        ) as any,
-      ).toString()}`,
-    ),
-  foodWasteRecords: (
-    params: {
-      source?: '库存损耗' | '加工制作损耗' | '剩菜剩饭损耗';
-      start?: string;
-      end?: string;
-      page?: number;
-      pageSize?: number;
-      schoolId?: string;
-    } = {},
-  ) =>
-    get<{ items: any[]; total: number; page: number; pageSize: number }>(
-      `/school/food-waste/records?${new URLSearchParams(
-        Object.fromEntries(
-          Object.entries({ ...params })
-            .filter(([, v]) => v !== undefined && v !== '' && v !== null)
-            .map(([k, v]) => [k, String(v)]),
-        ) as any,
-      ).toString()}`,
-    ),
-  foodWasteCreate: async (body: {
-    source: '库存损耗' | '加工制作损耗' | '剩菜剩饭损耗';
-    itemType: '食材' | '菜品';
-    itemName: string;
-    weightKg: number;
-    amountYuan: number;
-    reason?: string;
-    schoolId?: string;
-    date?: string;
-    meal?: '早餐' | '午餐' | '晚餐';
-  }) => {
-    const res = await fetch(`${BASE}/school/food-waste/records`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  foodWasteReasons: () => get<any[]>(`/school/food-waste/reasons`),
-  foodWasteReasonCreate: async (name: string) => {
-    const res = await fetch(`${BASE}/school/food-waste/reasons`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  foodWasteReasonEnable: async (id: string, enabled: boolean) => {
-    const res = await fetch(`${BASE}/school/food-waste/reasons/enable`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, enabled }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
-  foodWasteReasonDelete: async (id: string) => {
-    const res = await fetch(`${BASE}/school/food-waste/reasons/delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
   },
   // Staff (personnel) removed
 

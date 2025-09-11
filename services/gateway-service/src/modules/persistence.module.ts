@@ -2,9 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { DbService } from './db.service';
 import { MorningChecksRepository } from './repositories/morning-checks.repository';
 import { RegulatorMorningChecksRepository } from './repositories/regulator-morning-checks.repository';
-import { PublicFeedbackRepository } from './repositories/public-feedback.repository';
 import { CertificatesRepository } from './repositories/certificates.repository';
-import { FoodWasteRepository } from './repositories/food-waste.repository';
 import { SchoolMorningChecksRepository } from './repositories/school-morning-checks.repository';
 import { WasteRepository } from './repositories/waste.repository';
 import { HygieneRepository } from './repositories/hygiene.repository';
@@ -21,6 +19,7 @@ import { CanteensRepository } from './repositories/canteens.repository';
 import { CanteenLicensesRepository } from './repositories/canteen-licenses.repository';
 import { SchoolUsersRepository } from './repositories/school-users.repository';
 import { PersonnelRepository } from './repositories/personnel.repository';
+import { DeviceSafetyRepository } from './repositories/device-safety.repository';
 
 @Global()
 @Module({
@@ -28,9 +27,7 @@ import { PersonnelRepository } from './repositories/personnel.repository';
     DbService,
     MorningChecksRepository,
     RegulatorMorningChecksRepository,
-    PublicFeedbackRepository,
     CertificatesRepository,
-    FoodWasteRepository,
     SchoolMorningChecksRepository,
     WasteRepository,
     HygieneRepository,
@@ -47,14 +44,13 @@ import { PersonnelRepository } from './repositories/personnel.repository';
     CanteenLicensesRepository,
     SchoolUsersRepository,
     PersonnelRepository,
+    DeviceSafetyRepository,
   ],
   exports: [
     DbService,
     MorningChecksRepository,
     RegulatorMorningChecksRepository,
-    PublicFeedbackRepository,
     CertificatesRepository,
-    FoodWasteRepository,
     SchoolMorningChecksRepository,
     WasteRepository,
     HygieneRepository,
@@ -71,6 +67,7 @@ import { PersonnelRepository } from './repositories/personnel.repository';
     CanteenLicensesRepository,
     SchoolUsersRepository,
     PersonnelRepository,
+    DeviceSafetyRepository,
   ],
 })
 export class PersistenceModule {}

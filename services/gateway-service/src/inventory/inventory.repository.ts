@@ -352,10 +352,86 @@ export class InventoryRepository {
     );
     return res.insertId || 0;
   }
-  async insertOutbound(r: { schoolId: number; productId: string; qty: number; purpose?: string; by?: string; warehouseId?: string; at: string; source: string }) {
+  async insertInboundDoc(b: { schoolId: number; docNo: string; canteenId?: number; supplierId?: number | string; date: string; operator?: string; items: Array<{ productId: string; qty: number; unitPrice?: number; prodDate?: string; shelfLifeDays?: number }>; tickets: Array<{ type: 'ticket_quarantine'|'ticket_invoice'|'ticket_receipt'; imageUrl: string }>; images?: string[] }) {
+    // Persist inbound date and production date as YYYY-MM-DD (date-only)
+    const toDateOnly = (val?: string) => {
+      if (!val) return null as any;
+      const d = new Date(val);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    const at: string = toDateOnly(b.date);
+    for (const it of b.items) {
+      await this.db.query(
+        `insert into inv_inbound(doc_no, school_id, canteen_id, product_id, qty, unit_price, prod_date, shelf_life_days, supplier_id, at, source, created_by)
+         values(?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [b.docNo, b.schoolId, b.canteenId || null, it.productId, it.qty, it.unitPrice ?? null, toDateOnly(it.prodDate) || null, it.shelfLifeDays ?? null, b.supplierId || null, at, 'manual', b.operator || null],
+      );
+    }
+    if (Array.isArray(b.tickets)) {
+      for (const t of b.tickets) {
+        await this.db.query('insert into inbound_attachments(doc_no, type, image_url) values(?,?,?)', [b.docNo, t.type, t.imageUrl]);
+      }
+    }
+    if (Array.isArray(b.images)) {
+      for (const url of b.images) {
+        await this.db.query('insert into inbound_attachments(doc_no, type, image_url) values(?,?,?)', [b.docNo, 'image', url]);
+      }
+    }
+  }
+  async listInboundDocs(schoolId?: number | string) {
+    const where = schoolId ? 'where i.school_id = ?' : '';
+    const params = schoolId ? [schoolId] : [];
+    const { rows } = await this.db.query<any>(
+      `select i.doc_no as docNo,
+              date(min(i.at)) as date,
+              min(i.canteen_id) as canteenId,
+              min(i.supplier_id) as supplierId,
+              count(distinct i.product_id) as kinds,
+              sum(i.qty) as totalQty,
+              coalesce(max(nullif(i.created_by, '')), min(i.created_by)) as operator,
+              group_concat(distinct p.name order by p.name separator '、') as productNames
+         from inv_inbound i
+         left join inv_products p on p.id = i.product_id
+         ${where}
+        group by i.doc_no
+        order by date desc, docNo desc`,
+      params,
+    );
+    return rows as Array<{ docNo: string; date: string; canteenId?: number; supplierId?: number; kinds: number; totalQty: number; operator?: string; productNames?: string }>;
+  }
+
+  async getInboundDocDetail(docNo: string) {
+    const head = await this.db.query<any>(
+      `select i.doc_no as docNo,
+              date(min(i.at)) as date,
+              min(i.school_id) as schoolId,
+              min(i.canteen_id) as canteenId,
+              min(i.supplier_id) as supplierId,
+              coalesce(max(nullif(i.created_by, '')), min(i.created_by)) as operator
+         from inv_inbound i where i.doc_no = ?`,
+      [docNo],
+    );
+    const items = await this.db.query<any>(
+      `select i.product_id as productId, p.name as productName, p.unit as unit,
+              i.qty, i.unit_price as unitPrice, i.prod_date as prodDate, i.shelf_life_days as shelfLifeDays
+         from inv_inbound i left join inv_products p on p.id = i.product_id
+        where i.doc_no = ? order by i.id asc`,
+      [docNo],
+    );
+    const atts = await this.db.query<any>(
+      `select type, image_url as imageUrl, created_at as createdAt
+         from inbound_attachments where doc_no = ? order by id asc`,
+      [docNo],
+    );
+    return { head: head.rows?.[0] || null, items: items.rows || [], attachments: atts.rows || [] };
+  }
+  async insertOutbound(r: { schoolId: number; productId: string; qty: number; purpose?: string; by?: string; receiver?: string; canteenId?: number; warehouseId?: string; at: string; source: string }) {
     const res = await this.db.query(
-      'insert into inv_outbound(school_id, product_id, qty, purpose, by_who, warehouse_id, at, source) values(?,?,?,?,?,?,?,?)',
-      [r.schoolId, r.productId, r.qty, r.purpose || null, r.by || null, r.warehouseId || null, new Date(r.at), r.source],
+      'insert into inv_outbound(school_id, canteen_id, product_id, qty, purpose, by_who, receiver, warehouse_id, at, source) values(?,?,?,?,?,?,?,?,?,?)',
+      [r.schoolId, r.canteenId || null, r.productId, r.qty, r.purpose || null, r.by || null, r.receiver || null, r.warehouseId || null, new Date(r.at), r.source],
     );
     return res.insertId || 0;
   }
@@ -363,7 +439,10 @@ export class InventoryRepository {
     const where = schoolId ? 'where school_id = ?' : '';
     const params = schoolId ? [schoolId] : [];
     const { rows } = await this.db.query<any>(
-      `select id, product_id as productId, qty, supplier_id as supplierId, warehouse_id as warehouseId, image_url as imageUrl, at, source
+      `select id, doc_no as docNo, product_id as productId, qty,
+              canteen_id as canteenId, supplier_id as supplierId,
+              unit_price as unitPrice, prod_date as prodDate, shelf_life_days as shelfLifeDays,
+              warehouse_id as warehouseId, image_url as imageUrl, at, source
        from inv_inbound ${where} order by at desc`,
       params,
     );
@@ -373,11 +452,52 @@ export class InventoryRepository {
     const where = schoolId ? 'where school_id = ?' : '';
     const params = schoolId ? [schoolId] : [];
     const { rows } = await this.db.query<any>(
-      `select id, product_id as productId, qty, purpose, by_who as \`by\`, warehouse_id as warehouseId, at, source
+      `select id, canteen_id as canteenId, product_id as productId, qty, purpose, by_who as \`by\`, receiver, warehouse_id as warehouseId, at, source
        from inv_outbound ${where} order by at desc`,
       params,
     );
     return rows;
+  }
+  async listOutboundTotalByProduct(schoolId: number | string, productId: number | string, canteenId?: number | string) {
+    const where = canteenId !== undefined && canteenId !== null
+      ? 'where school_id = ? and product_id = ? and canteen_id = ?'
+      : 'where school_id = ? and product_id = ?';
+    const params = canteenId !== undefined && canteenId !== null ? [schoolId, productId, canteenId] : [schoolId, productId];
+    const { rows } = await this.db.query<any>(
+      `select coalesce(sum(qty),0) as total from inv_outbound ${where}`,
+      params,
+    );
+    return Number(rows?.[0]?.total || 0);
+  }
+  async listInboundFifoBatches(params: { schoolId: number | string; productId: number | string; canteenId?: number | string }) {
+    const { schoolId, productId, canteenId } = params;
+    const where = canteenId !== undefined && canteenId !== null
+      ? 'where i.school_id = ? and i.product_id = ? and (i.canteen_id = ? or i.canteen_id is null)'
+      : 'where i.school_id = ? and i.product_id = ?';
+    const values = canteenId !== undefined && canteenId !== null ? [schoolId, productId, canteenId] : [schoolId, productId];
+    const inRows = await this.db.query<any>(
+      `select i.id as inboundId, i.doc_no as docNo, date(i.at) as date, i.qty
+         from inv_inbound i ${where}
+        order by i.at asc, i.id asc`,
+      values,
+    );
+    const outTotal = await this.listOutboundTotalByProduct(schoolId, productId, canteenId);
+    let remainingOut = Number(outTotal || 0);
+    const batches: Array<{ inboundId: number; docNo?: string; date: string; qty: number; remain: number }> = [];
+    for (const r of inRows.rows) {
+      const size = Number(r.qty || 0);
+      const consumed = Math.min(size, remainingOut);
+      const remain = size - consumed;
+      remainingOut = remainingOut - consumed;
+      if (remain > 0) batches.push({ inboundId: Number(r.inboundId), docNo: r.docNo || undefined, date: r.date, qty: size, remain });
+    }
+    return batches;
+  }
+  async clearOutbound(schoolId?: number | string) {
+    const where = schoolId !== undefined && schoolId !== null ? 'where school_id = ?' : '';
+    const params = schoolId !== undefined && schoolId !== null ? [schoolId] : [];
+    const res = await this.db.query(`delete from inv_outbound ${where}`, params);
+    return res.affectedRows || 0;
   }
   async getStock(schoolId?: number | string) {
     const whereIn = schoolId ? 'where school_id = ?' : '';
@@ -405,6 +525,71 @@ export class InventoryRepository {
       if (!prev || (t && new Date(t).getTime() > new Date(prev).getTime())) timeMap.set(r.productId, t);
     }
     return Array.from(qtyMap.entries()).map(([productId, qty]) => ({ productId, qty, updatedAt: timeMap.get(productId) || null }));
+  }
+
+  // Batch-level stock listing with FIFO-based remaining per inbound
+  async listBatchStock(schoolId: number | string) {
+    // Fetch inbound rows per school ordered by product/date
+    const inbound = await this.db.query<any>(
+      `select i.id as inboundId, i.doc_no as docNo, i.product_id as productId, i.qty as qty,
+              i.prod_date as prodDate, i.shelf_life_days as shelfLifeDays, i.at as at,
+              p.name as productName, p.unit as unit
+         from inv_inbound i left join inv_products p on p.id = i.product_id
+        where i.school_id = ?
+        order by i.product_id asc, i.at asc, i.id asc`,
+      [schoolId],
+    );
+    // Outbound totals per product
+    const outs = await this.db.query<any>(
+      `select product_id as productId, coalesce(sum(qty),0) as total from inv_outbound where school_id = ? group by product_id`,
+      [schoolId],
+    );
+    const outMap = new Map<string, number>();
+    for (const r of outs.rows) outMap.set(String(r.productId), Number(r.total || 0));
+    const result: Array<any> = [];
+    let currentPid: any = null;
+    let remainingOut = 0;
+    for (const r of inbound.rows) {
+      const pid = String(r.productId);
+      if (currentPid !== pid) {
+        currentPid = pid;
+        remainingOut = Number(outMap.get(pid) || 0);
+      }
+      const size = Number(r.qty || 0);
+      const consumed = Math.min(size, remainingOut);
+      const remain = size - consumed;
+      remainingOut = remainingOut - consumed;
+      if (remain > 0) {
+        result.push({
+          inboundId: Number(r.inboundId),
+          docNo: r.docNo || null,
+          productId: Number(r.productId),
+          productName: r.productName || String(r.productId),
+          unit: r.unit || '',
+          qty: remain,
+          prodDate: r.prodDate,
+          shelfLifeDays: r.shelfLifeDays,
+        });
+      }
+    }
+    return result;
+  }
+  async getInboundById(id: number | string) {
+    const { rows } = await this.db.query<any>(
+      `select id, school_id as schoolId, product_id as productId, qty, prod_date as prodDate, shelf_life_days as shelfLifeDays from inv_inbound where id = ? limit 1`,
+      [id],
+    );
+    return rows?.[0] || null;
+  }
+  async updateInboundQty(id: number | string, qty: number) {
+    await this.db.query('update inv_inbound set qty = ? where id = ?', [qty, id]);
+  }
+  async insertStocktake(rec: { schoolId: number; inboundId: number; productId: number; prevQty: number; actualQty: number; diff: number; operator?: string }) {
+    await this.db.query(
+      `insert into inv_stocktakes(school_id, inbound_id, product_id, prev_qty, actual_qty, diff, operator)
+       values(?,?,?,?,?,?,?)`,
+      [rec.schoolId, rec.inboundId, rec.productId, rec.prevQty, rec.actualQty, rec.diff, rec.operator || null],
+    );
   }
 
   // Tickets

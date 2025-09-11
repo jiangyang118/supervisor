@@ -18,11 +18,7 @@ import { CredentialsService } from './credentials.service';
 import { WasteController } from './waste.controller';
 import { WasteService } from './waste.service';
 import { CertificatesService } from './certificates.service';
-import { FoodWasteController } from './food-waste.controller';
-import { FoodWasteService } from './food-waste.service';
-import { PublicFeedbackController } from './public-feedback.controller';
-import { PublicFeedbackService } from './public-feedback.service';
-import { RegPublicFeedbackController } from './reg-public-feedback.controller';
+// Public feedback & food-waste module removed
 import { PublicConfigController } from './public-config.controller';
 import { PublicConfigService } from './public-config.service';
 import { EmergencyController } from './emergency.controller';
@@ -37,7 +33,7 @@ import { DevicesController } from './devices.controller';
 import { FilesController } from './files.controller';
 import { DevicesService } from './devices.service';
 import { RegCredentialsController } from './reg-credentials.controller';
-import { RegFoodWasteController } from './reg-food-waste.controller';
+// Reg food-waste controller removed
 import { DeviceController } from './device.controller';
 import { InspectionsService } from './inspections.service';
 import { RegInspectionsController } from './reg-inspections.controller';
@@ -71,6 +67,8 @@ import { TokenBlacklistService } from './token-blacklist.service';
 import { SchoolCertificatesController } from './school-certificates.controller';
 import { PersonnelController } from './personnel.controller';
 import { PersonnelRepository } from './repositories/personnel.repository';
+import { DeviceSafetyController } from './device-safety.controller';
+import { DeviceSafetyService } from './device-safety.service';
 
 @Module({
   imports: [
@@ -99,12 +97,10 @@ import { PersonnelRepository } from './repositories/personnel.repository';
     DisinfectionController,
     HygieneController,
     WasteController,
-    FoodWasteController,
-    PublicFeedbackController,
-    RegPublicFeedbackController,
     PublicConfigController,
     SchoolCertificatesController,
     PersonnelController,
+    DeviceSafetyController,
     EmergencyController,
     RiskController,
     AuthController,
@@ -113,7 +109,6 @@ import { PersonnelRepository } from './repositories/personnel.repository';
     DevicesController,
     FilesController,
     RegCredentialsController,
-    RegFoodWasteController,
     RegInspectionsController,
     RegAlertsController,
     RegSystemController,
@@ -135,8 +130,7 @@ import { PersonnelRepository } from './repositories/personnel.repository';
     
     WasteService,
     CertificatesService,
-    FoodWasteService,
-    PublicFeedbackService,
+    
     PublicConfigService,
     EmergencyService,
     RiskService,
@@ -152,6 +146,7 @@ import { PersonnelRepository } from './repositories/personnel.repository';
     PermissionGuard,
     TokenBlacklistService,
     PersonnelRepository,
+    DeviceSafetyService,
   ],
 })
 export class AppModule {}

@@ -7,6 +7,7 @@ import { SchoolUsersRepository } from './repositories/school-users.repository';
 export type Attachment = { id: string; name: string; url: string };
 export type Announcement = {
   id: string;
+  schoolId: number;
   title: string;
   content: string;
   at: string;
@@ -147,17 +148,21 @@ export class SystemService {
   ];
 
   // Announcements
-  listAnnouncements(params?: { page?: number | string; pageSize?: number | string }) {
+  listAnnouncements(params?: { page?: number | string; pageSize?: number | string; schoolId?: number }) {
     const page = Math.max(1, parseInt(String(params?.page ?? 1), 10) || 1);
     const pageSize = Math.max(1, parseInt(String(params?.pageSize ?? 20), 10) || 20);
-    const total = this.announcements.length;
-    const items = this.announcements.slice((page - 1) * pageSize, page * pageSize);
+    const sid = params?.schoolId && Number.isFinite(Number(params.schoolId)) ? Number(params.schoolId) : undefined;
+    const rows = sid ? this.announcements.filter((a) => a.schoolId === sid) : this.announcements;
+    const total = rows.length;
+    const items = rows.slice((page - 1) * pageSize, page * pageSize);
     return { items, total, page, pageSize };
   }
-  createAnnouncement(b: { title: string; content: string }) {
+  createAnnouncement(b: { title: string; content: string }, schoolId: number) {
     if (!b?.title) throw new BadRequestException('title required');
+    if (!Number.isFinite(Number(schoolId))) throw new BadRequestException('schoolId required');
     const it: Announcement = {
       id: this.id('AN'),
+      schoolId: Number(schoolId),
       title: b.title,
       content: b.content || '',
       at: this.now(),
@@ -166,15 +171,15 @@ export class SystemService {
     this.announcements.unshift(it);
     return it;
   }
-  addAnnouncementAttachment(id: string, att: { name: string; url: string }) {
-    const a = this.announcements.find((x) => x.id === id);
+  addAnnouncementAttachment(id: string, att: { name: string; url: string }, schoolId?: number) {
+    const a = this.announcements.find((x) => x.id === id && (schoolId === undefined || x.schoolId === Number(schoolId)));
     if (!a) throw new BadRequestException('not found');
     const item = { id: this.id('ATT'), name: att.name, url: att.url };
     (a.attachments ||= []).push(item);
     return item;
   }
-  getAnnouncement(id: string) {
-    const a = this.announcements.find((x) => x.id === id);
+  getAnnouncement(id: string, schoolId?: number) {
+    const a = this.announcements.find((x) => x.id === id && (schoolId === undefined || x.schoolId === Number(schoolId)));
     if (!a) throw new BadRequestException('not found');
     return a;
   }

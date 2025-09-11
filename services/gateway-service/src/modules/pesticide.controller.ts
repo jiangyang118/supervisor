@@ -35,8 +35,11 @@ export class PesticideController {
     @Body()
     body: {
       schoolId?: number;
+      canteenId?: number;
       sample: string;
       device: string;
+      tester?: string;
+      value?: number | string;
       result: PesticideResult;
       imageUrl?: string;
       remark?: string;

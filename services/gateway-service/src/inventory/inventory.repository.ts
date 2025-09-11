@@ -10,6 +10,64 @@ export class InventoryRepository {
     const res = await this.db.query('insert into inv_categories(school_id, name) values(?,?)', [schoolId, name]);
     return res.insertId || 0;
   }
+  private async ensureSupplierCertificatesTable() {
+    try {
+      await this.db.query(
+        `create table if not exists supplier_certificates (
+           id int primary key auto_increment,
+           supplier_id int not null,
+           type varchar(64) not null,
+           number varchar(128) null,
+           authority varchar(255) null,
+           expire_at datetime null,
+           image_url varchar(255) null,
+           created_at datetime not null default current_timestamp,
+           key idx_sup_cert_supplier (supplier_id),
+           key idx_sup_cert_type (type),
+           key idx_sup_cert_expire (expire_at)
+         )`,
+      );
+    } catch {}
+  }
+
+  async insertSupplierCertificate(c: { supplierId: number; type: string; number?: string; authority?: string; expireAt?: string; imageUrl?: string }) {
+    await this.ensureSupplierCertificatesTable();
+    await this.db.query(
+      `insert into supplier_certificates(supplier_id, type, number, authority, expire_at, image_url)
+       values(?,?,?,?,?,?)`,
+      [c.supplierId, c.type, c.number || null, c.authority || null, c.expireAt ? new Date(c.expireAt) : null, c.imageUrl || null],
+    );
+  }
+
+  async listInboundBySupplier(supplierId: number | string) {
+    const { rows } = await this.db.query<any>(
+      `select id, product_id as productId, qty, at, source from inv_inbound where supplier_id = ? order by at desc limit 200`,
+      [supplierId],
+    );
+    return rows as Array<{ id: number; productId: number; qty: number; at: string; source: string }>;
+  }
+
+  async listSupplierProducts(supplierId: number | string) {
+    const { rows } = await this.db.query<any>(
+      `select distinct p.id, p.name, p.unit
+         from inv_inbound i join inv_products p on p.id = i.product_id
+        where i.supplier_id = ?
+        order by p.name asc limit 200`,
+      [supplierId],
+    );
+    return rows as Array<{ id: number; name: string; unit: string }>;
+  }
+
+  async listSupplierCertificates(supplierId: number | string) {
+    await this.ensureSupplierCertificatesTable();
+    const { rows } = await this.db.query<any>(
+      `select type, number, authority, expire_at as expireAt, image_url as imageUrl
+         from supplier_certificates where supplier_id = ?
+        order by coalesce(expire_at, '1970-01-01') desc, id desc`,
+      [supplierId],
+    );
+    return rows as Array<{ type: string; number?: string; authority?: string; expireAt?: string; imageUrl?: string }>;
+  }
   async listCategories(schoolId?: number | string) {
     const where = schoolId ? 'where school_id = ?' : '';
     const params = schoolId ? [schoolId] : [];
@@ -72,7 +130,7 @@ export class InventoryRepository {
   }
   async getSupplierById(id: number | string) {
     const { rows } = await this.db.query<any>(
-      `select id, name, phone, license, address, contact, email, enabled, rating, categories, license_expire_at as licenseExpireAt, license_image_url as licenseImageUrl, deleted
+      `select id, school_id as schoolId, name, phone, license, address, contact, email, enabled, rating, categories, license_expire_at as licenseExpireAt, license_image_url as licenseImageUrl, deleted
        from inv_suppliers where id = ? limit 1`,
       [id],
     );
@@ -82,6 +140,13 @@ export class InventoryRepository {
       try { r.categories = JSON.parse(r.categories); } catch { r.categories = []; }
     }
     return r;
+  }
+  async existsSupplierName(schoolId: number | string, name: string, excludeId?: number | string) {
+    const where: string[] = ['deleted = 0', 'school_id = ?', 'name = ?'];
+    const args: any[] = [schoolId, name];
+    if (excludeId !== undefined && excludeId !== null) { where.push('id <> ?'); args.push(excludeId); }
+    const { rows } = await this.db.query<any>(`select count(1) as c from inv_suppliers where ${where.join(' and ')}`, args);
+    return Number(rows?.[0]?.c || 0) > 0;
   }
   async listSuppliers(filters: { schoolId?: number | string; q?: string; enabled?: boolean; expired?: boolean; expireStart?: string; expireEnd?: string; page: number; pageSize: number }) {
     const where: string[] = ['deleted = 0'];
@@ -97,19 +162,123 @@ export class InventoryRepository {
     if (filters.expired === false) { where.push('(license_expire_at is null or license_expire_at >= now())'); }
     if (filters.expireStart) { where.push('license_expire_at >= ?'); values.push(new Date(filters.expireStart)); }
     if (filters.expireEnd) { where.push('license_expire_at <= ?'); values.push(new Date(filters.expireEnd)); }
-    const base = `from inv_suppliers where ${where.join(' and ')}`;
-    const totalRows = await this.db.query<any>(`select count(1) as c ${base}`, values);
-    const total = Number(totalRows.rows[0]?.c || 0);
-    const rows = await this.db.query<any>(
-      `select id, name, phone, license, address, contact, email, enabled, rating, categories, license_expire_at as licenseExpireAt, license_image_url as licenseImageUrl, deleted ${base}
-       order by id desc limit ? offset ?`,
-      [...values, filters.pageSize, (filters.page - 1) * filters.pageSize],
-    );
-    const items = rows.rows.map((r: any) => ({
-      ...r,
-      categories: (() => { try { return JSON.parse(r.categories || '[]'); } catch { return []; } })(),
-    }));
-    return { items, total, page: filters.page, pageSize: filters.pageSize };
+    // Prefer joined view with supplier_certificates; fallback gracefully if table is missing
+    try {
+      const base = `from (
+          select s.*,
+                 coalesce(bl.number, s.license) as license_joined,
+                 coalesce(bl.expire_at, s.license_expire_at) as license_expire_joined,
+                 fd.number as food_license_joined,
+                 fd.expire_at as food_expire_joined,
+                 qc.number as qc_number,
+                 qc.expire_at as qc_expire,
+                 an.number as animal_number,
+                 an.expire_at as animal_expire
+            from inv_suppliers s
+            left join (
+              select sc1.supplier_id, sc1.number, sc1.expire_at
+                from supplier_certificates sc1
+                join (
+                  select supplier_id, max(expire_at) as max_expire
+                    from supplier_certificates
+                   where type = '营业执照'
+                   group by supplier_id
+                ) mx on mx.supplier_id = sc1.supplier_id and sc1.expire_at = mx.max_expire
+                join (
+                  select supplier_id, expire_at, min(id) as min_id
+                    from supplier_certificates
+                   where type = '营业执照'
+                   group by supplier_id, expire_at
+                ) pick on pick.supplier_id = sc1.supplier_id and pick.expire_at = sc1.expire_at and pick.min_id = sc1.id
+               where sc1.type = '营业执照'
+            ) bl on bl.supplier_id = s.id
+            left join (
+              select sc2.supplier_id, sc2.number, sc2.expire_at
+                from supplier_certificates sc2
+                join (
+                  select supplier_id, max(expire_at) as max_expire
+                    from supplier_certificates
+                   where type in ('食品生产许可证','食品经营许可证')
+                   group by supplier_id
+                ) mx2 on mx2.supplier_id = sc2.supplier_id and sc2.expire_at = mx2.max_expire
+                join (
+                  select supplier_id, expire_at, min(id) as min_id
+                    from supplier_certificates
+                   where type in ('食品生产许可证','食品经营许可证')
+                   group by supplier_id, expire_at
+                ) pick2 on pick2.supplier_id = sc2.supplier_id and pick2.expire_at = sc2.expire_at and pick2.min_id = sc2.id
+               where sc2.type in ('食品生产许可证','食品经营许可证')
+            ) fd on fd.supplier_id = s.id
+            left join (
+              select sc3.supplier_id, sc3.number, sc3.expire_at
+                from supplier_certificates sc3
+                join (
+                  select supplier_id, max(expire_at) as max_expire
+                    from supplier_certificates
+                   where type = '质检报告'
+                   group by supplier_id
+                ) mx3 on mx3.supplier_id = sc3.supplier_id and sc3.expire_at = mx3.max_expire
+                join (
+                  select supplier_id, expire_at, min(id) as min_id
+                    from supplier_certificates
+                   where type = '质检报告'
+                   group by supplier_id, expire_at
+                ) pick3 on pick3.supplier_id = sc3.supplier_id and pick3.expire_at = sc3.expire_at and pick3.min_id = sc3.id
+               where sc3.type = '质检报告'
+            ) qc on qc.supplier_id = s.id
+            left join (
+              select sc4.supplier_id, sc4.number, sc4.expire_at
+                from supplier_certificates sc4
+                join (
+                  select supplier_id, max(expire_at) as max_expire
+                    from supplier_certificates
+                   where type = '动物检疫合格证'
+                   group by supplier_id
+                ) mx4 on mx4.supplier_id = sc4.supplier_id and sc4.expire_at = mx4.max_expire
+                join (
+                  select supplier_id, expire_at, min(id) as min_id
+                    from supplier_certificates
+                   where type = '动物检疫合格证'
+                   group by supplier_id, expire_at
+                ) pick4 on pick4.supplier_id = sc4.supplier_id and pick4.expire_at = sc4.expire_at and pick4.min_id = sc4.id
+               where sc4.type = '动物检疫合格证'
+            ) an on an.supplier_id = s.id
+        ) inv
+        where ${where.map(w => w.replace(/\b(license|license_expire_at)\b/g, (m)=> m==='license'?'license_joined':'license_expire_joined')).join(' and ')}`;
+      const totalRows = await this.db.query<any>(`select count(1) as c ${base}`, values);
+      const total = Number(totalRows.rows[0]?.c || 0);
+      const rows = await this.db.query<any>(
+        `select id, name, phone, license_joined as license, address, contact, email, enabled, rating, categories, license_expire_joined as licenseExpireAt, license_image_url as licenseImageUrl, deleted,
+                food_license_joined as foodLicense, food_expire_joined as foodLicenseExpireAt,
+                qc_number as qcNumber, qc_expire as qcExpireAt,
+                animal_number as animalNumber, animal_expire as animalExpireAt ${base}
+         order by id desc limit ? offset ?`,
+        [...values, filters.pageSize, (filters.page - 1) * filters.pageSize],
+      );
+      const items = rows.rows.map((r: any) => ({
+        ...r,
+        categories: (() => { try { return JSON.parse(r.categories || '[]'); } catch { return []; } })(),
+      }));
+      return { items, total, page: filters.page, pageSize: filters.pageSize };
+    } catch (e) {
+      // Fallback to original schema (no certificates table)
+      const legacyBase = `from inv_suppliers where ${where.join(' and ')}`;
+      const totalRows = await this.db.query<any>(`select count(1) as c ${legacyBase}`, values);
+      const total = Number(totalRows.rows[0]?.c || 0);
+      const rows = await this.db.query<any>(
+        `select id, name, phone, license, address, contact, email, enabled, rating, categories, license_expire_at as licenseExpireAt, license_image_url as licenseImageUrl, deleted,
+                null as foodLicense, null as foodLicenseExpireAt,
+                null as qcNumber, null as qcExpireAt,
+                null as animalNumber, null as animalExpireAt ${legacyBase}
+         order by id desc limit ? offset ?`,
+        [...values, filters.pageSize, (filters.page - 1) * filters.pageSize],
+      );
+      const items = rows.rows.map((r: any) => ({
+        ...r,
+        categories: (() => { try { return JSON.parse(r.categories || '[]'); } catch { return []; } })(),
+      }));
+      return { items, total, page: filters.page, pageSize: filters.pageSize };
+    }
   }
   async batchEnableSuppliers(ids: Array<number | string>, enabled: boolean) {
     if (!ids.length) return 0;

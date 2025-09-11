@@ -1,4 +1,4 @@
-import { Injectable, MessageEvent, BadRequestException } from '@nestjs/common';
+import { Injectable, MessageEvent, BadRequestException, ConflictException } from '@nestjs/common';
 import { InventoryRepository } from './inventory.repository';
 import { Observable, Subject } from 'rxjs';
 
@@ -134,11 +134,19 @@ export class InventoryService {
     const t = Date.parse(dateISO);
     return Number.isFinite(t) ? t < Date.now() : false;
   }
-  private assertUnique(_b: Partial<Supplier>, _ignoreId?: string) {}
+  private async assertUnique(b: Partial<Supplier>, schoolId: number, ignoreId?: number | string) {
+    const name = String(b.name || '').trim();
+    if (!name) return;
+    const exists = await this.repo!.existsSupplierName(schoolId, name, ignoreId);
+    if (exists) throw new ConflictException('供应商名称已存在');
+  }
   private assertValid(b: Partial<Supplier>) {
-    if (b.phone) {
-      const ok = /^\+?\d{7,20}$/.test(b.phone);
-      if (!ok) throw new BadRequestException('invalid phone');
+    if (b.phone !== undefined && b.phone !== null) {
+      const p = String(b.phone).trim();
+      if (p) {
+        const ok = /^[+]?[\d\s\-()]{6,25}$/.test(p);
+        if (!ok) throw new BadRequestException('invalid phone');
+      }
     }
     if (b.email) {
       const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email);
@@ -153,39 +161,92 @@ export class InventoryService {
       if (!Number.isFinite(n) || n < 1 || n > 5) throw new BadRequestException('invalid rating');
     }
   }
-  createSupplier(b: {
+  async createSupplier(b: {
     schoolId?: number | string;
     name: string;
     phone?: string;
-    license?: string;
     address?: string;
     contact?: string;
     email?: string;
     enabled?: boolean;
     rating?: number;
     categories?: string[];
+    // optional legacy license fields kept for backward compatibility
+    license?: string;
     licenseExpireAt?: string;
     licenseImageUrl?: string;
+    // certificate from modal
+    certType?: string;
+    certNumber?: string;
+    certAuthority?: string;
+    certExpireAt?: string;
+    certImageUrl?: string;
   }) {
-    if (!b?.name) throw new BadRequestException('name required');
-    this.assertUnique(b);
-    this.assertValid(b);
+    if (!b?.name || !String(b.name).trim()) throw new BadRequestException('name required');
+    b.name = String(b.name).trim();
+    if (b.address !== undefined && b.address !== null) b.address = String(b.address).trim();
+    if (b.contact !== undefined && b.contact !== null) b.contact = String(b.contact).trim();
+    if (b.phone !== undefined && b.phone !== null) b.phone = String(b.phone).trim();
     const sid = b.schoolId !== undefined && b.schoolId !== null && String(b.schoolId).trim() !== '' ? Number(b.schoolId) : 1;
+    await this.assertUnique(b, sid);
+    this.assertValid(b);
     const payload = { schoolId: sid, ...b } as any;
     if (payload.rating && (payload.rating < 1 || payload.rating > 5)) payload.rating = Math.min(5, Math.max(1, payload.rating));
-    return this.repo!.insertSupplier(payload).then((id) => ({ id, enabled: payload.enabled ?? true, ...b } as any));
+    return this.repo!.insertSupplier(payload).then(async (id) => {
+      // Insert certificate if provided; ignore if cert table not migrated yet
+      try {
+        if (b.certType || b.certNumber || b.certExpireAt || b.certImageUrl) {
+          await this.repo!.insertSupplierCertificate({
+            supplierId: Number(id),
+            type: b.certType || '营业执照',
+            number: b.certNumber,
+            authority: b.certAuthority,
+            expireAt: b.certExpireAt || b.licenseExpireAt,
+            imageUrl: b.certImageUrl || b.licenseImageUrl,
+          });
+        }
+      } catch {}
+      return { id, enabled: payload.enabled ?? true, ...b } as any;
+    });
   }
   async getSupplier(id: number | string) {
     const s = await this.repo!.getSupplierById(id);
     if (!s) throw new BadRequestException('not found');
-    return s;
+    // Attach certificates summary
+    let certs: Array<{ type: string; number?: string; authority?: string; expireAt?: string; imageUrl?: string }> = [];
+    try { certs = await this.repo!.listSupplierCertificates(id); } catch { certs = []; }
+    const byType = (t: string) => certs.filter((c) => c.type === t);
+    const latest = (arr: any[]) => (arr && arr.length ? arr[0] : undefined);
+    const biz = latest(byType('营业执照')) || (s.license || s.licenseExpireAt || s.licenseImageUrl ? { number: s.license, expireAt: s.licenseExpireAt, imageUrl: s.licenseImageUrl } : undefined);
+    const qc = latest(byType('质检报告'));
+    const animal = latest(byType('动物检疫合格证'));
+    return { ...s, businessLicense: biz || null, qcReport: qc || null, animalCert: animal || null };
   }
-  async updateSupplier(id: number | string, b: Partial<Omit<Supplier, 'id'>>) {
+  async updateSupplier(id: number | string, b: Partial<Omit<Supplier, 'id'>> & { certType?: string; certNumber?: string; certAuthority?: string; certExpireAt?: string; certImageUrl?: string }) {
     this.assertValid(b);
     const next = { ...b } as any;
     if (next.rating && (next.rating < 1 || next.rating > 5))
       next.rating = Math.min(5, Math.max(1, next.rating));
+    if (next.name !== undefined) {
+      next.name = String(next.name).trim();
+      if (next.name) {
+        const cur = await this.repo!.getSupplierById(id);
+        if (cur) await this.assertUnique({ name: next.name }, Number(cur.schoolId), id);
+      }
+    }
     await this.repo!.updateSupplier(id, next);
+    try {
+      if ((b as any)?.certType || (b as any)?.certNumber || (b as any)?.certExpireAt || (b as any)?.certImageUrl) {
+        await this.repo!.insertSupplierCertificate({
+          supplierId: Number(id),
+          type: (b as any).certType || '营业执照',
+          number: (b as any).certNumber,
+          authority: (b as any).certAuthority,
+          expireAt: (b as any).certExpireAt || (b as any).licenseExpireAt,
+          imageUrl: (b as any).certImageUrl || (b as any).licenseImageUrl,
+        });
+      }
+    } catch {}
     return { id, ...next };
   }
   async deleteSupplier(id: number | string) {
@@ -196,6 +257,52 @@ export class InventoryService {
   async batchEnable(ids: string[], enabled: boolean) {
     const count = await this.repo!.batchEnableSuppliers(ids || [], !!enabled);
     return { count };
+  }
+
+  async addSupplierCertificate(id: number | string, b: { type: string; number?: string; authority?: string; expireAt?: string; imageUrl?: string }) {
+    if (!b?.type) throw new BadRequestException('type required');
+    const allowed = new Set(['营业执照', '食品生产许可证', '食品经营许可证', '质检报告', '动物检疫合格证']);
+    if (!allowed.has(b.type)) throw new BadRequestException('invalid certificate type');
+    if (b.number !== undefined && b.number !== null) {
+      const n = String(b.number).trim();
+      if (n && !/^[A-Za-z0-9\-_/]{3,64}$/.test(n)) throw new BadRequestException('invalid certificate number');
+      b.number = n;
+    }
+    if (b.authority !== undefined && b.authority !== null) b.authority = String(b.authority).trim();
+    if (b.expireAt !== undefined && b.expireAt !== null) {
+      const t = Date.parse(String(b.expireAt));
+      if (!Number.isFinite(t)) throw new BadRequestException('invalid expireAt');
+    }
+    try {
+      await this.repo!.insertSupplierCertificate({
+        supplierId: Number(id),
+        type: b.type,
+        number: b.number,
+        authority: b.authority,
+        expireAt: b.expireAt,
+        imageUrl: b.imageUrl,
+      });
+    } catch (e) {
+      // Fallback for older schema: write to legacy columns for business license
+      if (b.type === '营业执照') {
+        await this.repo!.updateSupplier(id, {
+          license: b.number,
+          licenseExpireAt: b.expireAt,
+          licenseImageUrl: b.imageUrl,
+        } as any);
+        return { ok: true, fallback: true } as any;
+      }
+      throw new BadRequestException('cannot add certificate');
+    }
+    return { ok: true };
+  }
+
+  async supplierSummary(id: number | string) {
+    const [products, inbound] = await Promise.all([
+      this.repo!.listSupplierProducts(id),
+      this.repo!.listInboundBySupplier(id),
+    ]);
+    return { products, inbound };
   }
 
   // Warehouses

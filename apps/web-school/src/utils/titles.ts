@@ -33,7 +33,7 @@ const map: Record<string, string> = {
   '/inventory/stock': '库存与盘点',
   '/inventory/tickets': '索票索证',
   '/inventory/additives': '添加剂使用',
-  '/suppliers': '供应商管理',
+  '/suppliers': '供应商资质',
   '/warehouses': '仓库信息管理',
   '/food-waste': '食品浪费分析',
   '/public-feedback': '公众反馈处理',

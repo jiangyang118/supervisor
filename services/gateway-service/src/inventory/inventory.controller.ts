@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Body, Query, Sse, MessageEvent } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Body, Query, Sse, MessageEvent, Param } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { InventoryService } from './inventory.service';
 
@@ -69,6 +69,12 @@ export class InventoryController {
   }
   @Post('suppliers/enable/batch') batchEnable(@Body() b: { ids: string[]; enabled: boolean }) {
     return this.svc.batchEnable(b.ids, b.enabled);
+  }
+  @Post('suppliers/:id/certificates') addCert(@Param('id') id: string, @Body() b: { type: string; number?: string; authority?: string; expireAt?: string; imageUrl?: string }) {
+    return this.svc.addSupplierCertificate(id, b);
+  }
+  @Get('suppliers/summary') summary(@Query('id') id: string) {
+    return this.svc.supplierSummary(id);
   }
   @Get('suppliers/export.csv')
   async exportCsv() {

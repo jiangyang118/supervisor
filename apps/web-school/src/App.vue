@@ -61,13 +61,13 @@
             <el-menu-item index="/inventory/outbound">出库登记</el-menu-item>
             <el-menu-item index="/inventory/stock">库存与盘点</el-menu-item>
             <el-menu-item index="/inventory/tickets">索票索证管理</el-menu-item>
-            <el-menu-item index="/suppliers">供应商管理</el-menu-item>
             <el-menu-item index="/warehouses">仓库信息管理</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu v-if="has('hr.*')" index="hr">
+          <el-sub-menu v-if="has('hr.*') || has('inventory.*')" index="hr">
             <template #title>人事管理</template>
-            <el-menu-item index="/hr/staff">人员资质</el-menu-item>
-            <el-menu-item index="/hr/canteen-licenses">食堂资质</el-menu-item>
+            <el-menu-item v-if="has('hr.*')" index="/hr/staff">人员资质</el-menu-item>
+            <el-menu-item v-if="has('hr.*')" index="/hr/canteen-licenses">食堂资质</el-menu-item>
+            <el-menu-item index="/suppliers">供应商资质</el-menu-item>
           </el-sub-menu>
           <el-sub-menu v-if="has('env.*')" index="env-dev">
             <template #title>环境及设备管理</template>
@@ -138,7 +138,44 @@ import { getCurrentSchoolId } from './utils/school';
 const route = useRoute();
 const router = useRouter();
 const isAuthPage = computed(() => route.path === '/login');
-const active = computed(() => route.path);
+// Map secondary/detail routes to their primary menu item for highlighting
+function mapPrimaryMenu(path: string): string {
+  const primary: Record<string, string> = {
+    // HR module
+    '/suppliers': '/suppliers',
+    '/hr/staff': '/hr/staff',
+    '/hr/canteen-licenses': '/hr/canteen-licenses',
+    // Daily ops
+    '/morning-check': '/morning-check',
+    '/sampling/records': '/sampling/records',
+    '/pesticide-tests': '/pesticide-tests',
+    '/disinfection': '/disinfection',
+    '/waste': '/waste',
+    // Inventory
+    '/inventory/items': '/inventory/items',
+    '/inventory/inbound': '/inventory/inbound',
+    '/inventory/outbound': '/inventory/outbound',
+    '/inventory/stock': '/inventory/stock',
+    '/inventory/tickets': '/inventory/tickets',
+    '/inventory/additives': '/inventory/additives',
+    // Public/food waste
+    '/food-waste': '/food-waste',
+    '/public-feedback': '/public-feedback',
+    '/public-config': '/public-config',
+    // System
+    '/system/canteen': '/system/canteen',
+    '/system/news': '/system/news',
+    '/system/announcements': '/system/announcements',
+    '/system/users': '/system/users',
+    '/system/roles': '/system/roles',
+  };
+  // pick the longest prefix that matches the current path
+  const keys = Object.keys(primary).sort((a, b) => b.length - a.length);
+  const hit = keys.find((k) => path.startsWith(k));
+  return hit ? primary[hit] : path;
+}
+
+const active = computed(() => mapPrimaryMenu(route.path));
 const openeds = computed(() => {
   const p = route.path;
   // 合并：AI 路由归入「明厨亮灶」分组展开
@@ -155,11 +192,10 @@ const openeds = computed(() => {
     return ['daily'];
   if (
     p.startsWith('/inventory/') ||
-    p === '/suppliers' ||
     p === '/warehouses'
   )
     return ['inventory'];
-  if (p.startsWith('/certificates') || p.startsWith('/hr/')) return ['hr'];
+  if (p.startsWith('/certificates') || p.startsWith('/hr/') || p.startsWith('/suppliers')) return ['hr'];
   if (
     p.startsWith('/public-') ||
     p.startsWith('/system/news') ||

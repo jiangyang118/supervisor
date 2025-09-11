@@ -2,7 +2,7 @@
   <el-card>
     <template #header>
       <div style="display: flex; align-items: center; justify-content: space-between">
-        <span>供应商管理</span>
+       
         <div>
           <el-input
             v-model="filters.q"
@@ -11,12 +11,12 @@
           />
           <el-select
             v-model="filters.enabled"
-            placeholder="请选择"
+            placeholder="启用"
             style="width: 120px; margin-right: 8px"
             clearable
           >
-            <el-option label="仅启用" value="true" />
-            <el-option label="仅禁用" value="false" />
+            <el-option  value="true" />
+            <el-option  value="false" />
           </el-select>
           <el-checkbox v-model="filters.expired" style="margin-right:8px">仅显示已过期</el-checkbox>
           <el-date-picker
@@ -30,30 +30,28 @@
           <el-divider direction="vertical" />
           <el-button   @click="onExportCsv">导出 CSV</el-button>
           <el-button   @click="openImport">导入 CSV</el-button>
-          <el-button type="primary"   @click="openCreate">新增供应商</el-button>
+          <el-button type="primary"   @click="goCreate">新增供应商</el-button>
         </div>
       </div>
     </template>
     <el-table :data="rows"   border @selection-change="onSelChange" :row-class-name="rowClassName">
       <el-table-column type="selection" width="46" />
-      <el-table-column prop="id" label="ID" width="140" />
-      <el-table-column prop="name" label="名称" />
-      <el-table-column prop="phone" label="电话" width="140" />
-      <el-table-column prop="license" label="营业执照号" />
-      <el-table-column label="证照到期" width="180">
+      <el-table-column prop="name" label="供应商名称" />
+      <el-table-column prop="license" label="营业执照编号" />
+      <el-table-column prop="foodLicense" label="食品生产/经营许可证编号" />
+      <el-table-column label="有效期至" width="180">
         <template #default="{ row }">
-          <span :style="{ color: row.expired ? '#f56c6c' : '#67c23a' }">{{
-            fmtTime(row.licenseExpireAt) || '-'
-          }}</span>
+          <span :style="{ color: row.statusTag === '过期' ? '#f56c6c' : (row.statusTag === '临期' ? '#e6a23c' : '#606266') }">{{ fmtTime(row.nextExpireAt) || '-' }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="启用" width="100">
+      <el-table-column label="状态" width="120">
         <template #default="{ row }">
-          <el-switch v-model="row.enabled" @change="(v: boolean) => toggleEnable(row, v)" />
+          <el-tag :type="row.statusTag==='过期' ? 'danger' : (row.statusTag==='临期' ? 'warning' : 'success')" effect="plain">{{ row.statusTag }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="260">
+      <el-table-column label="操作" width="300">
         <template #default="{ row }">
+          <el-button   @click="view(row)">查看</el-button>
           <el-button   @click="toggleEnable(row, !(row.enabled ?? true))">
             {{ (row.enabled ?? true) ? '禁用' : '启动' }}
           </el-button>
@@ -89,16 +87,11 @@
     </div>
   </el-card>
 
-  <el-dialog v-model="createVisible" :title="editId ? '编辑供应商' : '新增供应商'" width="560px">
-    <el-form :model="form" label-width="108px">
-      <el-form-item label="名称">
+  <el-dialog v-model="createVisible" :title="editId ? '编辑供应商' : '新增供应商'" width="720px">
+    <el-form :model="form" label-width="120px">
+      <el-divider content-position="left">基本信息</el-divider>
+      <el-form-item label="供应商名称" required>
         <el-input v-model="form.name" />
-      </el-form-item>
-      <el-form-item label="电话">
-        <el-input v-model="form.phone" placeholder="如：13800000000" />
-      </el-form-item>
-      <el-form-item label="营业执照号">
-        <el-input v-model="form.license" />
       </el-form-item>
       <el-form-item label="地址">
         <el-input v-model="form.address" />
@@ -106,22 +99,37 @@
       <el-form-item label="联系人">
         <el-input v-model="form.contact" />
       </el-form-item>
-      <el-form-item label="邮箱">
-        <el-input v-model="form.email" placeholder="name@example.com" />
+      <el-form-item label="联系电话">
+        <el-input v-model="form.phone" placeholder="如：13800000000" />
       </el-form-item>
-      <el-form-item label="评级">
-        <el-input v-model.number="form.rating" type="number" min="1" max="5" />
-      </el-form-item>
-      <el-form-item label="供货品类">
-        <el-select v-model="form.categories" multiple placeholder="请选择">
-          <el-option v-for="c in catOpts" :key="c" :label="c" :value="c" />
+
+      <el-divider content-position="left">证件信息</el-divider>
+      <el-form-item label="类型" required>
+        <el-select v-model="form.certType" placeholder="请选择" style="width: 260px">
+          <el-option label="营业执照" value="营业执照" />
+          <el-option label="食品生产许可证" value="食品生产许可证" />
+          <el-option label="食品经营许可证" value="食品经营许可证" />
+          <el-option label="质检报告" value="质检报告" />
+          <el-option label="动物检疫合格证" value="动物检疫合格证" />
         </el-select>
       </el-form-item>
-      <el-form-item label="证照到期">
-        <el-date-picker v-model="form.licenseExpireAt" type="datetime" value-format="YYYY-MM-DD HH:mm:ss" />
+      <el-form-item label="证件编号">
+        <el-input v-model="form.certNumber" />
       </el-form-item>
-      <el-form-item label="证照图片URL">
-        <el-input v-model="form.licenseImageUrl" placeholder="http(s)://..." />
+      <el-form-item label="发证机关">
+        <el-input v-model="form.certAuthority" />
+      </el-form-item>
+      <el-form-item label="有效期">
+        <el-date-picker v-model="form.certExpireAt" type="date" value-format="YYYY-MM-DD" />
+      </el-form-item>
+      <el-form-item label="证件上传">
+        <div style="display:flex;gap:12px;align-items:center">
+          <el-upload :show-file-list="false" :http-request="onUploadCert">
+            <el-button>上传</el-button>
+          </el-upload>
+          <el-input v-model="form.certImageUrl" placeholder="或粘贴图片URL" style="width: 320px" />
+          <el-image v-if="form.certImageUrl" :src="form.certImageUrl" style="width:120px;height:80px" fit="contain" />
+        </div>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -158,7 +166,7 @@ const selected = ref<any[]>([]);
 const onSelChange = (arr: any[]) => (selected.value = arr);
 
 function rowClassName({ row }: { row: any }) {
-  return row?.expired ? 'row-expired' : '';
+  return row?.statusTag === '过期' ? 'row-expired' : '';
 }
 
 async function load() {
@@ -172,51 +180,48 @@ async function load() {
     pageSize: pageSize.value,
     schoolId: getCurrentSchoolId(),
   });
-  rows.value = res.items.map(item=>({
-    ...item,
-    enabled:!!item.enabled,
-  }));
+  rows.value = res.items.map(item=>{
+    const bizExp = item.licenseExpireAt ? new Date(item.licenseExpireAt).getTime() : undefined;
+    const foodExp = item.foodLicenseExpireAt ? new Date(item.foodLicenseExpireAt).getTime() : undefined;
+    const candidates = [bizExp, foodExp].filter((x)=> typeof x === 'number') as number[];
+    const nextExpireAtTs = candidates.length ? Math.min(...candidates) : undefined;
+    const daysLeft = typeof nextExpireAtTs === 'number' ? Math.ceil((nextExpireAtTs - Date.now())/86400000) : undefined;
+    const statusTag = typeof daysLeft === 'number' ? (daysLeft < 0 ? '过期' : (daysLeft <= 30 ? '临期' : '有效')) : '有效';
+    return {
+      ...item,
+      enabled: !!item.enabled,
+      nextExpireAt: nextExpireAtTs ? new Date(nextExpireAtTs).toISOString() : '',
+      statusTag,
+    };
+  });
   total.value = res.total;
 }
 
 const createVisible = ref(false);
 const editId = ref<string | null>(null);
+import { useRouter } from 'vue-router';
+const router = useRouter();
 const catOpts = ['粮油', '蔬菜', '肉禽', '调味品'];
 const form = reactive<any>({
   name: '',
-  phone: '',
-  license: '',
   address: '',
   contact: '',
-  email: '',
-  rating: undefined,
-  categories: [],
+  phone: '',
+  // certificate fields
+  certType: '营业执照',
+  certNumber: '',
+  certAuthority: '',
+  certExpireAt: '',
+  certImageUrl: '',
+  // legacy fallback for edit rows
+  license: '',
   licenseExpireAt: '',
-  licenseImageUrl: '',
 });
-function openCreate() {
-  editId.value = null;
-  Object.assign(form, {
-    name: '',
-    phone: '',
-    license: '',
-    address: '',
-    contact: '',
-    email: '',
-    rating: undefined,
-    categories: [],
-    licenseExpireAt: '',
-    licenseImageUrl: '',
-  });
-  createVisible.value = true;
-}
-function openEdit(row: any) {
-  editId.value = row.id;
-  Object.assign(form, { ...row });
-  createVisible.value = true;
-}
+function goCreate() { router.push('/suppliers/new'); }
+function view(row: any) { router.push({ path: '/suppliers/edit', query: { id: String(row.id) } }); }
+function openEdit(row: any) { router.push({ path: '/suppliers/edit', query: { id: String(row.id) } }); }
 async function save() {
-  if (!form.name) return ElMessage.warning('请填写名称');
+  if (!form.name) return ElMessage.warning('请填写供应商名称');
   try {
     if (editId.value) await api.invSupplierUpdate(editId.value, normalizeForm());
     else await api.invSupplierCreate({ ...normalizeForm(), schoolId: getCurrentSchoolId() });
@@ -224,12 +229,24 @@ async function save() {
     createVisible.value = false;
     await load();
   } catch (e: any) {
-    ElMessage.error(e?.message || '保存失败');
+    const msg = String(e?.message || '');
+    if (msg.includes('409')) ElMessage.error('供应商名称已存在，请更换');
+    else ElMessage.error('保存失败');
   }
 }
 function normalizeForm() {
-  const obj: any = { ...form };
-  // 使用 datetime 选择器的字符串值（YYYY-MM-DD HH:mm:ss），后端保存为 DATETIME
+  const obj: any = {
+    name: form.name,
+    address: form.address || undefined,
+    contact: form.contact || undefined,
+    phone: form.phone || undefined,
+    // certificate fields
+    certType: form.certType || '营业执照',
+    certNumber: form.certNumber || undefined,
+    certAuthority: form.certAuthority || undefined,
+    certExpireAt: form.certExpireAt || undefined,
+    certImageUrl: form.certImageUrl || undefined,
+  };
   return obj;
 }
 async function del(row: any) {
@@ -251,19 +268,12 @@ async function batchEnable(enabled: boolean) {
 }
 async function onExportCsv() {
   // 直接前端导出当前页（也可请求服务端csv）
-  exportCsv('供应商', rows.value, {
-    id: 'ID',
-    name: '名称',
-    phone: '电话',
-    license: '营业执照号',
-    address: '地址',
-    contact: '联系人',
-    email: '邮箱',
-    enabled: '启用',
-    rating: '评级',
-    categories: '品类',
-    licenseExpireAt: '到期',
-    licenseImageUrl: '证照图片',
+  exportCsv('供应商资质', rows.value, {
+    name: '供应商名称',
+    license: '营业执照编号',
+    foodLicense: '食品生产/经营许可证编号',
+    nextExpireAt: '有效期至',
+    statusTag: '状态',
   });
 }
 const importVisible = ref(false);
@@ -277,6 +287,22 @@ async function doImport() {
   ElMessage.success('已导入');
   importVisible.value = false;
   await load();
+}
+
+async function onUploadCert(req: any) {
+  const file: File = req.file;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const content = reader.result as string;
+      const { url } = await api.uploadFile(file.name, content);
+      form.certImageUrl = url;
+      req.onSuccess && req.onSuccess({ url });
+    } catch (e) {
+      req.onError && req.onError(e);
+    }
+  };
+  reader.readAsDataURL(file);
 }
 
 let off: any = null;

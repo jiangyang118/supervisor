@@ -72,7 +72,7 @@ const menus = [
     { id:'store_out', label:'出库登记' },
     { id:'store_stock', label:'库存与盘点' },
     { id:'store_ticket', label:'索票索证管理' },
-    { id:'store_supplier', label:'供应商管理' },
+    { id:'store_supplier', label:'供应商资质' },
     { id:'store_warehouse', label:'仓库信息管理' },
   ]},
   { id:'hr', label:'资质证件管理', children:[

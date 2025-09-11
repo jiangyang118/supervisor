@@ -911,6 +911,7 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
+  invSupplierDetail: async (id: string | number) => get<any>(`/school/inventory/suppliers/detail?id=${encodeURIComponent(String(id))}`),
   invSuppliersBatchEnable: async (ids: string[], enabled: boolean) => {
     const res = await fetch(`${BASE}/school/inventory/suppliers/enable/batch`, {
       method: 'POST',
@@ -937,6 +938,21 @@ export const api = {
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
+  },
+  invSupplierAddCert: async (
+    id: string | number,
+    body: { type: string; number?: string; authority?: string; expireAt?: string; imageUrl?: string },
+  ) => {
+    const res = await fetch(`${BASE}/school/inventory/suppliers/${encodeURIComponent(String(id))}/certificates`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  invSupplierSummary: async (id: string | number) => {
+    return get<{ products: any[]; inbound: any[] }>(`/school/inventory/suppliers/summary?id=${encodeURIComponent(String(id))}`);
   },
   // Canteens & licenses
   canteenDetail: (canteenId: number | string, schoolId?: number | string) =>

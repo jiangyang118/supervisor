@@ -60,6 +60,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/inventory/tickets', component: () => import('../views/InventoryTickets.vue'), meta: { perms: ['inventory.*'] } },
   { path: '/inventory/additives', component: () => import('../views/InventoryAdditives.vue'), meta: { perms: ['inventory.*'] } },
   { path: '/suppliers', component: () => import('../views/Suppliers.vue'), meta: { perms: ['inventory.*'] } },
+  { path: '/suppliers/new', component: () => import('../views/SupplierEdit.vue'), meta: { perms: ['inventory.*'] } },
+  { path: '/suppliers/edit', component: () => import('../views/SupplierEdit.vue'), meta: { perms: ['inventory.*'] } },
   { path: '/warehouses', component: () => import('../views/Warehouses.vue'), meta: { perms: ['inventory.*'] } },
   // removed: personnel certificates
   // Environment & devices

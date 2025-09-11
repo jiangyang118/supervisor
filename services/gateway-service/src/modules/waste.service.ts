@@ -56,6 +56,7 @@ export class WasteService {
   // Records
   async list(params: {
     schoolId?: number | string;
+    canteenId?: number | string;
     category?: number;
     start?: string;
     end?: string;
@@ -72,14 +73,11 @@ export class WasteService {
       schoolIdNum !== undefined && Number.isFinite(schoolIdNum) && Number.isInteger(schoolIdNum)
         ? schoolIdNum
         : (params.schoolId !== undefined ? -1 : undefined);
-    const total = await this.repo.countRecords({
-      schoolId,
-      category: params.category,
-      start: params.start,
-      end: params.end,
-    });
+    const canteenId = params.canteenId !== undefined && params.canteenId !== null && String(params.canteenId).trim() !== '' ? Number(params.canteenId) : undefined;
+    const total = await this.repo.countRecords({ schoolId, canteenId, category: params.category, start: params.start, end: params.end });
     const items = await this.repo.listRecords({
       schoolId,
+      canteenId,
       category: params.category,
       start: params.start,
       end: params.end,
@@ -91,6 +89,7 @@ export class WasteService {
 
   async create(body: {
     schoolId?: number | string;
+    canteenId?: number | string;
     date?: string;
     category: WasteCategory;
     amount: number;
@@ -98,9 +97,11 @@ export class WasteService {
     person: string;
   }) {
     const schoolId = Number(body.schoolId ?? 0) || 0;
+    const canteenId = body.canteenId !== undefined && body.canteenId !== null && String(body.canteenId).trim() !== '' ? Number(body.canteenId) : undefined;
     const createdAt = new Date().toISOString();
     const insertId = await this.repo.insertRecord({
       schoolId,
+      canteenId: canteenId ?? null,
       date: body.date || todayStr(),
       category: (body.category as any) || 1,
       amount: Number(body.amount) || 0,
@@ -127,5 +128,13 @@ export class WasteService {
       throw new HttpException('Not found', HttpStatus.NOT_FOUND);
     }
     return rec;
+  }
+
+  async remove(id: number) {
+    const affected = await this.repo.deleteRecord(Number(id));
+    if (!affected) {
+      throw new HttpException('Not found', HttpStatus.NOT_FOUND);
+    }
+    return { id: Number(id) };
   }
 }

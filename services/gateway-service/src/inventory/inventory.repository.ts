@@ -77,9 +77,10 @@ export class InventoryRepository {
 
   // Products
   async insertProduct(schoolId: number, name: string, unit: string, categoryId?: number) {
+    // legacy signature kept for compatibility (categoryId is unused after schema change)
     const res = await this.db.query(
-      'insert into inv_products(school_id, name, unit, category_id) values(?,?,?,?)',
-      [schoolId, name, unit, categoryId || null],
+      'insert into inv_products(school_id, name, unit) values(?,?,?)',
+      [schoolId, name, unit],
     );
     return res.insertId || 0;
   }
@@ -87,11 +88,31 @@ export class InventoryRepository {
     const where = schoolId ? 'where school_id = ?' : '';
     const params = schoolId ? [schoolId] : [];
     const { rows } = await this.db.query<any>(
-      `select id, name, unit, category_id as categoryId from inv_products ${where} order by id desc`,
+      `select id, school_id as schoolId, name, unit, category, spec, last_price as lastPrice from inv_products ${where} ${where ? 'and' : 'where'} deleted = 0 order by id desc`,
       params,
     );
-    return rows as Array<{ id: number; name: string; unit: string; categoryId?: number }>;
+    return rows as Array<{ id: number; schoolId: number; name: string; unit: string; category?: string; spec?: string; lastPrice?: number }>;
   }
+  async insertProductV2(row: { schoolId: number; name: string; unit: string; category?: string; spec?: string; lastPrice?: number }) {
+    const res = await this.db.query(
+      `insert into inv_products(school_id, name, unit, category, spec, last_price) values(?,?,?,?,?,?)`,
+      [row.schoolId, row.name, row.unit, row.category || null, row.spec || null, row.lastPrice ?? null],
+    );
+    return res.insertId || 0;
+  }
+  async updateProduct(id: number, patch: Partial<{ name: string; unit: string; category?: string; spec?: string; lastPrice?: number }>) {
+    const sets: string[] = [];
+    const args: any[] = [];
+    const map: Record<string, string> = { name: 'name', unit: 'unit', category: 'category', spec: 'spec', lastPrice: 'last_price' };
+    for (const k of Object.keys(patch)) {
+      const col = map[k]; if (!col) continue; sets.push(`${col} = ?`); args.push((patch as any)[k]);
+    }
+    if (!sets.length) return { ok: true } as any;
+    args.push(id);
+    await this.db.query(`update inv_products set ${sets.join(', ')} where id = ?`, args);
+    return { ok: true } as any;
+  }
+  async softDelete(id: number) { await this.db.query('update inv_products set deleted = 1 where id = ?', [id]); return { ok: true } as any; }
 
   // Suppliers
   async insertSupplier(s: {

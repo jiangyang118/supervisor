@@ -4,6 +4,7 @@ import { Observable, Subject } from 'rxjs';
 
 export type Category = { id: number; name: string };
 export type Product = { id: number; name: string; unit: string; categoryId?: number };
+export type ProductV2 = { id: number; schoolId: number; name: string; unit: string; category?: string; spec?: string; lastPrice?: number };
 export type Supplier = {
   id: string;
   name: string;
@@ -84,30 +85,50 @@ export class InventoryService {
     return this.repo!.insertCategory(sid, body.name).then((id) => ({ id, name: body.name }));
   }
 
-  // Products
-  async listProducts(schoolId?: number | string) {
-    return this.repo!.listProducts(schoolId);
-  }
-  createProduct(body: { schoolId?: number | string; name: string; unit: string; categoryId?: number | string }) {
+  // Products: removed (商品管理下线)
+  async listProductsV2(schoolId?: number | string): Promise<ProductV2[]> { return this.repo!.listProducts(schoolId) as any; }
+  async createProductV2(body: { schoolId?: number | string; name: string; unit: string; category?: string; spec?: string; lastPrice?: number }) {
     if (!body?.name) throw new BadRequestException('name required');
     if (!body?.unit) throw new BadRequestException('unit required');
     const sid = body.schoolId !== undefined && body.schoolId !== null && String(body.schoolId).trim() !== '' ? Number(body.schoolId) : 1;
-    const categoryId = body.categoryId !== undefined && body.categoryId !== null && String(body.categoryId).trim() !== '' ? Number(body.categoryId) : undefined;
-    return this.repo!.insertProduct(sid, body.name, body.unit, categoryId).then((id) => ({ id, name: body.name, unit: body.unit, categoryId } as Product));
+    const id = await (this.repo as any).insertProductV2({ schoolId: sid, name: body.name, unit: body.unit, category: body.category, spec: body.spec, lastPrice: body.lastPrice });
+    return { id };
   }
-  importFromCloud() {
-    const list = [
-      { name: '大米', unit: 'kg' },
-      { name: '面粉', unit: 'kg' },
-      { name: '鸡蛋', unit: '枚' },
+  importFromCloudV2() {
+    const fixedCats = ['主食','肉类','蛋类','鱼虾蟹贝类','奶类及奶制品','豆类及豆制品','蔬菜','油脂','淀粉类','菌藻类','坚果种子类','小吃甜品','速食食品','含酒精饮料','蜜饯类','调味品','饮料'];
+    const sample = [
+      { name: '大米', unit: 'kg', category: '主食', spec: '25kg/袋' },
+      { name: '猪肉', unit: 'kg', category: '肉类', spec: '散装' },
+      { name: '鸡蛋', unit: '枚', category: '蛋类', spec: '30枚/板' },
+      { name: '生菜', unit: 'kg', category: '蔬菜', spec: '散装' },
     ];
-    const created = list.map((i) => this.createProduct(i as any));
-    return { count: created.length, items: created };
+    return { fixedCategories: fixedCats, items: sample };
   }
-  importFromTemplate(body: { items: { name: string; unit: string; categoryId?: string }[] }) {
-    if (!Array.isArray(body?.items)) throw new BadRequestException('items required');
-    const created = body.items.map((i) => this.createProduct(i));
-    return { count: created.length };
+  async importFromTemplateV2(schoolId: number | string | undefined, items: Array<{ name: string; unit: string; category?: string; spec?: string; lastPrice?: number }>) {
+    const sid = schoolId !== undefined && schoolId !== null && String(schoolId).trim() !== '' ? Number(schoolId) : 1;
+    let count = 0;
+    for (const it of items || []) {
+      if (!it?.name || !it?.unit) continue;
+      await (this.repo as any).insertProductV2({ schoolId: sid, name: it.name, unit: it.unit, category: it.category, spec: it.spec, lastPrice: it.lastPrice });
+      count++;
+    }
+    return { count };
+  }
+  async updateProductV2(id: number | string, patch: Partial<{ name: string; unit: string; category?: string; spec?: string; lastPrice?: number }>) {
+    if (!id || !Number.isFinite(Number(id))) throw new BadRequestException('id required');
+    const p: any = {};
+    if (patch.name !== undefined) p.name = patch.name;
+    if (patch.unit !== undefined) p.unit = patch.unit;
+    if (patch.category !== undefined) p.category = patch.category;
+    if (patch.spec !== undefined) p.spec = patch.spec ?? '';
+    if (patch.lastPrice !== undefined) p.lastPrice = Number.isFinite(Number(patch.lastPrice)) ? Number(patch.lastPrice) : null;
+    await (this.repo as any).updateProduct(Number(id), p);
+    return { ok: true } as any;
+  }
+  async deleteProductV2(id: number | string) {
+    if (!id || !Number.isFinite(Number(id))) throw new BadRequestException('id required');
+    await (this.repo as any).softDelete(Number(id));
+    return { ok: true } as any;
   }
 
   // Suppliers

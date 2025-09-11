@@ -42,35 +42,32 @@ export class WasteRepository {
   }
 
   // Records
-  async countRecords(filters: { schoolId?: number; category?: number; start?: string; end?: string }) {
+  async countRecords(filters: { schoolId?: number; canteenId?: number; category?: number; start?: string; end?: string }) {
     const where: string[] = [];
     const params: any[] = [];
-    if (filters.schoolId !== undefined && filters.schoolId !== null) { where.push('school_id = ?'); params.push(filters.schoolId); }
-    if (filters.category) { where.push('category = ?'); params.push(filters.category); }
-    if (filters.start) { where.push('date >= ?'); params.push(filters.start); }
-    if (filters.end) { where.push('date <= ?'); params.push(filters.end); }
-    const sql = `select count(1) as c from waste_records ${where.length ? 'where ' + where.join(' and ') : ''}`;
+    if (filters.schoolId !== undefined && filters.schoolId !== null) { where.push('r.school_id = ?'); params.push(filters.schoolId); }
+    if (filters.canteenId !== undefined && filters.canteenId !== null) { where.push('r.canteen_id = ?'); params.push(filters.canteenId); }
+    if (filters.category) { where.push('r.category = ?'); params.push(filters.category); }
+    if (filters.start) { where.push('r.`date` >= ?'); params.push(filters.start); }
+    if (filters.end) { where.push('r.`date` <= ?'); params.push(filters.end); }
+    const sql = `select count(1) as c from waste_records r ${where.length ? 'where ' + where.join(' and ') : ''}`;
     const { rows } = await this.db.query<any>(sql, params);
     return Number(rows[0]?.c || 0);
   }
 
-  async listRecords(filters: {
-    schoolId?: number;
-    category?: number;
-    start?: string;
-    end?: string;
-    page: number;
-    pageSize: number;
-  }) {
+  async listRecords(filters: { schoolId?: number; canteenId?: number; category?: number; start?: string; end?: string; page: number; pageSize: number; }) {
     const where: string[] = [];
     const params: any[] = [];
-    if (filters.schoolId !== undefined && filters.schoolId !== null) { where.push('school_id = ?'); params.push(filters.schoolId); }
-    if (filters.category) { where.push('category = ?'); params.push(filters.category); }
-    if (filters.start) { where.push('date >= ?'); params.push(filters.start); }
-    if (filters.end) { where.push('date <= ?'); params.push(filters.end); }
-    const sql = `select id, school_id as schoolId, date, category, amount, buyer, person, created_at as createdAt
-                 from waste_records ${where.length ? 'where ' + where.join(' and ') : ''}
-                 order by created_at desc limit ? offset ?`;
+    if (filters.schoolId !== undefined && filters.schoolId !== null) { where.push('r.school_id = ?'); params.push(filters.schoolId); }
+    if (filters.canteenId !== undefined && filters.canteenId !== null) { where.push('r.canteen_id = ?'); params.push(filters.canteenId); }
+    if (filters.category) { where.push('r.category = ?'); params.push(filters.category); }
+    if (filters.start) { where.push('r.`date` >= ?'); params.push(filters.start); }
+    if (filters.end) { where.push('r.`date` <= ?'); params.push(filters.end); }
+    const sql = `select r.id, r.school_id as schoolId, r.canteen_id as canteenId, r.date, r.category, r.amount, r.buyer, r.person, r.created_at as createdAt,
+                        c.name as canteenName
+                 from waste_records r left join canteens c on c.id = r.canteen_id
+                 ${where.length ? 'where ' + where.join(' and ') : ''}
+                 order by r.created_at desc limit ? offset ?`;
     params.push(filters.pageSize, (filters.page - 1) * filters.pageSize);
     const { rows } = await this.db.query<any>(sql, params);
     return (rows as any[]).map((r) => ({
@@ -83,6 +80,7 @@ export class WasteRepository {
 
   async insertRecord(rec: {
     schoolId: number;
+    canteenId?: number | null;
     date: string;
     category: string;
     amount: number;
@@ -91,22 +89,28 @@ export class WasteRepository {
     createdAt: string;
   }): Promise<number> {
     const res = await this.db.query(
-      `insert into waste_records(school_id, date, category, amount, buyer, person, created_at)
-       values(?,?,?,?,?,?,?)`,
-      [rec.schoolId, rec.date, rec.category, rec.amount, rec.buyer, rec.person, new Date(rec.createdAt)],
+      `insert into waste_records(school_id, canteen_id, date, category, amount, buyer, person, created_at)
+       values(?,?,?,?,?,?,?,?)`,
+      [rec.schoolId, rec.canteenId || null, rec.date, rec.category, rec.amount, rec.buyer, rec.person, new Date(rec.createdAt)],
     );
     return res.insertId || 0;
   }
 
   async getRecordById(id: number) {
     const { rows } = await this.db.query<any>(
-      `select id, school_id as schoolId, date, category, amount, buyer, person, created_at as createdAt
-       from waste_records where id = ? limit 1`,
+      `select r.id, r.school_id as schoolId, r.canteen_id as canteenId, r.date, r.category, r.amount, r.buyer, r.person, r.created_at as createdAt,
+              c.name as canteenName
+       from waste_records r left join canteens c on c.id = r.canteen_id where r.id = ? limit 1`,
       [id],
     );
     const row = rows[0] || null;
     return row
       ? { ...row, id: Number(row.id), schoolId: Number(row.schoolId), amount: Number(row.amount) }
       : null;
+  }
+
+  async deleteRecord(id: number) {
+    const { affectedRows } = await this.db.query('delete from waste_records where id = ?', [id]);
+    return affectedRows || 0;
   }
 }

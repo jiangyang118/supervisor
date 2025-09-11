@@ -29,6 +29,7 @@ export class WasteController {
   @Get('records')
   list(
     @Query('schoolId') schoolId?: string,
+    @Query('canteenId') canteenId?: string,
     @Query('category') category?: WasteCategory,
     @Query('start') start?: string,
     @Query('end') end?: string,
@@ -37,6 +38,7 @@ export class WasteController {
   ) {
     return this.svc.list({
       schoolId: schoolId !== undefined && schoolId !== null && schoolId !== '' ? Number(schoolId) : undefined,
+      canteenId: canteenId !== undefined && canteenId !== null && canteenId !== '' ? Number(canteenId) : undefined,
       category,
       start,
       end,
@@ -50,6 +52,7 @@ export class WasteController {
     @Body()
     body: {
       schoolId?: number;
+      canteenId?: number;
       date?: string;
       category: WasteCategory;
       amount: number;
@@ -63,5 +66,10 @@ export class WasteController {
   @Get('records/:id')
   getOne(@Param('id', ParseIntPipe) id: number) {
     return this.svc.getById(id);
+  }
+
+  @Delete('records/:id')
+  deleteOne(@Param('id', ParseIntPipe) id: number) {
+    return this.svc.remove(id);
   }
 }

@@ -10,6 +10,11 @@
       </div>
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
+      <el-form-item label="所属食堂">
+        <el-select v-model="filters.canteenId" clearable filterable placeholder="全部食堂" style="min-width: 200px">
+          <el-option v-for="c in canteens" :key="c.id" :label="c.name" :value="c.id" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="种类">
         <el-select v-model="filters.category" clearable placeholder="请选择">
           <el-option
@@ -31,6 +36,7 @@
     <el-table :data="rows" size="small" border>
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="date" label="日期" width="120" />
+      <el-table-column prop="canteenName" label="所属食堂" min-width="160" />
       <el-table-column prop="category" label="种类" />
       <el-table-column prop="amount" label="数量(kg)" width="140" />
       <el-table-column prop="buyer" label="收购单位" />
@@ -45,6 +51,11 @@
 
   <el-dialog v-model="createVisible" title="新增废弃物记录" width="520px">
     <el-form :model="form" label-width="96px">
+      <el-form-item label="所属食堂">
+        <el-select v-model="form.canteenId" filterable placeholder="请选择" style="width: 240px">
+          <el-option v-for="c in canteens" :key="c.id" :label="c.name" :value="c.id" />
+        </el-select>
+      </el-form-item>
       <el-form-item label="日期">
         <el-date-picker v-model="form.date" type="date" />
       </el-form-item>
@@ -112,18 +123,21 @@ const categories = ref<Category[]>([]);
 type Row = {
   id: number;
   date: string;
+  canteenName?: string;
   category: string;
   amount: number;
   buyer: string;
   person: string;
 };
 const rows = ref<Row[]>([]);
-const filters = reactive<{ category: string | undefined; range: [Date, Date] | null }>({
+const filters = reactive<{ canteenId?: number | null; category: string | undefined; range: [Date, Date] | null }>({
+  canteenId: null,
   category: undefined,
   range: null,
 });
 const applyFilters = async () => {
   const params: any = { schoolId: getCurrentSchoolIdNum() };
+  if (filters.canteenId) params.canteenId = filters.canteenId;
   if (filters.category) params.category = filters.category;
   if (filters.range && filters.range.length === 2) {
     const [s, e] = filters.range;
@@ -134,6 +148,7 @@ const applyFilters = async () => {
   rows.value = res.items.map((r: any) => ({
     id: r.id,
     date: r.date,
+    canteenName: r.canteenName || '-',
     category: r.category,
     amount: r.amount,
     buyer: r.buyer,
@@ -141,7 +156,7 @@ const applyFilters = async () => {
   }));
 };
 const createVisible = ref(false);
-const form = reactive({ date: new Date(), category: '', amount: 0, buyer: '', person: '' });
+const form = reactive({ canteenId: null as number | null, date: new Date(), category: '', amount: 0, buyer: '', person: '' });
 const categoryDialogVisible = ref(false);
 const newCategory = ref('');
 const openCategoryDialog = () => {
@@ -188,6 +203,7 @@ const openCreate = () => {
 };
 const save = async () => {
   await api.wasteCreate({
+    canteenId: form.canteenId || undefined,
     date: (form.date as any)?.toISOString?.() ?? undefined,
     category: form.category,
     amount: form.amount,
@@ -202,6 +218,7 @@ const onExportCsv = () =>
   exportCsv('废弃物管理', rows.value, {
     id: 'ID',
     date: '日期',
+    canteenName: '所属食堂',
     category: '种类',
     amount: '数量(kg)',
     buyer: '收购单位',
@@ -216,11 +233,16 @@ async function deleteRow(row: Row) {
 }
 
 let off: any = null;
+const canteens = ref<Array<{ id: number; name: string }>>([]);
+async function loadCanteens() {
+  try { const sid = getCurrentSchoolIdNum(); const list = await api.canteensList(String(sid)); canteens.value = (list || []).map((c:any)=>({ id: Number(c.id), name: c.name })); } catch { canteens.value = []; }
+}
 onMounted(async () => {
+  await loadCanteens();
   await loadCategories();
   await applyFilters();
   const h = async () => {
-    await applyFilters();
+    await loadCanteens(); await applyFilters();
   };
   window.addEventListener('school-changed', h as any);
   off = () => window.removeEventListener('school-changed', h as any);

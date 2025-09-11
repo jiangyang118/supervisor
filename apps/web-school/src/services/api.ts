@@ -622,34 +622,30 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  invProducts: (schoolId?: string) =>
-    get<any[]>(
-      `/school/inventory/products${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
-    ),
-  invProductCreate: async (body: {
-    name: string;
-    unit: string;
-    categoryId?: number | string;
-    schoolId?: string;
-  }) => {
-    const res = await fetch(`${BASE}/school/inventory/products`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
+  // Products v2
+  invProducts: (schoolId?: string) => get<any[]>(`/school/inventory/products${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`),
+  invProductCreate: async (body: { schoolId?: string | number; name: string; unit: string; category?: string; spec?: string; lastPrice?: number }) => {
+    const res = await fetch(`${BASE}/school/inventory/products`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  invProductUpdate: async (id: number, patch: any) => {
+    const res = await fetch(`${BASE}/school/inventory/products?id=${encodeURIComponent(String(id))}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(patch) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
   invImportCloud: () => get<any>(`/school/inventory/products/import/cloud`),
-  invImportTemplate: async (items: any[]) => {
-    const res = await fetch(`${BASE}/school/inventory/products/import/template`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items }),
-    });
+  invImportTemplate: async (schoolId: string | number | undefined, items: Array<{ name: string; unit: string; category?: string; spec?: string; lastPrice?: number }>) => {
+    const res = await fetch(`${BASE}/school/inventory/products/import/template`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schoolId, items }) });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
+  invProductDelete: async (id: number) => {
+    const res = await fetch(`${BASE}/school/inventory/products/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
+  // invProducts endpoints removed
   invSuppliers: (
     params: {
       q?: string;

@@ -14,21 +14,19 @@ export class InventoryController {
     return this.svc.createCategory(b);
   }
 
-  // Products
-  @Get('products') listProducts(@Query('schoolId') schoolId?: string) {
-    return this.svc.listProducts(schoolId);
+  // Products (v2)
+  @Get('products') listProductsV2(@Query('schoolId') schoolId?: string) {
+    return this.svc.listProductsV2(schoolId);
   }
-  @Post('products') createProduct(@Body() b: { schoolId?: string; name: string; unit: string; categoryId?: number | string }) {
-    return this.svc.createProduct(b);
+  @Post('products') createProductV2(@Body() b: { schoolId?: string; name: string; unit: string; category?: string; spec?: string; lastPrice?: number }) {
+    return this.svc.createProductV2(b);
   }
-  @Post('products/import/cloud') importCloud() {
-    return this.svc.importFromCloud();
+  @Patch('products') updateProductV2(@Query('id') id: string, @Body() b: any) { return (this.svc as any).updateProductV2(id, b); }
+  @Post('products/import/cloud') importCloudV2() { return this.svc.importFromCloudV2(); }
+  @Post('products/import/template') importTemplateV2(@Body() b: { schoolId?: number | string; items: Array<{ name: string; unit: string; category?: string; spec?: string; lastPrice?: number }> }) {
+    return this.svc.importFromTemplateV2(b.schoolId, b.items || []);
   }
-  @Post('products/import/template') importTemplate(
-    @Body() b: { items: { name: string; unit: string; categoryId?: string }[] },
-  ) {
-    return this.svc.importFromTemplate(b);
-  }
+  @Post('products/delete') deleteProductV2(@Body() b: { id: number }) { return (this.svc as any).deleteProductV2(b?.id); }
 
   // Suppliers
   @Get('suppliers') listSuppliers(

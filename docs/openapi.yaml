@@ -70,6 +70,9 @@ components:
           name: schoolId
           schema: { type: integer }
         - in: query
+          name: canteenId
+          schema: { type: integer }
+        - in: query
           name: category
           schema: { type: string }
         - in: query
@@ -140,6 +143,22 @@ components:
             application/json:
               schema:
                 $ref: '#/components/schemas/WasteRecord'
+    delete:
+      summary: Delete waste record by id
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer }
   /reg/schools:
     get:
       summary: List schools

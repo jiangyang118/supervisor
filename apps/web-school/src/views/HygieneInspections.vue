@@ -5,7 +5,7 @@
         <span>卫生检查台账</span>
         <div>
           <el-button type="primary" @click="openCreate">新建检查</el-button>
-          <el-button @click="onExportCsv">导出 CSV</el-button>
+          <el-button @click="onExportCsv">导出 </el-button>
         </div>
       </div>
     </template>

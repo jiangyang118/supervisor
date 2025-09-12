@@ -355,6 +355,33 @@ export class InventoryService {
   async listInbound(schoolId?: number | string) { return this.repo!.listInbound(schoolId); }
   async listInboundDocs(schoolId?: number | string) { return this.repo!.listInboundDocs(schoolId); }
   async getInboundDocDetail(docNo: string) { return this.repo!.getInboundDocDetail(docNo); }
+  async updateInboundDoc(docNo: string, b: {
+    schoolId?: number | string;
+    canteenId?: number;
+    supplierId?: number | string;
+    date: string;
+    operator?: string;
+    items: Array<{ productId: string; qty: number; unitPrice?: number; prodDate?: string; shelfLifeDays?: number }>;
+    tickets: Array<{ type: 'ticket_quarantine'|'ticket_invoice'|'ticket_receipt'; imageUrl: string }>;
+    images?: string[];
+  }) {
+    const doc = String(docNo || '').trim();
+    if (!doc) throw new BadRequestException('docNo required');
+    if (!b?.date) throw new BadRequestException('date required');
+    if (!Array.isArray(b.items) || !b.items.length) throw new BadRequestException('items required');
+    const sid = b.schoolId !== undefined && b.schoolId !== null && String(b.schoolId).trim() !== '' ? Number(b.schoolId) : 1;
+    await this.repo!.updateInboundDoc(doc, {
+      schoolId: sid,
+      canteenId: b.canteenId,
+      supplierId: b.supplierId,
+      date: b.date,
+      operator: b.operator,
+      items: b.items,
+      tickets: b.tickets || [],
+      images: b.images || [],
+    });
+    return { ok: true } as any;
+  }
   async listOutbound(schoolId?: number | string) { return this.repo!.listOutbound(schoolId); }
   async listOutboundBatches(params: { schoolId: number | string; productId: number | string; canteenId?: number | string }) {
     if (!params?.schoolId || !params?.productId) throw new BadRequestException('schoolId/productId required');

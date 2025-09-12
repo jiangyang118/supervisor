@@ -2,7 +2,7 @@
   <div class="login-wrap">
     <div class="brand">
       <div class="logo">🍽️</div>
-      <div class="title">智慧食安监管 · 学校端</div>
+      <div class="title">智慧食安</div>
       <div class="subtitle">深色科技风 · 智慧食安驾驶舱同款风格</div>
     </div>
     <el-card :class="['login-card', 'glass', isLightCard ? 'light' : 'dark']" shadow="always">

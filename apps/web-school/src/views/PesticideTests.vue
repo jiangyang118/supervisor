@@ -40,12 +40,45 @@
       <el-table-column prop="tester" label="检测员" width="140" />
       <el-table-column label="操作" width="260">
         <template #default="{ row }">
-          <el-button text  @click="viewDetail(row)">查看</el-button>
+          <el-button text  @click="viewDetail(row)" type="primary">查看</el-button>
 
         </template>
       </el-table-column>
     </el-table>
   </el-card>
+
+  <el-dialog v-model="detailVisible" title="农残检测详情" width="720px">
+    <div v-if="detailRow">
+      <el-descriptions :column="2" border>
+        <el-descriptions-item label="记录编号">{{ detailRow.id }}</el-descriptions-item>
+        <el-descriptions-item label="检测日期">{{ String(detailRow.at||'').slice(0,10) }}</el-descriptions-item>
+        <el-descriptions-item label="食堂">{{ canteenName(detailRow.canteenId) }}</el-descriptions-item>
+        <el-descriptions-item label="检测样本">{{ detailRow.sample }}</el-descriptions-item>
+        <el-descriptions-item label="检测仪">{{ detailRow.device }}</el-descriptions-item>
+        <el-descriptions-item label="检测员">{{ detailRow.tester || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="检测值">{{ detailRow.value ?? '-' }}</el-descriptions-item>
+        <el-descriptions-item label="检测结果">
+          <el-tag :type="detailRow.result==='合格' ? 'success' : 'danger'" effect="plain">{{ detailRow.result }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="备注" :span="2">{{ detailRow.remark || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="处理措施" :span="2">{{ detailRow.measure || '-' }}</el-descriptions-item>
+      </el-descriptions>
+      <el-divider />
+      <div v-if="detailRow.imageUrl" style="margin-bottom: 12px">
+        <el-image :src="detailRow.imageUrl" fit="contain" style="width: 360px; height: 240px" />
+      </div>
+    </div>
+    <template #footer>
+      <div style="display:flex; gap: 8px; align-items: center; justify-content: space-between; width:100%">
+        <div>
+          <el-button v-if="detailRow && detailRow.result==='不合格'" type="primary" @click="onOpenMeasureFromDetail">填写处理措施</el-button>
+        </div>
+        <div>
+          <el-button @click="detailVisible=false">关闭</el-button>
+        </div>
+      </div>
+    </template>
+  </el-dialog>
 
   <el-dialog v-model="createVisible" title="新建农残检测记录" width="520px">
     <el-form :model="form" label-width="96px">
@@ -280,7 +313,8 @@ function onExportOne(row: any) {
   exportCsv(`农残-${row.id}`, [row], { at: '检测日期', canteenId: '食堂', sample: '检测样本', result: '检测结果', tester: '检测员' });
 }
 function viewDetail(row: any) {
-  ElMessage.info(`样本: ${row.sample}，结果: ${row.result}`);
+  detailRow.value = row;
+  detailVisible.value = true;
 }
 function onDeviceConnect() {
   connectSSE();
@@ -307,4 +341,11 @@ onBeforeUnmount(() => {
     off?.();
   } catch {}
 });
+
+const detailVisible = ref(false);
+const detailRow = ref<any | null>(null);
+function onOpenMeasureFromDetail() {
+  if (!detailRow.value) return;
+  openMeasure(detailRow.value);
+}
 </script>

@@ -26,8 +26,8 @@
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <ActionCell :actions="[
-            { label: '查看', onClick: () => view(row), type: 'info' },
-            { label: '编辑', onClick: () => edit(row), type: 'primary' },
+            { label: '查看', onClick: () => view(row), type: 'primary' },
+            { label: '编辑', onClick: () => edit(row), type: 'success' },
             { label: '删除', onClick: () => onDelete(row), danger: true, confirm: '确认删除该食堂资质？' },
           ]" :inline="99" />
         </template>

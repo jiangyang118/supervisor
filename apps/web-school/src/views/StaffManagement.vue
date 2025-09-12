@@ -27,11 +27,13 @@
       </el-table-column>
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <ActionCell :actions="[
-            { label: '查看', onClick: () => view(row), type: 'info' },
-            { label: '编辑', onClick: () => edit(row), type: 'primary' },
-            { label: '删除', onClick: () => onDelete(row), danger: true, confirm: '确认删除该人员？' },
-          ]" :inline="2" />
+          <el-button text type="primary" @click="view(row)">查看</el-button>
+          <el-button text type="success" @click="edit(row)">编辑</el-button>
+          <el-popconfirm title="确认删除该人员？" @confirm="onDelete(row)">
+            <template #reference>
+              <el-button text type="danger">删除</el-button>
+            </template>
+          </el-popconfirm>
         </template>
       </el-table-column>
     </el-table>
@@ -89,7 +91,6 @@ import { api } from '../services/api';
 import { useRouter } from 'vue-router';
 import { getCurrentSchoolId } from '../utils/school';
 import { dateOnly } from '../utils/datetime';
-import ActionCell from '../components/ActionCell.vue';
 
 const filters = reactive({ name: '', phone: '' });
 const rows = ref<any[]>([]);

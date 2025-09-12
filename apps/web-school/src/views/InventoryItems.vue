@@ -5,11 +5,11 @@
         <span>商品管理</span>
         <div style="display:flex;gap:8px;align-items:center">
           <el-button type="primary" @click="openDialog()">新增商品</el-button>
-          <el-button @click="importCloud">从云端食材库导入</el-button>
+          <!-- <el-button @click="importCloud">从云端食材库导入</el-button>
           <el-upload :show-file-list="false" :auto-upload="true" :http-request="onImportTemplate" accept=".csv,text/csv">
             <el-button>Excel模板导入</el-button>
           </el-upload>
-          <el-button @click="downloadTemplate">下载模板</el-button>
+          <el-button @click="downloadTemplate">下载模板</el-button> -->
         </div>
       </div>
     </template>
@@ -23,7 +23,7 @@
       </el-table-column>
       <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
-          <el-button text  @click="edit(row)">编辑</el-button>
+          <el-button text  @click="edit(row)" type="success">编辑</el-button>
           <el-popconfirm title="确认删除该商品？" @confirm="remove(row)">
             <template #reference>
               <el-button text type="danger">删除</el-button>

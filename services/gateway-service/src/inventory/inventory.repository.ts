@@ -428,6 +428,39 @@ export class InventoryRepository {
     );
     return { head: head.rows?.[0] || null, items: items.rows || [], attachments: atts.rows || [] };
   }
+  async updateInboundDoc(docNo: string, b: { schoolId: number; canteenId?: number; supplierId?: number | string; date: string; operator?: string; items: Array<{ productId: string; qty: number; unitPrice?: number; prodDate?: string; shelfLifeDays?: number }>; tickets: Array<{ type: 'ticket_quarantine'|'ticket_invoice'|'ticket_receipt'; imageUrl: string }>; images?: string[] }) {
+    // Recreate rows for simplicity: delete existing, then insert with new head + items + attachments
+    const toDateOnly = (val?: string) => {
+      if (!val) return null as any;
+      const d = new Date(val);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+    // Delete old
+    await this.db.query('delete from inbound_attachments where doc_no = ?', [docNo]);
+    await this.db.query('delete from inv_inbound where doc_no = ?', [docNo]);
+    // Insert new
+    const at: string = toDateOnly(b.date);
+    for (const it of b.items || []) {
+      await this.db.query(
+        `insert into inv_inbound(doc_no, school_id, canteen_id, product_id, qty, unit_price, prod_date, shelf_life_days, supplier_id, at, source, created_by)
+         values(?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [docNo, b.schoolId, b.canteenId || null, it.productId, it.qty, it.unitPrice ?? null, toDateOnly(it.prodDate) || null, it.shelfLifeDays ?? null, b.supplierId || null, at, 'manual', b.operator || null],
+      );
+    }
+    if (Array.isArray(b.tickets)) {
+      for (const t of b.tickets) {
+        await this.db.query('insert into inbound_attachments(doc_no, type, image_url) values(?,?,?)', [docNo, t.type, t.imageUrl]);
+      }
+    }
+    if (Array.isArray(b.images)) {
+      for (const url of b.images) {
+        await this.db.query('insert into inbound_attachments(doc_no, type, image_url) values(?,?,?)', [docNo, 'image', url]);
+      }
+    }
+  }
   async insertOutbound(r: { schoolId: number; productId: string; qty: number; purpose?: string; by?: string; receiver?: string; canteenId?: number; warehouseId?: string; at: string; source: string }) {
     const res = await this.db.query(
       'insert into inv_outbound(school_id, canteen_id, product_id, qty, purpose, by_who, receiver, warehouse_id, at, source) values(?,?,?,?,?,?,?,?,?,?)',

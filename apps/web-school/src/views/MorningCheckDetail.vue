@@ -5,7 +5,7 @@
         <span>晨检详情</span>
         <div class="actions">
           <el-button @click="$router.back()">返回</el-button>
-          <el-button type="success" @click="syncFromDevice">同步设备记录</el-button>
+          
           <el-button type="primary" @click="openManual">手动登记</el-button>
           <el-button @click="onExportCsv">导出台账</el-button>
         </div>
@@ -43,7 +43,7 @@
       </el-table-column>
       <el-table-column label="操作" min-width="200">
         <template #default="{ row }">
-          <el-button v-if="row.result==='异常' && !row.handle"  @click="openHandle(row)">处理</el-button>
+          <el-button text type="danger" v-if="row.result==='异常' && !row.handle"  @click="openHandle(row)">处理</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -112,6 +112,7 @@ import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
 import { ElMessage } from 'element-plus';
 import { useRoute } from 'vue-router';
+import { getCurrentSchoolIdNum } from '../utils/school';
 import { getCurrentSchoolId } from '../utils/school';
 
 type Employee = { userId: string; name: string };
@@ -156,10 +157,19 @@ async function onUpload(opt: any) {
   reader.onerror = (e) => opt.onError?.(e); reader.readAsDataURL(file);
 }
 
-function saveManual() {
+async function saveManual() {
   if (!manualForm.userId || !manualForm.temp || !manualForm.attire || !manualForm.hygiene) { ElMessage.warning('请完整填写手动登记信息'); return; }
   const emp = employees.value.find(e => e.userId === manualForm.userId);
   if (!emp) return;
+  try {
+    // Persist to backend
+    await api.morningCreate({ staff: emp.userId, temp: Number(manualForm.temp), schoolId: getCurrentSchoolIdNum() });
+    ElMessage.success('已保存到数据库');
+  } catch (e) {
+    // Keep UI responsive even if backend unavailable
+    ElMessage.warning('后端保存失败，已在本地记录');
+  }
+  // Update local table data for immediate feedback
   records.value.push({ userId: emp.userId, name: emp.name, at: new Date().toISOString(), temp: manualForm.temp, attire: manualForm.attire, hygiene: manualForm.hygiene, source: 'manual', result: (manualForm.temp >= 37.3 || manualForm.attire==='异常' || manualForm.hygiene==='异常') ? '异常' : '正常', photoUrl: manualForm.photoUrl });
   manualVisible.value = false;
   manualForm.userId = undefined as any; manualForm.photoUrl='';
@@ -178,32 +188,7 @@ function onExportCsv() {
   exportCsv('晨检详情', data, { name:'姓名', at:'检测时间', temp:'体温', attire:'工装', source:'来源', result:'状态', handle:'处理' });
 }
 
-async function syncFromDevice() {
-  try {
-    const resp = await api.megoMorningChecks();
-    const d = (route.query.date as string) || new Date().toISOString().slice(0,10);
-    const sameDay = (ts: string) => (ts||'').slice(0,10) === d;
-    let mapped: RecordItem[] = (resp.data || [])
-      .filter((x:any) => sameDay(x.checkTime || ''))
-      .map((x:any) => ({ userId: x.userId || x.raw?.userId || String(x.id), name: x.raw?.name || x.userId || '-', at: (x.checkTime||'').replace(' ','T'), temp: Number(x.foreheadTemp || 0), attire: (x.health===0?'正常':'异常'), source: 'device', result: x.health===0 ? '正常' : '异常' }));
-    // Try align device records to personnel by name so that manual selection list (from 人员资质) matches
-    if (allStaff.value.length) {
-      const byName = new Map(allStaff.value.map(s => [String(s.name).trim(), s] as const));
-      mapped = mapped.map(r => {
-        const m = byName.get(String(r.name).trim());
-        return m ? { ...r, userId: String(m.id), name: m.name } : r;
-      });
-    }
-    // merge by userId (device data不可编辑，直接覆盖)
-    const ids = new Set(mapped.map(m => m.userId));
-    records.value = [
-      ...mapped,
-      ...records.value.filter(r => !ids.has(r.userId)),
-    ];
-    updateParentTaskCounts();
-    ElMessage.success('已同步设备记录');
-  } catch { ElMessage.error('同步失败'); }
-}
+// 已移除设备记录同步接口（/api/morning-checks），不再提供该功能
 
 function dayStr(d?: string) { return (d||'').slice(0,10); }
 function updateParentTaskCounts() {
@@ -233,9 +218,28 @@ onMounted(async () => {
     allStaff.value = filtered.map((it: any) => ({ id: it.id, name: it.name }));
     employees.value = allStaff.value.map(s => ({ userId: String(s.id), name: s.name }));
   } catch { employees.value = []; allStaff.value = []; }
-  try { await syncFromDevice(); } catch {}
+  // 从后端加载当日已保存的晨检记录（含手动登记）
+  try { await loadDbRecords(); } catch {}
   updateParentTaskCounts();
 });
+
+async function loadDbRecords() {
+  const d = (route.query.date as string) || new Date().toISOString().slice(0,10);
+  const start = `${d}T00:00:00`;
+  const end = `${d}T23:59:59`;
+  const schoolId = getCurrentSchoolIdNum();
+  const res = await api.morningList({ schoolId, start, end, page: 1, pageSize: 1000 });
+  const db = (res.items || []).map((it: any) => {
+    const userId = String(it.staff);
+    const name = employees.value.find(e => e.userId === userId)?.name || userId;
+    return { userId, name, at: it.at, temp: it.temp, attire: '正常', hygiene: '正常', source: it.source, result: it.result } as any;
+  });
+  // Merge by userId, DB entries take precedence
+  const map = new Map<string, any>();
+  for (const r of records.value) map.set(r.userId, r);
+  for (const r of db) map.set(r.userId, r);
+  records.value = Array.from(map.values());
+}
 </script>
 
 <style scoped>

@@ -61,5 +61,47 @@ export class DeviceSafetyService {
     if (!r) throw new BadRequestException('not found');
     return r;
   }
-}
 
+  async update(
+    id: number | string,
+    body: {
+      canteenId?: number | string | null;
+      deviceName?: string;
+      items?: string[];
+      result?: DeviceSafetyResult;
+      description?: string | null;
+      measures?: string | null;
+      handler?: string | null;
+      imageUrl?: string | null;
+      signatureData?: string | null;
+      checkDate?: string;
+    },
+  ) {
+    const num = (() => { const n = Number(id); return Number.isFinite(n) ? n : NaN; })();
+    if (!Number.isFinite(num)) throw new BadRequestException('invalid id');
+    // Basic validations similar to create when pertinent fields are present
+    if (body.result === '异常') {
+      if (body.measures !== undefined && (!body.measures || String(body.measures).trim() === ''))
+        throw new BadRequestException('measures required for abnormal');
+      if (body.handler !== undefined && (!body.handler || String(body.handler).trim() === ''))
+        throw new BadRequestException('handler required for abnormal');
+    }
+    const canteenId = (() => {
+      if (body.canteenId === undefined) return undefined;
+      const s = body.canteenId; const n = s!==null&&s!==undefined&&String(s).trim()!==''?Number(s):NaN; return Number.isFinite(n)&&Number.isInteger(n)?n:null;
+    })();
+    await this.repo.update(num, {
+      canteenId,
+      deviceName: body.deviceName,
+      items: body.items ? body.items.join(',') : undefined,
+      result: body.result,
+      description: body.description,
+      measures: body.measures,
+      handler: body.handler,
+      imageUrl: body.imageUrl,
+      signatureData: body.signatureData,
+      checkDate: body.checkDate,
+    });
+    return { ok: true } as any;
+  }
+}

@@ -18,6 +18,7 @@ const map: Record<string, string> = {
   // 资质证件管理
   '/hr': '资质证件管理',
   '/hr/staff':'人员资质',
+  '/hr/staff/view':'人员资质详情',
   '/hr/canteen-licenses':'食堂资质',
   '/hr/suppliers':'供应商资质',
   '/system': '系统配置',

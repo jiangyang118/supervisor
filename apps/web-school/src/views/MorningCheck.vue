@@ -5,10 +5,10 @@
         <span>晨检管理</span>
         <div class="actions">
           <el-date-picker v-model="date" type="date" placeholder="选择日期" style="margin-right:8px" />
-          <el-select v-model="canteenId" placeholder="选择食堂" style="width:200px; margin-right:8px">
+          <el-select v-model="canteenId" placeholder="选择食堂" style="width:200px; margin-right:8px" clearable>
             <el-option v-for="c in canteens" :key="c.id" :label="c.name" :value="c.id" />
           </el-select>
-          <el-button type="primary" @click="autoCreate">创建晨检任务</el-button>
+          <el-button type="primary" @click="openCreate">创建晨检任务</el-button>
           <el-button @click="syncExpected">同步应检人数</el-button>
           <el-button @click="autoCollect">同步设备数据</el-button>
           <el-button @click="openManualChannel">手动补录</el-button>
@@ -16,7 +16,7 @@
       </div>
     </template>
 
-    <el-table :data="tasksToday"  border>
+    <el-table :data="displayTasks"  border>
       <el-table-column prop="date" label="日期" width="140" />
       <el-table-column prop="canteen" label="食堂名称" width="180" />
       <el-table-column label="应检/实检/异常" width="200">
@@ -37,21 +37,49 @@
       </el-table-column>
       <el-table-column label="操作" min-width="280">
         <template #default="{ row }">
-          <el-button text @click="view(row)">查看详情</el-button>
-          <el-button text v-if="statusLabel(row)==='进行中'"  @click="view(row)">手动登记</el-button>
-          <el-button text  @click="exportRow(row)">导出</el-button>
+          <el-button text @click="view(row)" type="primary">查看</el-button>
+          <el-button text v-if="statusLabel(row)==='进行中'"  @click="view(row)" type="warning">手动登记</el-button>
+          <el-button text  @click="exportRow(row)" >导出</el-button>
         </template>
       </el-table-column>
     </el-table>
   </el-card>
+
+  <!-- 创建晨检任务 -->
+  <el-dialog v-model="createVisible" title="创建晨检任务" width="520px">
+    <el-form :model="createForm" label-width="120px">
+      <el-form-item label="日期" required>
+        <el-date-picker v-model="createForm.date" type="date" placeholder="选择日期" />
+      </el-form-item>
+      <el-form-item label="食堂" required>
+        <el-select v-model="createForm.canteenId" placeholder="选择食堂" style="width:260px">
+          <el-option v-for="c in canteens" :key="String(c.id)" :label="c.name" :value="c.id" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="应检人数" required>
+        <el-input-number v-model="createForm.expected" :min="0" :step="1" />
+      </el-form-item>
+      <el-form-item label="实检人数" required>
+        <el-input-number v-model="createForm.actual" :min="0" :step="1" />
+      </el-form-item>
+      <el-form-item label="异常人数" required>
+        <el-input-number v-model="createForm.abnormal" :min="0" :step="1" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="createVisible = false">取消</el-button>
+      <el-button type="primary" @click="submitCreate">提交</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, reactive } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
 import { getCurrentSchoolIdNum } from '../utils/school';
 import { useRouter } from 'vue-router';
+import { ElMessage } from 'element-plus';
 
 type Task = { id: string; date: string; canteenId?: string|number; canteen: string; expected: number; actual: number; abnormal: number };
 
@@ -60,6 +88,8 @@ const date = ref<Date | null>(new Date());
 const canteens = ref<Array<{ id: number|string; name: string }>>([]);
 const canteenId = ref<number|string|undefined>(undefined);
 const tasks = ref<Task[]>([]);
+const createVisible = ref(false);
+const createForm = reactive<{ date: Date | null; canteenId?: string|number; expected: number; actual: number; abnormal: number }>({ date: new Date(), canteenId: undefined, expected: 0, actual: 0, abnormal: 0 });
 
 function dayStr(d?: Date|null) { const x=d||new Date(); const p=(n:number)=>String(n).padStart(2,'0'); return `${x.getFullYear()}-${p(x.getMonth()+1)}-${p(x.getDate())}`; }
 function uid() { return Math.random().toString(36).slice(2,10); }
@@ -67,6 +97,7 @@ function persist() { try { localStorage.setItem('morning_tasks', JSON.stringify(
 function restore() { try { const s = localStorage.getItem('morning_tasks'); if (s) tasks.value = JSON.parse(s); } catch {} }
 
 const tasksToday = computed(() => tasks.value.filter(t => t.date === dayStr(date.value)));
+const displayTasks = computed(() => tasksToday.value.filter(t => !canteenId.value || String(t.canteenId||'') === String(canteenId.value||'')));
 function ensureCanteenName(): string { const c = canteens.value.find(c => String(c.id)===String(canteenId.value)); return c?.name || '学校食堂'; }
 
 function autoCreate() {
@@ -75,6 +106,37 @@ function autoCreate() {
   if (exists) return;
   tasks.value.unshift({ id: uid(), date: d, canteenId: canteenId.value, canteen: ensureCanteenName(), expected: 0, actual: 0, abnormal: 0 });
   persist();
+}
+function openCreate() {
+  createVisible.value = true;
+  createForm.date = date.value ? new Date(date.value) : new Date();
+  createForm.canteenId = canteenId.value as any;
+  createForm.expected = 0; createForm.actual = 0; createForm.abnormal = 0;
+}
+function submitCreate() {
+  const d = dayStr(createForm.date); // target date
+  const cid = createForm.canteenId;
+  const exp = Math.max(0, Number(createForm.expected || 0));
+  const act = Math.max(0, Number(createForm.actual || 0));
+  const abn = Math.max(0, Number(createForm.abnormal || 0));
+  if (act > exp) { createForm.actual = exp; }
+  if (abn > act) { createForm.abnormal = act; }
+  // merge rule: same date + same canteen → 合并累计；否则新增
+  const idx = tasks.value.findIndex(t => t.date === d && String(t.canteenId||'') === String(cid||''));
+  if (idx >= 0) {
+    const t = tasks.value[idx];
+    t.expected = Math.max(0, Number(t.expected || 0)) + exp;
+    t.actual = Math.max(0, Number(t.actual || 0)) + (createForm.actual || 0);
+    t.abnormal = Math.max(0, Number(t.abnormal || 0)) + (createForm.abnormal || 0);
+    tasks.value[idx] = { ...t } as any;
+  } else {
+    tasks.value.unshift({ id: uid(), date: d, canteenId: cid, canteen: (canteens.value.find(c => String(c.id)===String(cid))?.name || '学校食堂'), expected: exp, actual: act, abnormal: abn });
+  }
+  // sync current filters to new defaults
+  date.value = new Date(d);
+  canteenId.value = cid as any;
+  persist();
+  createVisible.value = false;
 }
 function ensureDailyTasks(d: string) {
   if (!canteens.value.length) return;
@@ -96,14 +158,15 @@ function syncExpected() {
   persist();
 }
 function autoCollect() {
-  const t = tasksToday.value.find(t => String(t.canteenId||'')===String(canteenId.value||'')) || tasksToday.value[0];
-  if (!t) return;
-  if (t.expected===0) t.expected = 20;
-  const remain = Math.max(0, t.expected - t.actual);
-  const add = Math.min(remain, 1 + Math.floor(Math.random()*5));
-  t.actual += add;
-  if (Math.random()<0.2) t.abnormal = Math.min(t.actual, t.abnormal + 1);
-  persist();
+  ElMessage.success('设备正在同步中，请稍后...');
+  // const t = tasksToday.value.find(t => String(t.canteenId||'')===String(canteenId.value||'')) || tasksToday.value[0];
+  // if (!t) return;
+  // if (t.expected===0) t.expected = 20;
+  // const remain = Math.max(0, t.expected - t.actual);
+  // const add = Math.min(remain, 1 + Math.floor(Math.random()*5));
+  // t.actual += add;
+  // if (Math.random()<0.2) t.abnormal = Math.min(t.actual, t.abnormal + 1);
+  // persist();
 }
 
 function rate(t: Task) { if (!t.expected) return 0; return Math.min(100, Math.round((t.actual / t.expected) * 100)); }

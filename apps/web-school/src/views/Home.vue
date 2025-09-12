@@ -367,14 +367,9 @@ async function refreshAll() {
     certExpired.value = items.filter((c: any) => c.status === '过期' || (c.healthCertExpireAt && Date.parse(c.healthCertExpireAt) < now)).length;
     certExpiring.value = items.filter((c: any) => (c.status === '临期') || (c.healthCertExpireAt && Date.parse(c.healthCertExpireAt) >= now && Date.parse(c.healthCertExpireAt) <= in30)).length;
   } catch { morningExpected.value = 0; certTotal.value = 0; certExpired.value = 0; certExpiring.value = 0; }
-  try {
-    const start = new Date(); start.setHours(0,0,0,0);
-    const end = new Date();
-    const r = await api.morningList({ start: start.toISOString(), end: end.toISOString(), page: 1, pageSize: 100000, schoolId: sid ? Number(sid) : undefined } as any);
-    const items = (r as any)?.items || [];
-    morningActual.value = Number((r as any)?.total || items.length || 0);
-    morningAbnormal.value = items.filter((x: any) => x.result === '异常' || x.abnormalTemp || (Array.isArray(x.handCheckResult) && x.handCheckResult.length) || (Array.isArray(x.healthAskResult) && x.healthAskResult.length)).length;
-  } catch { morningActual.value = 0; morningAbnormal.value = 0; }
+  // 移除晨检列表接口后，实际/异常人数置 0（或可由设备集成统计后替换）
+  morningActual.value = 0;
+  morningAbnormal.value = 0;
   // 健康证模块已移除
   // 消毒
   try {

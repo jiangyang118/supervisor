@@ -182,32 +182,20 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json() as Promise<{ data: Array<{ userId: string; name: string; healthStartTime?: string; healthEndTime?: string }> }>;
   },
-  megoMorningChecks: async () => {
-    const res = await fetch(`${SCHOOL_INTEGRATION_BASE}/api/morning-checks`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json() as Promise<{ data: any[] }>;
-  },
   // Morning check APIs
   morningList: (
-    params: {
-      staff?: string;
-      result?: '正常' | '异常' | '';
-      start?: string;
-      end?: string;
-      page?: number;
-      pageSize?: number;
-      schoolId?: number;
-    } = {},
+    params: { schoolId?: number; staff?: string; result?: '正常' | '异常'; start?: string; end?: string; page?: number; pageSize?: number } = {},
   ) =>
-    get<{ items: any[]; total: number; page: number; pageSize: number }>(
+    get<{ items: Array<{ id: number; schoolId: number; staff: string; temp: number; result: '正常'|'异常'; at: string; source: 'manual'|'device'; reported: boolean; measure?: string }>; total: number; page: number; pageSize: number }>(
       `/school/morning-checks?${new URLSearchParams(
         Object.fromEntries(
-          Object.entries({ ...params })
+          Object.entries(params)
             .filter(([, v]) => v !== undefined && v !== '' && v !== null)
             .map(([k, v]) => [k, String(v)]),
         ) as any,
       ).toString()}`,
     ),
+  // Morning check APIs (list removed per requirements)
   morningCreate: async (body: { staff: string; temp: number; schoolId?: number }) => {
     const res = await fetch(`${BASE}/school/morning-checks`, {
       method: 'POST',
@@ -761,6 +749,17 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
+  invInboundUpdateDoc: async (docNo: string, body: any) => {
+    // Prefer PATCH with docNo query to modify existing document
+    const url = `${BASE}/school/inventory/inbound/doc?docNo=${encodeURIComponent(docNo)}`;
+    const res = await fetch(url, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  },
   invOutboundList: (schoolId?: string) =>
     get<any[]>(
       `/school/inventory/outbound${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
@@ -1152,6 +1151,31 @@ export const api = {
     return res.json();
   },
   deviceSafetyDetail: (id: number | string) => get<any>(`/school/device-safety/detail?id=${encodeURIComponent(String(id))}`),
+  deviceSafetyUpdate: async (
+    id: number | string,
+    body: {
+      canteenId?: number | string | null;
+      deviceName?: string;
+      items?: string[];
+      result?: '正常' | '异常';
+      description?: string | null;
+      measures?: string | null;
+      handler?: string | null;
+      imageUrl?: string | null;
+      signatureData?: string | null;
+      checkDate?: string;
+      schoolId?: number | string; // ignored server-side for update
+    },
+  ) => {
+    const payload = { ...body } as any;
+    const res = await fetch(`${BASE}/school/device-safety/${encodeURIComponent(String(id))}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) { handleUnauthorized(res.status); throw new Error(`HTTP ${res.status}`); }
+    return res.json();
+  },
   riskCatalogUpdate: async (id: string, body: any) => {
     const res = await fetch(`${BASE}/school/risk/catalog?id=${encodeURIComponent(id)}`, {
       method: 'PATCH',

@@ -43,7 +43,7 @@
       <el-table-column prop="responsible" label="责任人" width="140" />
       <el-table-column label="操作" width="220">
         <template #default="{ row }">
-          <el-button text  @click="viewDetail(row)">查看</el-button>
+          <el-button text  @click="viewDetail(row)" type="primary">查看</el-button>
          
          
         </template>
@@ -254,7 +254,7 @@ function onExportOne(row: any) {
   exportCsv(`消毒-${row.id}`, [row], { at:'消毒日期', canteenId:'食堂', items:'消毒区域/物品', method:'消毒方式', duration:'时长(分钟)', temperature:'温度(℃)', responsible:'责任人' });
 }
 const router = useRouter();
-function viewDetail(row: any) { router.push({ path: '/disinfection/detail', query: { id: row.id } }); }
+function viewDetail(row: any) { router.push({ path: '/daily-op/disinfection/detail', query: { id: row.id } }); }
 function showExceptions() { filters.exception = 'true' as any; applyFilters(); }
 
 let off: any = null;

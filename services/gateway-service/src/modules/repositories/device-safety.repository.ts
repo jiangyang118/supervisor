@@ -90,5 +90,37 @@ export class DeviceSafetyRepository implements OnModuleInit {
     );
     return { items: rows as DeviceSafetyRow[], total, page: params.page, pageSize: params.pageSize };
   }
-}
 
+  async update(
+    id: number,
+    r: Partial<{
+      canteenId?: number | null;
+      deviceName: string;
+      items: string; // comma separated
+      result: '正常' | '异常';
+      description?: string | null;
+      measures?: string | null;
+      handler?: string | null;
+      imageUrl?: string | null;
+      signatureData?: string | null;
+      checkDate: string; // datetime
+    }>,
+  ) {
+    const fields: string[] = [];
+    const args: any[] = [];
+    if (r.canteenId !== undefined) { fields.push('canteen_id = ?'); args.push(r.canteenId ?? null); }
+    if (r.deviceName !== undefined) { fields.push('device_name = ?'); args.push(r.deviceName); }
+    if (r.items !== undefined) { fields.push('items = ?'); args.push(r.items); }
+    if (r.result !== undefined) { fields.push('result = ?'); args.push(r.result); }
+    if (r.description !== undefined) { fields.push('description = ?'); args.push(r.description ?? null); }
+    if (r.measures !== undefined) { fields.push('measures = ?'); args.push(r.measures ?? null); }
+    if (r.handler !== undefined) { fields.push('handler = ?'); args.push(r.handler ?? null); }
+    if (r.imageUrl !== undefined) { fields.push('image_url = ?'); args.push(r.imageUrl ?? null); }
+    if (r.signatureData !== undefined) { fields.push('signature_data = ?'); args.push(r.signatureData ?? null); }
+    if (r.checkDate !== undefined) { fields.push('check_date = ?'); args.push(new Date(r.checkDate)); }
+    if (fields.length === 0) return { affectedRows: 0 } as any;
+    const sql = `update device_safety_checks set ${fields.join(', ')} where id = ?`;
+    const res = await this.db.query(sql, [...args, id]);
+    return res;
+  }
+}

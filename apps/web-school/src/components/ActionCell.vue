@@ -1,12 +1,18 @@
 <template>
   <div class="action-cell">
     <template v-for="(a, i) in inlineActions" :key="i">
-      <el-popconfirm v-if="a.confirm" :title="a.confirm" @confirm="() => a.onClick && a.onClick()">
+      <el-popconfirm
+        v-if="a.confirm"
+        :title="a.confirm"
+        :teleported="true"
+        :popper-options="{ strategy: 'fixed' }"
+        @confirm="() => a.onClick && a.onClick()"
+      >
         <template #reference>
           <el-button
             text
             :type="a.type || (a.danger ? 'danger' : undefined)"
-            :class="['op-action', a.danger ? 'op-danger' : '']"
+            :class="['op-action', a.danger ? 'op-danger' : '', a.type ? ('op-' + a.type) : '']"
           >{{ a.label }}</el-button>
         </template>
       </el-popconfirm>
@@ -14,14 +20,20 @@
         v-else
         text
         :type="a.type || (a.danger ? 'danger' : undefined)"
-        :class="['op-action', a.danger ? 'op-danger' : '']"
+        :class="['op-action', a.danger ? 'op-danger' : '', a.type ? ('op-' + a.type) : '']"
         @click="a.onClick && a.onClick()"
       >
         {{ a.label }}
       </el-button>
     </template>
 
-    <el-popover v-if="moreActions.length" placement="bottom" trigger="hover">
+    <el-popover
+      v-if="moreActions.length"
+      placement="bottom-start"
+      trigger="hover"
+      :teleported="true"
+      :popper-options="{ strategy: 'fixed' }"
+    >
       <template #reference>
         <el-button text>更多</el-button>
       </template>
@@ -32,7 +44,7 @@
               <el-button
                 text
                 :type="a.type || (a.danger ? 'danger' : undefined)"
-                :class="['op-action', a.danger ? 'op-danger' : '']"
+                :class="['op-action', a.danger ? 'op-danger' : '', a.type ? ('op-' + a.type) : '']"
               >{{ a.label }}</el-button>
             </template>
           </el-popconfirm>
@@ -40,7 +52,7 @@
             v-else
             text
             :type="a.type || (a.danger ? 'danger' : undefined)"
-            :class="['op-action', a.danger ? 'op-danger' : '']"
+            :class="['op-action', a.danger ? 'op-danger' : '', a.type ? ('op-' + a.type) : '']"
             @click="a.onClick && a.onClick()"
           >
             {{ a.label }}

@@ -22,7 +22,7 @@
       <el-table-column label="操作" width="200">
         <template #default="{ row }">
           <ActionCell :actions="[
-            { label: '编辑', onClick: () => openEdit(row), type: 'primary' },
+            { label: '编辑', onClick: () => openEdit(row), type: 'success' },
             { label: '删除', onClick: () => onDelete(row), danger: true, confirm: '确认删除该食堂？该操作不可恢复' },
           ]" :inline="2" />
         </template>

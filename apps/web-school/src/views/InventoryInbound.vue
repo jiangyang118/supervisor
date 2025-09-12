@@ -6,7 +6,7 @@
         <span>入库登记</span>
         <div>
           <el-button type="primary" @click="openCreate">新增入库</el-button>
-          <el-button @click="onExportCsv">导出 CSV</el-button>
+          <el-button @click="onExportCsv">导出 </el-button>
         </div>
       </div>
     </template>
@@ -25,9 +25,10 @@
       <el-table-column prop="totalQty" label="入库数量" width="120" />
       <el-table-column prop="kinds" label="商品种类数" width="120" />
       <el-table-column prop="operator" label="操作人" width="140" />
-      <el-table-column label="操作" width="260">
+      <el-table-column label="操作" width="300">
         <template #default="{ row }">
-          <el-button text  @click="openDetail(row)">查看详情</el-button>
+          <el-button text  @click="openDetail(row)" type="primary">查看</el-button>
+          <el-button text  @click="openEdit(row)" type="success">编辑</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -45,7 +46,7 @@
       <el-divider content-position="left">商品明细</el-divider>
       <el-table :data="detail.items" border >
         <el-table-column prop="productName" label="商品" />
-        <el-table-column prop="qty" label="数量" width="120" />
+        <el-table-column prop="qty" label="数量" width="200" />
         <el-table-column prop="unitPrice" label="单价(元)" width="140" />
         <el-table-column label="生产日期" width="160">
           <template #default="{ row }">{{ dateOnly(row.prodDate) }}</template>
@@ -68,7 +69,8 @@
     </div>
   </el-drawer>
 
-  <el-drawer v-model="createVisible" title="新增入库" size="80%" :with-header="true">
+  <el-drawer v-model="createVisible" :title="formMode==='edit' ? '编辑入库' : '新增入库'" size="80%" :with-header="true">
+    <div class="drawer-body-scroll">
     <el-form :model="form" label-width="120px">
       <el-form-item label="入库日期">
         <el-date-picker v-model="form.date" type="date" />
@@ -94,7 +96,7 @@
       <div style="margin-bottom:8px">
         <el-button type="primary" text @click="addItem">+ 添加商品</el-button>
       </div>
-      <el-table :data="form.items" border  show-summary :summary-method="itemsSummary">
+      <el-table :data="form.items" border show-summary :summary-method="itemsSummary" style="width:100%" :max-height="tableMaxH" :fit="false" table-layout="auto">
         <el-table-column label="商品" min-width="220">
           <template #default="{ row }">
             <el-select v-model="row.productId" filterable placeholder="选择商品" style="width:100%">
@@ -102,16 +104,16 @@
             </el-select>
           </template>
         </el-table-column>
-        <el-table-column label="数量" width="120">
+        <el-table-column label="数量" width="180">
           <template #default="{ row }"><el-input-number v-model="row.qty" :min="1" /></template>
         </el-table-column>
         <el-table-column label="单价(元)" width="140">
           <template #default="{ row }"><el-input v-model.number="row.unitPrice" /></template>
         </el-table-column>
-        <el-table-column label="生产日期" width="160">
+        <el-table-column label="生产日期" width="200">
           <template #default="{ row }"><el-date-picker v-model="row.prodDate" type="date" placeholder="选择日期" /></template>
         </el-table-column>
-        <el-table-column label="保质期(天)" width="140">
+        <el-table-column label="保质期(天)" width="180">
           <template #default="{ row }"><el-input-number v-model.number="row.shelfLifeDays" :min="0" /></template>
         </el-table-column>
         <el-table-column label="小计(元)" width="140">
@@ -150,23 +152,12 @@
         <el-icon><Plus /></el-icon>
       </el-upload>
 
-      <el-divider />
-      <el-form-item label="商品（快速添加）">
-        <el-select v-model="form.productId" placeholder="请选择" style="width: 240px">
-          <el-option v-for="p in products" :key="p.id" :label="p.name" :value="p.id" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="数量">
-        <el-input-number v-model="form.qty" :min="1" />
-      </el-form-item>
-      <el-form-item>
-        <el-button @click="() => form.items.push({ productId: form.productId, qty: form.qty || 1 })">添加至明细</el-button>
-      </el-form-item>
     </el-form>
+    </div>
     <template #footer>
       <div style="display:flex;justify-content:flex-end;gap:8px;padding:8px 0">
         <el-button @click="createVisible = false">取消</el-button>
-        <el-button type="primary" @click="save">提交</el-button>
+        <el-button type="primary" @click="save">{{ formMode==='edit' ? '保存修改' : '提交' }}</el-button>
       </div>
     </template>
   </el-drawer>
@@ -222,6 +213,8 @@ async function load() {
   try { canteens.value = await api.canteensList(String(getCurrentSchoolId())); } catch { canteens.value = []; }
 }
 const createVisible = ref(false);
+const formMode = ref<'create'|'edit'>('create');
+let editingDocNo: string | null = null;
 const form = reactive<any>({
   date: new Date(),
   canteenId: undefined as number|undefined,
@@ -238,6 +231,8 @@ function removeTicket(i: number) { form.tickets.splice(i,1); }
 function addImage() { form.images.push(''); }
 function removeImage(i: number) { form.images.splice(i,1); }
 const openCreate = () => {
+  formMode.value = 'create';
+  editingDocNo = null;
   form.date = new Date();
   form.canteenId = canteens.value[0]?.id ? Number(canteens.value[0].id) : undefined;
   form.supplierId = suppliers.value[0]?.id;
@@ -248,6 +243,34 @@ const openCreate = () => {
   addItem();
   createVisible.value = true;
 };
+
+async function openEdit(row: any) {
+  if (!row?.docNo) { ElMessage.warning('缺少入库单号，无法编辑'); return; }
+  try {
+    const res = await api.invInboundDocDetail(row.docNo);
+    formMode.value = 'edit';
+    editingDocNo = row.docNo;
+    const head = res?.head || {};
+    form.date = head.date ? new Date(head.date) : new Date();
+    form.canteenId = head.canteenId ? Number(head.canteenId) : undefined;
+    form.supplierId = head.supplierId;
+    form.operator = head.operator || '';
+    form.items = (res?.items || []).map((it:any)=> ({
+      productId: it.productId || '',
+      qty: Number(it.qty || 0),
+      unitPrice: it.unitPrice ?? undefined,
+      prodDate: it.prodDate || undefined,
+      shelfLifeDays: it.shelfLifeDays ?? undefined,
+    }));
+    const atts = Array.isArray(res?.attachments) ? res.attachments : [];
+    form.tickets = atts.filter((a:any)=> a.type==='ticket_quarantine' || a.type==='ticket_invoice' || a.type==='ticket_receipt')
+      .map((a:any)=> ({ type: a.type, imageUrl: a.imageUrl }));
+    form.images = atts.filter((a:any)=> a.type==='image').map((a:any)=> a.imageUrl);
+    createVisible.value = true;
+  } catch {
+    ElMessage.error('加载单据失败，无法编辑');
+  }
+}
 function addItem() {
   form.items.push({ productId: products.value[0]?.id || '', qty: 1 });
 }
@@ -361,7 +384,7 @@ async function save() {
   const validTickets = (form.tickets || []).filter((t:any)=> t.type && String(t.imageUrl||'').trim());
   const types = new Set(validTickets.map((t:any)=>t.type));
   if (!types.has('ticket_quarantine') || !(types.has('ticket_invoice') || types.has('ticket_receipt'))) { ElMessage.warning('请上传检疫合格证与发票/收货单照片'); return; }
-  await api.invInboundCreateDoc({
+  const payload = {
     schoolId: getCurrentSchoolId(),
     // Send date as YYYY-MM-DD to avoid timezone shifts
     date: (() => { const d = form.date as Date; const y=d.getFullYear(); const m=String(d.getMonth()+1).padStart(2,'0'); const dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; })(),
@@ -385,11 +408,19 @@ async function save() {
     })),
     tickets: validTickets,
     images: form.images,
-  });
-  ElMessage.success('已提交');
+  } as any;
+  if (formMode.value === 'edit' && editingDocNo) {
+    await api.invInboundUpdateDoc(editingDocNo, payload);
+    ElMessage.success('已保存修改');
+  } else {
+    await api.invInboundCreateDoc(payload);
+    ElMessage.success('已提交');
+  }
   createVisible.value = false;
   load();
 }
+
+const tableMaxH = computed(() => Math.max(260, Math.floor(window.innerHeight * 0.5)));
 const onExportCsv = () =>
   exportCsv('入库登记(单据汇总)', rows.value, {
     docNo: '入库单号',
@@ -436,3 +467,7 @@ onBeforeUnmount(() => {
   } catch {}
 });
 </script>
+
+<style scoped>
+.drawer-body-scroll { max-height: calc(100vh - 210px); overflow: auto; padding-right: 4px; }
+</style>

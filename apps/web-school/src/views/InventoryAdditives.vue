@@ -5,7 +5,7 @@
         <span>食品添加剂使用记录</span>
         <div>
           <el-button type="primary" @click="openCreate">新增记录</el-button>
-          <el-button @click="onExportCsv">导出 CSV</el-button>
+          <el-button @click="onExportCsv">导出 </el-button>
         </div>
       </div>
     </template>

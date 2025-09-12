@@ -7,10 +7,10 @@
   <!-- Default application shell -->
   <el-container v-else style="height: 100vh">
     <el-header class="app-header" style="display: flex; align-items: center; justify-content: space-between">
-      <div>学校端 • 食品安全云<span v-if="schoolName"> ｜ {{ schoolName }}</span></div>
+      <div>智慧食安<span v-if="schoolName"> ｜ {{ schoolName }}</span></div>
       <div style="display:flex; align-items:center; gap:12px">
         <el-button v-if="has('overview.*')" link type="primary" @click="go('/overview')">首页</el-button>
-        <el-button v-if="has('overview.*')" link @click="go('/reports')">每日报表</el-button>
+        <!-- <el-button v-if="has('overview.*')" link @click="go('/reports')">每日报表</el-button> -->
         <el-divider direction="vertical" />
         <el-dropdown>
           <span class="el-dropdown-link" style="cursor:pointer">
@@ -26,7 +26,7 @@
     </el-header>
     <el-container>
       <el-aside width="240px" class="app-aside">
-        <el-menu :key="openeds.join(',')" :default-active="active" :default-openeds="openeds" router unique-opened>
+        <el-menu ref="menuRef" :key="openeds.join(',')" :default-active="active" :default-openeds="openeds" router unique-opened>
           <el-menu-item v-if="has('overview.*')" index="/overview">首页</el-menu-item>
           <!-- 预警概览升为一级模块，置于首页下方展示 -->
           <el-menu-item v-if="has('overview.*')" index="/overview/alerts">预警概览</el-menu-item>
@@ -115,7 +115,7 @@
 
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router';
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue';
 import { ElMessageBox, ElMessage } from 'element-plus';
 import PageHeader from './components/PageHeader.vue';
 import { useAuthStore } from './stores/auth';
@@ -134,8 +134,8 @@ function mapPrimaryMenu(path: string): string {
     // Daily ops
     '/daily-op/morning-check': '/daily-op/morning-check',
     '/daily-op/sampling': '/daily-op/sampling',
-    '/pesticide-tests': '/pesticide-tests',
-    '/disinfection': '/disinfection',
+    '/daily-op/pesticide-tests': '/daily-op/pesticide-tests',
+    '/daily-op/disinfection': '/daily-op/disinfection',
     '/daily-op/waste': '/daily-op/waste',
     // Inventory
     '/inventory/items': '/inventory/items',
@@ -167,11 +167,11 @@ const openeds = computed(() => {
   if (p.startsWith('/analytics')) return ['overview'];
   if (
     p.startsWith('/daily-op/morning-check') ||
-    p.startsWith('/daily-op/sampling/') ||
+    p.startsWith('/daily-op/sampling') ||
     p.startsWith('/daily-op/pesticide-tests') ||
     p.startsWith('/daily-op/disinfection') ||
     p.startsWith('/daily-op/waste') ||
-    p.startsWith('/daily-op/environment/monitor')
+    p.startsWith('/daily-op/environment')
   )
     return ['daily'];
   if (
@@ -187,6 +187,9 @@ const openeds = computed(() => {
 const go = (p: string) => router.push(p);
 const auth = useAuthStore();
 const has = (p: string) => auth.hasPerm(p);
+
+// Menu ref (kept for future programmatic control if needed)
+const menuRef = ref<any>(null);
 
 // School name in header
 const schoolName = ref<string>('');

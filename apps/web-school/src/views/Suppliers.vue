@@ -23,8 +23,8 @@
             format="YYYY-MM-DD"
           />
           <el-button @click="load">查询</el-button>
-          <el-button @click="onExportCsv">导出 CSV</el-button>
-          <el-button @click="openImport">导入 CSV</el-button>
+          <el-button @click="onExportCsv">导出 </el-button>
+          <el-button @click="openImport">导入 </el-button>
           <el-button type="primary" @click="goCreate">新增供应商</el-button>
         </div>
       </div>
@@ -50,8 +50,8 @@
       <el-table-column label="操作" width="220">
         <template #default="{ row }">
           <ActionCell :actions="[
-            { label: '查看', onClick: () => view(row), type: 'info' },
-            { label: '编辑', onClick: () => openEdit(row), type: 'primary' },
+            { label: '查看', onClick: () => view(row), type: 'primary' },
+            { label: '编辑', onClick: () => openEdit(row), type: 'success' },
             { label: '删除', onClick: () => del(row), danger: true, confirm: '确认删除该供应商？' },
           ]" :inline="2" />
         </template>

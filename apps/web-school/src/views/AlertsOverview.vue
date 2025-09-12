@@ -60,7 +60,7 @@
         <el-button type="success" :disabled="!selectedIds.length" @click="batchMark">批量标记已处理</el-button>
       </div>
       <div>
-        <el-button @click="doExport">导出 CSV</el-button>
+        <el-button @click="doExport">导出 </el-button>
       </div>
     </div>
 

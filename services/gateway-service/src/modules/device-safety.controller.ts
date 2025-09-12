@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Patch, Param, Query } from '@nestjs/common';
 import { DeviceSafetyService } from './device-safety.service';
 
 @Controller('school/device-safety')
@@ -41,5 +41,24 @@ export class DeviceSafetyController {
   detail(@Query('id') id: string) {
     return this.svc.detail(id);
   }
-}
 
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body()
+    body: {
+      canteenId?: number | string | null;
+      deviceName?: string;
+      items?: string[];
+      result?: '正常' | '异常';
+      description?: string | null;
+      measures?: string | null;
+      handler?: string | null;
+      imageUrl?: string | null;
+      signatureData?: string | null;
+      checkDate?: string;
+    },
+  ) {
+    return this.svc.update(id, body as any);
+  }
+}

@@ -25,7 +25,7 @@
       <el-table-column prop="linkedCount" label="关联菜品数" width="120" />
       <el-table-column label="操作" min-width="220">
         <template #default="{ row }">
-          <el-button text @click="viewBatch(row)">查看</el-button>
+          <el-button text @click="viewBatch(row)" type="primary">查看</el-button>
           
         </template>
       </el-table-column>
@@ -183,7 +183,8 @@ function addSmart() {
 function saveManual() {
   if (!manualForm.sample || !manualForm.imageUrl || !manualForm.by || !manualForm.weight || !manualForm.canteenId) { return; }
   const canteen = canteens.value.find(c=> String(c.id)===String(manualForm.canteenId))?.name || canteenName();
-  batches.value.unshift({ id: uid(), type: 'manual', date: todayStr(), meal: mealNow(), canteen, by: manualForm.by, createdAt: new Date().toLocaleString(), linkedCount: 1, items: [ { sample: manualForm.sample, weight: manualForm.weight, imageUrl: manualForm.imageUrl, at: new Date().toLocaleString(), cookTime: manualForm.cookTime || '' } ] });
+  const nowIso = new Date().toISOString();
+  batches.value.unshift({ id: uid(), type: 'manual', date: todayStr(), meal: mealNow(), canteen, by: manualForm.by, createdAt: nowIso, linkedCount: 1, items: [ { sample: manualForm.sample, weight: manualForm.weight, imageUrl: manualForm.imageUrl, at: nowIso, cookTime: manualForm.cookTime || '' } ] });
   persist();
   manualVisible.value = false;
   manualForm.sample=''; manualForm.imageUrl=''; manualForm.by=''; manualForm.weight=100; manualForm.canteenId = undefined; manualForm.cookTime='';
@@ -195,28 +196,19 @@ function viewBatch(b: Batch) {
   cleanupForm.photos = '';
   detailVisible.value = true;
 }
-function exportBatch(b: Batch) {
-  const firstItem = (b.items && b.items[0]) || {} as any;
-  const data = [{
-    date: b.date,
-    meal: b.meal,
-    canteen: b.canteen,
-    by: b.by,
-    createdAt: b.createdAt || firstItem.at || '',
-    cookTime: firstItem.cookTime || '',
-    linkedCount: b.linkedCount,
-  }];
-  exportCsv(
-    `留样-${b.date}-${b.meal}`,
-    data,
-    { date: '留样日期', meal: '餐次', canteen: '食堂', by: '留样人', createdAt: '留样时间', cookTime: '出锅时间', linkedCount: '关联菜品数' },
-  );
+function fmtDateTime(v?: string) {
+  if (!v) return '';
+  const d = new Date(v);
+  if (isNaN(d.getTime())) return String(v);
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
+
 function confirmCleanup() {
   if (!current.value) return;
   if (!cleanupForm.by || !cleanupForm.photos) return;
   const photos = cleanupForm.photos;
-  current.value.items = [{ sample: '清理记录', photos, at: new Date().toLocaleString() }];
+  current.value.items = [{ sample: '清理记录', photos, at: new Date().toISOString() }];
   current.value.by = cleanupForm.by;
   current.value.linkedCount = 1;
   // write back
@@ -233,7 +225,7 @@ function exportAll() {
       meal: b.meal,
       canteen: b.canteen,
       by: b.by,
-      createdAt: b.createdAt || first.at || '',
+      createdAt: fmtDateTime(b.createdAt || first.at || ''),
       cookTime: first.cookTime || '',
       linkedCount: b.linkedCount,
     };
@@ -243,7 +235,7 @@ function exportAll() {
     meal: '餐次',
     canteen: '食堂',
     by: '留样人',
-    createdAt: '留样时间',
+
     cookTime: '出锅时间',
     linkedCount: '关联菜品数',
   });

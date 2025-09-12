@@ -5,7 +5,7 @@
         <span>库存记录（批次）</span>
         <div style="display:flex;gap:8px;align-items:center">
           <el-switch v-model="showNear" active-text="仅临期" />
-          <el-button type="primary" @click="onExportCsv">导出 CSV</el-button>
+          <el-button type="primary" @click="onExportCsv">导出 </el-button>
         </div>
       </div>
     </template>
@@ -23,7 +23,7 @@
       </el-table-column>
       <el-table-column label="操作" width="160">
         <template #default="{ row }">
-          <el-button text @click="openStocktake(row)">盘点</el-button>
+          <el-button text @click="openStocktake(row)" type="info">盘点</el-button>
         </template>
       </el-table-column>
     </el-table>

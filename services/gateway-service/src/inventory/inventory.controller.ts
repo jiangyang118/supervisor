@@ -196,6 +196,21 @@ export class InventoryController {
   @Get('inbound/doc') inboundDocDetail(@Query('docNo') docNo: string) {
     return this.svc.getInboundDocDetail(docNo);
   }
+  @Patch('inbound/doc')
+  updateInboundDoc(
+    @Query('docNo') docNo: string,
+    @Body()
+    b: {
+      schoolId?: number | string;
+      canteenId?: number;
+      supplierId?: number | string;
+      date: string;
+      operator?: string;
+      items: Array<{ productId: string; qty: number; unitPrice?: number; prodDate?: string; shelfLifeDays?: number }>;
+      tickets: Array<{ type: 'ticket_quarantine'|'ticket_invoice'|'ticket_receipt'; imageUrl: string }>;
+      images?: string[];
+    },
+  ) { return this.svc.updateInboundDoc(docNo, b as any); }
   @Post('inbound/scale') scaleInbound(
     @Body()
     b: {

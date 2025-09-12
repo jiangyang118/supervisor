@@ -5,14 +5,15 @@
         <span>出库登记</span>
         <div>
           <el-button type="primary" @click="openCreate">新增出库</el-button>
-          <el-button @click="onExportCsv">导出 CSV</el-button>
+          <el-button @click="onExportCsv">导出 </el-button>
         </div>
       </div>
     </template>
     <el-table :data="rows"  border>
-      <el-table-column prop="id" label="ID" width="120" />
-      <el-table-column label="食堂" width="160"><template #default="{ row }">{{ canteenName(row.canteenId) }}</template></el-table-column>
       <el-table-column label="商品"><template #default="{ row }">{{ productName(row.productId) }}</template></el-table-column>
+      <!-- <el-table-column prop="id" label="ID" width="120" /> -->
+      <el-table-column label="食堂" width="160"><template #default="{ row }">{{ canteenName(row.canteenId) }}</template></el-table-column>
+    
       <el-table-column prop="qty" label="数量" width="120" />
       <el-table-column prop="purpose" label="用途" width="160" />
       <el-table-column prop="by" label="出库人" width="140" />

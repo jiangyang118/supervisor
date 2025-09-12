@@ -122,13 +122,12 @@ import { exportCsv } from '../utils/export';
 
 // 枚举定义
 const TYPE_ENUM = [
-  { label: '证件过期（供应商、食堂相关）', value: '证件过期' },
+  { label: '资质证书过期', value: '资质证书过期' },
   { label: '食材过期预警', value: '食材过期预警' },
   { label: '日常行为AI预警', value: '日常行为AI预警' },
   { label: '环境监测异常', value: '环境监测异常' },
   { label: '农残检测', value: '农残检测' },
   { label: '晨检异常', value: '晨检异常' },
-  { label: '健康证到期', value: '健康证到期' },
   { label: '设备安全异常', value: '设备安全异常' },
   { label: '消毒管理', value: '消毒管理' },
 ] as const;
@@ -206,8 +205,14 @@ async function handleOne(row: any) {
   if (t.includes('农残')) { router.push({ path: '/daily-op/pesticide-tests' }); return; }
   if (t.includes('设备安全')) { router.push({ path: '/daily-op/device-safety' }); return; }
   if (t.includes('环境')) { router.push({ path: '/daily-op/environment' }); return; }
-  if (t.includes('健康证')) { router.push({ path: '/hr/staff' }); return; }
-  if (t.includes('证件过期')) { router.push({ path: '/hr/canteen-licenses' }); return; }
+  if (t.includes('资质证书过期')) {
+    if ((row as any).origType && String((row as any).origType).includes('健康证')) {
+      router.push({ path: '/hr/staff' });
+    } else {
+      router.push({ path: '/hr/canteen-licenses' });
+    }
+    return;
+  }
 }
 function doExport() {
   const rows = warnRows.value.map((r) => ({ id: r.id, type: r.type, detail: r.detail || '', at: dateOnly(r.at), status: r.status }));
@@ -283,6 +288,8 @@ async function load() {
       canteenId: canteenId.value,
     } as any);
     let rows = (alerts.items || []) as Array<any>;
+    // 合并后端“证件过期/健康证到期”为统一类型“资质证书过期”
+    rows = rows.map((r) => ({ ...r, type: (r.type === '证件过期' || r.type === '健康证到期') ? '资质证书过期' : r.type }));
     if (Array.isArray(typeLabels.value) && typeLabels.value.length) {
       const selValues = typeLabels.value
         .map((lab) => TYPE_ENUM.find((t) => t.label === lab)?.value)

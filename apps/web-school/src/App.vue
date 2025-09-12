@@ -12,7 +12,7 @@
           <el-icon><component :is="collapsed ? Expand : Fold" /></el-icon>
         </el-button>
         <div class="app-logo" @click="go('/overview')">
-          <el-icon class="logo-icon"><House /></el-icon>
+          <img class="cpt-logo" src="./assets/img/cpt.png" alt="CPT" />
           <span class="logo-text">智慧食安</span>
           <span class="school" v-if="schoolName">｜ {{ schoolName }}</span>
         </div>
@@ -66,7 +66,7 @@
             <el-menu-item v-if="has('bright.live')" index="/bright-kitchen/live"><el-icon><VideoCamera /></el-icon><span>实时视频</span></el-menu-item>
             <el-menu-item v-if="has('bright.ai-events')" index="/ai/events"><el-icon><Camera /></el-icon><span>AI 违规抓拍明细</span></el-menu-item>
             <el-menu-item v-if="has('bright.playback')" index="/bright-kitchen/playback"><el-icon><VideoPlay /></el-icon><span>视频回放</span></el-menu-item>
-            <el-menu-item v-if="has('bright.snapshots')" index="/bright-kitchen/snapshots"><el-icon><Picture /></el-icon><span>快照留存</span></el-menu-item>
+            <!-- <el-menu-item v-if="has('bright.snapshots')" index="/bright-kitchen/snapshots"><el-icon><Picture /></el-icon><span>快照留存</span></el-menu-item> -->
           </el-sub-menu>
           <el-sub-menu v-if="hasAny(['daily.morning','daily.sampling','daily.disinfection','daily.environment','daily.pesticide','daily.waste','daily.device-safety'])" index="daily">
             <template #title>
@@ -321,9 +321,9 @@ body {
 .collapse-btn { padding: 4px; }
 .collapse-btn .el-icon { color: #606266; }
 .app-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; }
-.app-logo .logo-icon { color: var(--el-color-primary); }
 .app-logo .logo-text { letter-spacing: .3px; }
 .app-logo .school { color: #909399; font-weight: 500; }
+.cpt-logo { height: 18px; width: auto; display: block; }
 .header-right { display: flex; align-items: center; gap: 8px; }
 .header-right .user-entry { display:flex; align-items:center; gap:6px; cursor:pointer; color:#303133 }
 

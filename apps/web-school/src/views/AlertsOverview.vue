@@ -259,10 +259,15 @@ function resolveDateRange(): { start?: string; end?: string } {
   return { start: toISO(s), end: toISO(e) };
 }
 
-function recomputeSummary(rows: Array<{ type: string }>) {
+function recomputeSummary(rows: Array<{ type?: string }>) {
   const map = new Map<string, number>();
-  rows.forEach((r) => map.set(r.type, (map.get(r.type) || 0) + 1));
-  summary.value = Array.from(map.entries()).map(([name, count]) => ({ name, count }));
+  rows.forEach((r) => {
+    const key = (r.type && String(r.type).trim()) || '其他';
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+  summary.value = Array.from(map.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 async function load() {
@@ -287,8 +292,16 @@ async function load() {
     if (canteenId.value) rows = rows.filter((r) => !('canteenId' in r) || r.canteenId === canteenId.value);
     warnRows.value = rows as any;
     recomputeSummary(rows as any);
-    const today = new Date().toISOString().slice(0,10);
-    todayTotal.value = warnRows.value.filter((x) => String(x.at||'').slice(0,10) === today).length;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const d = new Date();
+    const todayLocal = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    todayTotal.value = warnRows.value.filter((x) => {
+      try {
+        const dt = new Date(String(x.at || ''));
+        const ds = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+        return ds === todayLocal;
+      } catch { return false; }
+    }).length;
   } finally {
     loading.value = false;
   }

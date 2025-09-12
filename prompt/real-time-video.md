@@ -10,7 +10,7 @@
 	•	播放器：优先 HLS（m3u8）或 FLV。若只拿到 RTSP，由后端 /streams/play 转换为 HLS/FLV（可用 Mock/转发服务），前端自动选择可用源。
 	•	鉴权：与项目现有 JWT 体系一致；接口走 services/gateway-service 反向代理（或 axios 直连网关，按项目既有风格）。
 	•	第三方上游接口（已有）：http://trustivs.biokee.com/gatewayGBS/openApi/getCameraByCompany
-	•	请求 Header：time=<毫秒时间戳>、uuid=cpt；业务固定账号：STANDTRUST/12345678，在 TokenService 中换取/刷新 token（已在项目内或本次完善）。
+	•	请求 Header：time=<毫秒时间戳>、uuid=cpt；业务固定账号：CPT/123456，在 TokenService 中换取/刷新 token（已在项目内或本次完善）。
 	•	固定请求参数：fthirdcomnum=cpt0904、deviceSn=HQDZKFGBDJGCJ0017。
 	•	列表展示字段：摄像头名称取返回值的 fname。
 	•	页面要求：删除“输入单位ID查询”组件；当前单位固定为“北京康比特体育科技股份有限公司”。
@@ -18,8 +18,8 @@
 
 ylt_baseurl=http://trustivs.biokee.com
 ylt_uuid=cpt
-ylt_account=STANDTRUST
-ylt_password=12345678
+ylt_account=CPT
+ylt_password=123456
 ylt_thirdcom=cpt0904
 ylt_device_sn=HQDZKFGBDJGCJ0017
 

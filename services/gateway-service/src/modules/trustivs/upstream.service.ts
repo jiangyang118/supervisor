@@ -22,11 +22,11 @@ export class TrustivsUpstreamService {
     const envToken = this.getEnvToken();
     if (!force && envToken) return envToken;
     // Build from ylt_* or TRUSTIVS_* env
-    const acc = process.env.ylt_account || process.env.TRUSTIVS_ACCOUNT || 'STANDTRUST';
+    const acc = process.env.ylt_account || process.env.TRUSTIVS_ACCOUNT || 'CPT';
     const pwdMd5Env = process.env.ylt_password_md5 || process.env.TRUSTIVS_PASSWORD_MD5 || '';
     let fpwd = pwdMd5Env;
     if (!fpwd) {
-      const raw = process.env.ylt_password || process.env.TRUSTIVS_PASSWORD || '12345678';
+      const raw = process.env.ylt_password || process.env.TRUSTIVS_PASSWORD || '123456';
       fpwd = crypto.createHash('md5').update(raw).digest('hex');
     }
     const body = { fnumber: acc, fpwd };

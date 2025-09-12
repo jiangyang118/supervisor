@@ -21,7 +21,7 @@ export class TrustivsConfigService {
 
   constructor() {
     console.log('999',process.env.ylt_baseurl )
-    this.baseURL = process.env.ylt_baseurl || process.env.TRUSTIVS_BASE || 'http://127.0.0.1:9086';
+    this.baseURL = process.env.ylt_baseurl || 'http://127.0.0.1:9086';
     // Warm up token in background and schedule refresh to avoid per-request fetching
     this.ensureToken().catch(() => {});
     this.scheduleTokenRefresh();
@@ -66,11 +66,11 @@ export class TrustivsConfigService {
     if (!force && TrustivsConfigService.tokenCache && TrustivsConfigService.tokenCache.expiresAt > now) {
       return TrustivsConfigService.tokenCache.token;
     }
-    const acc = process.env.ylt_account || process.env.TRUSTIVS_ACCOUNT || 'CPT';
-    const pwdMd5Env = process.env.ylt_password_md5 || process.env.TRUSTIVS_PASSWORD_MD5 || '';
+    const acc = process.env.ylt_account || 'CPT';
+    const pwdMd5Env = process.env.ylt_password_md5 || '';
     let fpwd = pwdMd5Env;
     if (!fpwd) {
-      const raw = process.env.ylt_password || process.env.TRUSTIVS_PASSWORD || '123456';
+      const raw = process.env.ylt_password || '123456';
       fpwd = crypto.createHash('md5').update(raw).digest('hex');
     }
     try {

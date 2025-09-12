@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import fetch from 'node-fetch';
 import crypto from 'crypto';
 import { logInfo, logError } from '../../common/file-logger';
+import { getTraceId } from '../../common/trace';
 
 type ReqInit = {
   method: string;
@@ -27,6 +28,14 @@ export class TrustivsConfigService {
     this.scheduleTokenRefresh();
   }
 
+  private maskHeaders(h: Record<string, any> | undefined) {
+    const o: Record<string, any> = {};
+    for (const [k, v] of Object.entries(h || {})) o[k] = v;
+    if (o['token']) o['token'] = '***';
+    if (o['authorization']) o['authorization'] = '***';
+    return o;
+  }
+
   private scheduleTokenRefresh() {
     try { if (this.refreshTimer) clearInterval(this.refreshTimer as any); } catch {}
     const minutes = Number(process.env.YLT_TOKEN_REFRESH_MINUTES || process.env.ylt_token_refresh_minutes || 1440); // default 1 day
@@ -43,9 +52,10 @@ export class TrustivsConfigService {
   private async rawFetch(method: string, path: string, body?: any) {
     const url = this.baseURL.replace(/\/$/, '') + (path.startsWith('/') ? path : '/' + path);
     const headers: Record<string, string> = { 'Content-Type': 'application/json', time: String(Date.now()), uuid: process.env.ylt_uuid || 'cpt' };
+    const traceId = getTraceId() || Math.random().toString(36).slice(2, 12);
     const started = Date.now();
     this.logger.log(`REQUEST ${method.toUpperCase()} ${url} (raw)`);
-    logInfo('trustivs.request', { method: method.toUpperCase(), url, headers, body });
+    logInfo('trustivs.request', { traceId, method: method.toUpperCase(), url, headers: this.maskHeaders(headers), body });
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), this.timeoutMs);
     try {
@@ -54,7 +64,18 @@ export class TrustivsConfigService {
       const tookMs = Date.now() - started;
       const resHeaders = (() => { try { return Object.fromEntries((res.headers as any).entries()); } catch { return {}; } })();
       this.logger.log(`RESPONSE ${method.toUpperCase()} ${url} ${res.status} ${tookMs}ms (raw)`);
-      logInfo('trustivs.response', { url, status: res.status, tookMs, headers: resHeaders, body: text });
+      logInfo('trustivs.response', { traceId, url, status: res.status, tookMs, headers: resHeaders, body: text, attempt: 1 });
+      if (res.status >= 500) {
+        logError('trustivs.chain', {
+          traceId,
+          url,
+          method: method.toUpperCase(),
+          tookMs,
+          attempt: 1,
+          request: { headers: this.maskHeaders(headers), body },
+          response: { status: res.status, headers: resHeaders, body: text },
+        });
+      }
       let json: any = undefined;
       try { json = JSON.parse(text); } catch {}
       return { status: res.status, text, json };
@@ -108,8 +129,9 @@ export class TrustivsConfigService {
     const url = this.baseURL.replace(/\/$/, '') + (init.path.startsWith('/') ? init.path : '/' + init.path) + this.qs(init.query);
     let headers = await this.buildHeaders(init.headers);
     const started = Date.now();
+    const traceId = getTraceId() || Math.random().toString(36).slice(2, 12);
     this.logger.log(`REQUEST ${init.method.toUpperCase()} ${url}`);
-    logInfo('trustivs.request', { method: init.method.toUpperCase(), url, headers, body: init.body });
+    logInfo('trustivs.request', { traceId, method: init.method.toUpperCase(), url, headers: this.maskHeaders(headers), body: init.body });
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), this.timeoutMs);
     try {
@@ -128,7 +150,18 @@ export class TrustivsConfigService {
       let tookMs = Date.now() - started;
       this.logger.log(`RESPONSE ${init.method.toUpperCase()} ${url} ${res.status} ${tookMs}ms`);
       let resHeaders = (() => { try { return Object.fromEntries((res.headers as any).entries()); } catch { return {}; } })();
-      logInfo('trustivs.response', { url, status: res.status, tookMs, headers: resHeaders, body: text });
+      logInfo('trustivs.response', { traceId, url, status: res.status, tookMs, headers: resHeaders, body: text, attempt: 1 });
+      if (res.status >= 500) {
+        logError('trustivs.chain', {
+          traceId,
+          url,
+          method: init.method.toUpperCase(),
+          tookMs,
+          attempt: 1,
+          request: { headers: this.maskHeaders(headers), body: init.body },
+          response: { status: res.status, headers: resHeaders, body: text },
+        });
+      }
       let json: any = undefined;
       try { json = JSON.parse(text); } catch {}
 
@@ -144,7 +177,19 @@ export class TrustivsConfigService {
           tookMs = Date.now() - started2;
           resHeaders = (() => { try { return Object.fromEntries((res.headers as any).entries()); } catch { return {}; } })();
           this.logger.log(`RESPONSE(retry) ${init.method.toUpperCase()} ${url} ${res.status} ${tookMs}ms`);
-          logInfo('trustivs.response', { url, status: res.status, tookMs, headers: resHeaders, body: text });
+          logInfo('trustivs.response', { traceId, url, status: res.status, tookMs, headers: resHeaders, body: text, attempt: 2, retry: true });
+          if (res.status >= 500) {
+            logError('trustivs.chain', {
+              traceId,
+              url,
+              method: init.method.toUpperCase(),
+              tookMs,
+              attempt: 2,
+              request: { headers: this.maskHeaders(headers), body: init.body },
+              response: { status: res.status, headers: resHeaders, body: text },
+              retry: true,
+            });
+          }
           try { json = JSON.parse(text); } catch { json = undefined; }
         }
       }

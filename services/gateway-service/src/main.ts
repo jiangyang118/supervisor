@@ -5,10 +5,20 @@ import { AppModule } from './modules/app.module';
 import { AppLogger } from './modules/app.logger';
 import { json, urlencoded } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { withTraceId } from './common/trace';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
   app.useLogger(new AppLogger());
+
+  // Bind traceId early for all requests (X-Trace-Id or generated)
+  const http = app.getHttpAdapter().getInstance();
+  http.use((req: any, _res: any, next: any) => {
+    const incoming = (req.headers['x-trace-id'] as string) || (req.headers['traceid'] as string) || '';
+    const traceId = incoming || Math.random().toString(36).slice(2, 12);
+    req.traceId = traceId;
+    withTraceId(traceId, () => next());
+  });
 
   // Increase body size limits to support base64 image uploads
   const limitMb = Number(process.env.BODY_LIMIT_MB || process.env.UPLOAD_LIMIT_MB || 10);
@@ -17,7 +27,6 @@ async function bootstrap() {
   app.use(urlencoded({ limit, extended: true }));
 
   // Normalize legacy frontend prefixes: strip leading /api for all routes to be backward-compatible
-  const http = app.getHttpAdapter().getInstance();
   http.use((req: any, _res: any, next: any) => {
     const url: string = req.url || '';
     if (url.startsWith('/api/')) req.url = url.replace(/^\/api\//, '/');

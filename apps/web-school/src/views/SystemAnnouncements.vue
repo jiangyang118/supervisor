@@ -21,7 +21,9 @@
     <el-table :data="rows"  border>
       <el-table-column prop="id" label="ID" width="120" />
       <el-table-column prop="title" label="标题" />
-      <el-table-column prop="at" label="时间" width="180" />
+      <el-table-column label="时间" width="140">
+        <template #default="{ row }">{{ dateOnly(row.at) }}</template>
+      </el-table-column>
       <el-table-column label="附件" width="260"
         ><template #default="{ row }">
           <span v-if="!(row.attachments || []).length">-</span>
@@ -44,6 +46,7 @@
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
 import { api } from '../services/api';
+import { dateOnly } from '../utils/datetime';
 const form = reactive({ title: '', content: '' });
 const rows = ref<any[]>([]);
 const attName = ref('');

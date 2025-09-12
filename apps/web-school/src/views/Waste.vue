@@ -35,7 +35,9 @@
     </el-form>
     <el-table :data="rows"  border>
       <el-table-column prop="id" label="ID" width="140" />
-      <el-table-column prop="date" label="日期" width="120" />
+      <el-table-column label="日期" width="120">
+        <template #default="{ row }">{{ dateOnly(row.date) }}</template>
+      </el-table-column>
       <el-table-column prop="canteenName" label="所属食堂" min-width="160" />
       <el-table-column prop="category" label="种类" />
       <el-table-column prop="amount" label="数量(kg)" width="140" />
@@ -116,6 +118,7 @@
 import { onMounted, reactive, ref, onBeforeUnmount } from 'vue';
 import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
+import { dateOnly } from '../utils/datetime';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getCurrentSchoolIdNum } from '../utils/school';
 type Category = { id: string; name: string; enabled: boolean } | string;
@@ -147,7 +150,7 @@ const applyFilters = async () => {
   const res = await api.wasteList(params);
   rows.value = res.items.map((r: any) => ({
     id: r.id,
-    date: r.date,
+    date: dateOnly(r.date),
     canteenName: r.canteenName || '-',
     category: r.category,
     amount: r.amount,

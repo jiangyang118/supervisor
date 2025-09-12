@@ -33,58 +33,7 @@ import { computed, ref, watch } from 'vue';
 type MenuNode = { id: string; label: string; children?: MenuNode[] };
 
 const defaultMenus: MenuNode[] = [
-  { id: 'home', label: '首页', children: [
-    { id: 'home_overview', label: '总览' },
-    { id: 'home_board', label: '数据看板' },
-    { id: 'home_warning', label: '预警概览' },
-  ]},
-  { id: 'check', label: '智能检查管理', children: [
-    { id: 'check_ai', label: 'AI 违规抓拍明细' },
-    { id: 'check_stat', label: '行为统计与导出' },
-  ]},
-  { id: 'video', label: '互联网+明厨亮灶', children: [
-    { id: 'video_live', label: '实时视频' },
-    { id: 'video_replay', label: '视频回放' },
-    { id: 'video_snapshot', label: '快照留存' },
-    { id: 'video_nvr', label: '摄像头/NVR管理' },
-  ]},
-  { id: 'daily', label: '日常运营管理', children: [
-    { id: 'daily_morning', label: '晨检管理' },
-    { id: 'daily_sample', label: '留样管理' },
-    { id: 'daily_residue', label: '农残快检管理' },
-    { id: 'daily_disinfection', label: '消毒管理' },
-    { id: 'daily_waste', label: '废弃物管理' },
-    { id: 'daily_hygiene', label: '卫生管理' },
-  ]},
-  { id: 'store', label: '出入库管理', children: [
-    { id: 'store_goods', label: '商品管理' },
-    { id: 'store_in', label: '入库登记' },
-    { id: 'store_out', label: '出库登记' },
-    { id: 'store_stock', label: '库存与盘点' },
-    { id: 'store_ticket', label: '索票索证管理' },
-    { id: 'store_supplier', label: '供应商管理' },
-    { id: 'store_warehouse', label: '仓库信息管理' },
-  ]},
-  { id: 'hr', label: '人事管理', children: [
-    { id: 'hr_license', label: '人员健康证' },
-    { id: 'hr_training', label: '培训课程' },
-    { id: 'hr_exam', label: '考试管理' },
-    { id: 'hr_staff', label: '人员管理' },
-  ]},
   
-  { id: 'public', label: '公示与反馈', children: [
-    { id: 'public_feedback', label: '公众反馈处理' },
-    { id: 'public_config', label: '公示内容配置' },
-    { id: 'public_info', label: '食安资讯发布' },
-    { id: 'public_notice', label: '公告公文管理' },
-    { id: 'public_waste', label: '食品浪费分析' },
-  ]},
-  { id: 'sys', label: '系统配置', children: [
-    { id: 'sys_canteen', label: '食堂信息维护+食堂资质' },
-    { id: 'sys_role', label: '用户管理' },
-    { id: 'sys_audit', label: '关联监管端审核' },
-    { id: 'sys_mobile', label: '移动端扫码' },
-  ]},
 ];
 
 const props = defineProps<{

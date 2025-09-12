@@ -4,9 +4,9 @@
       <div class="header">
         <span>留样管理</span>
         <div class="actions">
-          <el-button type="primary" @click="addSmart">智能留样</el-button>
+          <el-button type="primary" @click="addSmart">同步设备数据</el-button>
           <el-button @click="manualVisible=true">手动记录</el-button>
-          <el-button @click="addCleanup">清理记录</el-button>
+          <el-button @click="exportAll">导出</el-button>
         </div>
       </div>
     </template>
@@ -16,11 +16,17 @@
       <el-table-column prop="meal" label="餐次" width="100" />
       <el-table-column prop="canteen" label="食堂" width="160" />
       <el-table-column prop="by" label="留样人" width="120" />
+      <el-table-column label="留样时间" width="180">
+        <template #default="{ row }">{{ row.createdAt || (row.items && row.items[0] ? row.items[0].at : '') }}</template>
+      </el-table-column>
+      <el-table-column label="出锅时间" width="140">
+        <template #default="{ row }">{{ (row.items && row.items[0] && row.items[0].cookTime) ? row.items[0].cookTime : '' }}</template>
+      </el-table-column>
       <el-table-column prop="linkedCount" label="关联菜品数" width="120" />
       <el-table-column label="操作" min-width="220">
         <template #default="{ row }">
-          <el-button  @click="viewBatch(row)">查看详情</el-button>
-          <el-button  @click="exportBatch(row)">导出</el-button>
+          <el-button text @click="viewBatch(row)">查看</el-button>
+          
         </template>
       </el-table-column>
     </el-table>
@@ -34,6 +40,14 @@
       </el-form-item>
       <el-form-item label="重量(g)" required>
         <el-input-number v-model="manualForm.weight" :min="1" />
+      </el-form-item>
+      <el-form-item label="出锅时间">
+        <el-time-picker
+          v-model="manualForm.cookTime"
+          placeholder="选择时间"
+          format="HH:mm:ss"
+          value-format="HH:mm:ss"
+        />
       </el-form-item>
       <el-form-item label="上传图片" required>
         <el-upload
@@ -83,7 +97,12 @@
             </template>
           </el-table-column>
           <el-table-column prop="slot" label="格口" width="80" />
-          <el-table-column prop="at" label="时间" width="180" />
+          <el-table-column label="日期" width="140">
+            <template #default="{ row }">{{ dateOnly(row.at) }}</template>
+          </el-table-column>
+          <el-table-column label="出锅时间" width="120">
+            <template #default="{ row }">{{ row.cookTime || '-' }}</template>
+          </el-table-column>
           <el-table-column v-if="current.type==='cleanup'" prop="photos" label="清理照片" />
         </el-table>
       </div>
@@ -115,6 +134,7 @@ import { ElMessage } from 'element-plus';
 import { reactive, ref, onMounted } from 'vue';
 import { exportCsv } from '../utils/export';
 import { useAuthStore } from '../stores/auth';
+import { dateOnly } from '../utils/datetime';
 import { api } from '../services/api';
 import { getCurrentSchoolIdNum } from '../utils/school';
 
@@ -125,8 +145,9 @@ type Batch = {
   meal: '早餐' | '午餐' | '晚餐';
   canteen: string;
   by: string;
+  createdAt?: string; // 留样时间（创建时间）
   linkedCount: number;
-  items: Array<{ sample: string; weight?: number; imageUrl?: string; slot?: string; at?: string; photos?: string }>; // photos for cleanup records
+  items: Array<{ sample: string; weight?: number; imageUrl?: string; slot?: string; at?: string; cookTime?: string; photos?: string }>; // photos for cleanup records
 };
 
 const auth = useAuthStore();
@@ -134,7 +155,7 @@ const batches = ref<Batch[]>([]);
 const detailVisible = ref(false);
 const current = ref<Batch | null>(null);
 const manualVisible = ref(false);
-const manualForm = reactive<{ sample: string; weight: number; imageUrl: string; by: string; canteenId?: number | string }>({ sample: '', weight: 100, imageUrl: '', by: '', canteenId: undefined });
+const manualForm = reactive<{ sample: string; weight: number; imageUrl: string; by: string; canteenId?: number | string; cookTime?: string }>({ sample: '', weight: 100, imageUrl: '', by: '', canteenId: undefined, cookTime: '' });
 const canteens = ref<Array<{ id: number|string; name: string }>>([]);
 const cleanupForm = reactive({ by: '', photos: '' });
 
@@ -152,26 +173,22 @@ function persist() { try { localStorage.setItem('sampling_batches', JSON.stringi
 function restore() { try { const s = localStorage.getItem('sampling_batches'); if (s) batches.value = JSON.parse(s); } catch {} }
 
 function addSmart() {
-  ElMessage({ message: '暂未实现', type: 'info' });
+  ElMessage({ message: '暂未连接设备', type: 'info' });
   // const by = auth.user?.name || '操作员';
   // const count = 1 + Math.floor(Math.random() * 3);
   // const items = Array.from({ length: count }).map((_, i) => ({ sample: `菜品${i+1}`, weight: 100 + i * 20, imageUrl: '', slot: String(1 + i), at: new Date().toLocaleString() }));
-  // batches.value.unshift({ id: uid(), type: 'smart', date: todayStr(), meal: mealNow(), canteen: canteenName(), by, linkedCount: count, items });
+  // batches.value.unshift({ id: uid(), type: 'smart', date: todayStr(), meal: mealNow(), canteen: canteenName(), by, createdAt: new Date().toLocaleString(), linkedCount: count, items });
   // persist();
 }
 function saveManual() {
   if (!manualForm.sample || !manualForm.imageUrl || !manualForm.by || !manualForm.weight || !manualForm.canteenId) { return; }
   const canteen = canteens.value.find(c=> String(c.id)===String(manualForm.canteenId))?.name || canteenName();
-  batches.value.unshift({ id: uid(), type: 'manual', date: todayStr(), meal: mealNow(), canteen, by: manualForm.by, linkedCount: 1, items: [ { sample: manualForm.sample, weight: manualForm.weight, imageUrl: manualForm.imageUrl, at: new Date().toLocaleString() } ] });
+  batches.value.unshift({ id: uid(), type: 'manual', date: todayStr(), meal: mealNow(), canteen, by: manualForm.by, createdAt: new Date().toLocaleString(), linkedCount: 1, items: [ { sample: manualForm.sample, weight: manualForm.weight, imageUrl: manualForm.imageUrl, at: new Date().toLocaleString(), cookTime: manualForm.cookTime || '' } ] });
   persist();
   manualVisible.value = false;
-  manualForm.sample=''; manualForm.imageUrl=''; manualForm.by=''; manualForm.weight=100; manualForm.canteenId = undefined;
+  manualForm.sample=''; manualForm.imageUrl=''; manualForm.by=''; manualForm.weight=100; manualForm.canteenId = undefined; manualForm.cookTime='';
 }
-function addCleanup() {
-  const by = auth.user?.name || '操作员';
-  batches.value.unshift({ id: uid(), type: 'cleanup', date: todayStr(), meal: mealNow(), canteen: canteenName(), by, linkedCount: 0, items: [] });
-  persist();
-}
+
 function viewBatch(b: Batch) {
   current.value = JSON.parse(JSON.stringify(b));
   cleanupForm.by = b.by || '';
@@ -179,8 +196,21 @@ function viewBatch(b: Batch) {
   detailVisible.value = true;
 }
 function exportBatch(b: Batch) {
-  const data = [{ date: b.date, meal: b.meal, canteen: b.canteen, by: b.by, linkedCount: b.linkedCount }];
-  exportCsv(`留样-${b.date}-${b.meal}`, data, { date: '留样日期', meal: '餐次', canteen: '食堂', by: '留样人', linkedCount: '关联菜品数' });
+  const firstItem = (b.items && b.items[0]) || {} as any;
+  const data = [{
+    date: b.date,
+    meal: b.meal,
+    canteen: b.canteen,
+    by: b.by,
+    createdAt: b.createdAt || firstItem.at || '',
+    cookTime: firstItem.cookTime || '',
+    linkedCount: b.linkedCount,
+  }];
+  exportCsv(
+    `留样-${b.date}-${b.meal}`,
+    data,
+    { date: '留样日期', meal: '餐次', canteen: '食堂', by: '留样人', createdAt: '留样时间', cookTime: '出锅时间', linkedCount: '关联菜品数' },
+  );
 }
 function confirmCleanup() {
   if (!current.value) return;
@@ -193,6 +223,30 @@ function confirmCleanup() {
   const idx = batches.value.findIndex((x) => x.id === current.value!.id);
   if (idx >= 0) batches.value[idx] = JSON.parse(JSON.stringify(current.value));
   persist();
+}
+
+function exportAll() {
+  const data = batches.value.map((b) => {
+    const first: any = (b.items && b.items[0]) || {};
+    return {
+      date: b.date,
+      meal: b.meal,
+      canteen: b.canteen,
+      by: b.by,
+      createdAt: b.createdAt || first.at || '',
+      cookTime: first.cookTime || '',
+      linkedCount: b.linkedCount,
+    };
+  });
+  exportCsv('留样记录', data, {
+    date: '留样日期',
+    meal: '餐次',
+    canteen: '食堂',
+    by: '留样人',
+    createdAt: '留样时间',
+    cookTime: '出锅时间',
+    linkedCount: '关联菜品数',
+  });
 }
 
 onMounted(async () => {

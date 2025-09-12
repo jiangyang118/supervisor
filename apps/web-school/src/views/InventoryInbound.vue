@@ -12,7 +12,9 @@
     </template>
     <el-table :data="rows" border>
       <el-table-column prop="docNo" label="入库单号" width="180" />
-      <el-table-column prop="date" label="入库日期" width="160" />
+      <el-table-column label="入库日期" width="160">
+        <template #default="{ row }">{{ dateOnly(row.date) }}</template>
+      </el-table-column>
       <el-table-column label="食堂" min-width="160"><template #default="{ row }">{{ canteenName(row.canteenId) }}</template></el-table-column>
       <el-table-column label="供应商" min-width="160"><template #default="{ row }">{{ supplierName(row.supplierId) }}</template></el-table-column>
       <el-table-column label="入库商品" min-width="240">
@@ -25,8 +27,7 @@
       <el-table-column prop="operator" label="操作人" width="140" />
       <el-table-column label="操作" width="260">
         <template #default="{ row }">
-          <el-button  @click="openDetail(row)">查看详情</el-button>
-          <el-button  @click="onExportDoc(row)">导出</el-button>
+          <el-button text  @click="openDetail(row)">查看详情</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -36,7 +37,7 @@
     <div v-if="detail.head">
       <el-descriptions :column="2"  border>
         <el-descriptions-item label="入库单号">{{ detail.head.docNo }}</el-descriptions-item>
-        <el-descriptions-item label="入库日期">{{ String(detail.head.date||'').slice(0,10) }}</el-descriptions-item>
+        <el-descriptions-item label="入库日期">{{ dateOnly(detail.head.date) }}</el-descriptions-item>
         <el-descriptions-item label="食堂">{{ canteenName(detail.head.canteenId) }}</el-descriptions-item>
         <el-descriptions-item label="供应商">{{ supplierName(detail.head.supplierId) }}</el-descriptions-item>
         <el-descriptions-item label="操作人">{{ detail.head.operator || '-' }}</el-descriptions-item>
@@ -46,7 +47,9 @@
         <el-table-column prop="productName" label="商品" />
         <el-table-column prop="qty" label="数量" width="120" />
         <el-table-column prop="unitPrice" label="单价(元)" width="140" />
-        <el-table-column prop="prodDate" label="生产日期" width="160" />
+        <el-table-column label="生产日期" width="160">
+          <template #default="{ row }">{{ dateOnly(row.prodDate) }}</template>
+        </el-table-column>
         <el-table-column prop="shelfLifeDays" label="保质期(天)" width="140" />
         <el-table-column label="小计(元)" width="140">
           <template #default="{ row }">{{ (((row.qty||0)*(row.unitPrice||0)) || 0).toFixed(2) }}</template>
@@ -177,6 +180,7 @@ import { api } from '../services/api';
 import { ElMessage } from 'element-plus';
 import { getCurrentSchoolId } from '../utils/school';
 import { Plus } from '@element-plus/icons-vue';
+import { dateOnly } from '../utils/datetime';
 const rows = ref<any[]>([]);
 const products = ref<any[]>([]);
 const suppliers = ref<any[]>([]);

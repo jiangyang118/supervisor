@@ -7,7 +7,9 @@
     >
     <el-table :data="rows"  border height="calc(100vh - 260px)">
       <el-table-column prop="title" label="标题" />
-      <el-table-column prop="at" label="发布时间" width="200" />
+      <el-table-column label="发布日期" width="140">
+        <template #default="{ row }">{{ dateOnly(row.at) }}</template>
+      </el-table-column>
       <el-table-column label="操作" width="140"
         ><template #default="{ row }"
           ><el-button  @click="view(row)">查看</el-button></template
@@ -17,7 +19,7 @@
   </el-card>
   <el-dialog v-model="dlg" title="资讯详情" width="720px">
     <h3>{{ detail?.title }}</h3>
-    <div style="color: #666; margin-bottom: 8px">发布时间：{{ detail?.at }}</div>
+    <div style="color: #666; margin-bottom: 8px">发布时间：{{ dateOnly(detail?.at) }}</div>
     <div style="white-space: pre-wrap">{{ detail?.content }}</div>
     <template #footer><el-button @click="dlg = false">关闭</el-button></template>
   </el-dialog>

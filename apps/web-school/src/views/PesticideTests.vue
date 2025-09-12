@@ -4,15 +4,16 @@
       <div style="display: flex; align-items: center; justify-content: space-between">
         <span>农残快检管理</span>
         <div>
-          <el-button @click="onDeviceConnect">设备接入</el-button>
+          <el-button @click="onDeviceConnect">同步设备数据</el-button>
           <el-button type="primary" @click="openCreate">手动录入</el-button>
-          <el-button @click="showExceptions">异常处置</el-button>
+          <el-button @click="onExportCsv">导出</el-button>
+          
         </div>
       </div>
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
-      <el-form-item label="关键词">
-        <el-input v-model="filters.q" placeholder="样品/检测仪" clearable />
+      <el-form-item label="检测样本">
+        <el-input v-model="filters.q" placeholder="请输入" clearable />
       </el-form-item>
       <el-form-item label="结果">
         <el-select v-model="filters.result" placeholder="全部" clearable style="width:120px">
@@ -39,9 +40,8 @@
       <el-table-column prop="tester" label="检测员" width="140" />
       <el-table-column label="操作" width="260">
         <template #default="{ row }">
-          <el-button  @click="viewDetail(row)">查看详情</el-button>
-          <el-button @click="onExportOne(row)">导出</el-button>
-          <el-button v-if="row.result==='不合格'" type="warning" @click="openMeasure(row)">异常处置</el-button>
+          <el-button text  @click="viewDetail(row)">查看</el-button>
+
         </template>
       </el-table-column>
     </el-table>
@@ -244,15 +244,19 @@ function formatTime(iso: string) {
 }
 
 function onExportCsv() {
-  exportCsv('农残快检', rows.value, {
-    id: 'ID',
-    sample: '样品',
-    device: '检测仪',
-    imageUrl: '图片',
-    result: '结果',
-    remark: '备注',
-    at: '时间',
-    measure: '处理措施',
+  const data = rows.value.map((r: any) => ({
+    date: String(r.at || '').slice(0, 10),
+    canteen: canteenName(r.canteenId),
+    sample: r.sample,
+    result: r.result,
+    tester: r.tester || '',
+  }));
+  exportCsv('农残快检', data, {
+    date: '检测日期',
+    canteen: '食堂',
+    sample: '检测样本',
+    result: '检测结果',
+    tester: '检测员',
   });
 }
 function onExportExceptions() {

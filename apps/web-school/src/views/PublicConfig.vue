@@ -24,8 +24,8 @@
     <el-table :data="auditRows"  border>
       <el-table-column prop="id" label="ID" width="120" />
       <el-table-column prop="by" label="操作人" width="120" />
-      <el-table-column label="时间" width="180">
-        <template #default="{ row }">{{ formatTime(row.at) }}</template>
+      <el-table-column label="日期" width="140">
+        <template #default="{ row }">{{ dateOnly(row.at) }}</template>
       </el-table-column>
       <el-table-column prop="changes" label="变更" />
     </el-table>
@@ -38,6 +38,7 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../services/api';
+import { dateOnly } from '../utils/datetime';
 import { getCurrentSchoolId } from '../utils/school';
 const cfg = reactive<any>({
   live: true,
@@ -63,13 +64,7 @@ async function openAudit() {
   auditRows.value = await api.publicConfigAudit(getCurrentSchoolId());
   auditDlg.value = true;
 }
-function formatTime(iso: string) {
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
-}
+// keep other non-list displays unchanged; list shows dateOnly
 onMounted(() => {
   load();
   const h = () => load();

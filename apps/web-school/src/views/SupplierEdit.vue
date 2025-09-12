@@ -70,7 +70,9 @@
             <el-table :data="summary.inbound"  border>
               <el-table-column prop="productId" label="商品ID" width="120" />
               <el-table-column prop="qty" label="数量" width="120" />
-              <el-table-column prop="at" label="时间" />
+              <el-table-column label="日期">
+                <template #default="{ row }">{{ dateOnly(row.at) }}</template>
+              </el-table-column>
             </el-table>
           </el-card>
         </el-col>
@@ -85,6 +87,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { api } from '../services/api';
 import { ElMessage } from 'element-plus';
 import { getCurrentSchoolId } from '../utils/school';
+import { dateOnly } from '../utils/datetime';
 
 const route = useRoute();
 const router = useRouter();

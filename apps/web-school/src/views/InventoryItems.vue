@@ -23,11 +23,10 @@
       </el-table-column>
       <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
-          <el-button  @click="edit(row)">编辑</el-button>
-          <el-button  @click="setCategory(row)">设置分类</el-button>
+          <el-button text  @click="edit(row)">编辑</el-button>
           <el-popconfirm title="确认删除该商品？" @confirm="remove(row)">
             <template #reference>
-              <el-button  type="danger">删除</el-button>
+              <el-button text type="danger">删除</el-button>
             </template>
           </el-popconfirm>
         </template>
@@ -120,9 +119,18 @@ async function onImportTemplate(opts: any) {
     const file: File = opts.file; const text = await file.text();
     const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
     if (!lines.length) return;
-    const header = lines.shift()!.split(',').map(s=>s.trim());
+    const rawHeader = lines.shift()!.split(',').map(s=>s.trim().replace(/^\ufeff/, ''));
+    // Map possible Chinese headers to internal keys
+    const keyMap: Record<string, string> = {
+      name: 'name', '商品名称': 'name',
+      unit: 'unit', '单位': 'unit',
+      category: 'category', '分类': 'category',
+      spec: 'spec', '规格': 'spec',
+      lastPrice: 'lastPrice', '最近进价': 'lastPrice',
+    };
+    const header = rawHeader.map(h => keyMap[h] || h);
     const items = lines.map(ln=>{
-      const cols = ln.split(','); const obj: any = {}; header.forEach((h,i)=>obj[h]= (cols[i]||'').trim());
+      const cols = ln.split(','); const obj: any = {}; header.forEach((h,i)=>{ if (!h) return; obj[h]= (cols[i]||'').trim(); });
       const lastPrice = obj.lastPrice ? Number(obj.lastPrice) : undefined;
       return { name: obj.name, unit: obj.unit, category: obj.category, spec: obj.spec, lastPrice };
     }).filter(it=>it.name && it.unit);
@@ -132,8 +140,9 @@ async function onImportTemplate(opts: any) {
 }
 
 function downloadTemplate() {
-  const header = ['name','unit','category','spec','lastPrice'];
-  const blob = new Blob(['\uFEFF' + header.join(',') + '\n'], { type: 'text/csv;charset=utf-8;' });
+  // 中文列名模板，兼容 Excel 打开
+  const headerZh = ['商品名称','单位','分类','规格','最近进价'];
+  const blob = new Blob(['\uFEFF' + headerZh.join(',') + '\n'], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = '商品导入模板.csv'; a.click(); URL.revokeObjectURL(url);
 }
 

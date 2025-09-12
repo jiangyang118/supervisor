@@ -82,7 +82,9 @@
         </template>
       </el-table-column>
       <el-table-column prop="detail" label="描述" min-width="260" show-overflow-tooltip />
-      <el-table-column prop="at" label="时间" width="200" />
+      <el-table-column label="日期" width="140">
+        <template #default="{ row }">{{ dateOnly(row.at) }}</template>
+      </el-table-column>
       <el-table-column label="操作" width="120" fixed="right">
         <template #default="{ row }">
           <el-button  :type="row.status === '未处理' ? 'primary' : 'default'" @click="handleOne(row)">
@@ -110,6 +112,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
 import { api } from '../services/api';
+import { dateOnly } from '../utils/datetime';
 import { getCurrentSchoolId } from '../utils/school';
 import { exportCsv } from '../utils/export';
 
@@ -181,7 +184,7 @@ async function handleOne(row: any) {
   }
 }
 function doExport() {
-  const rows = warnRows.value.map((r) => ({ id: r.id, type: r.type, detail: r.detail || '', at: fmt(r.at), status: r.status }));
+  const rows = warnRows.value.map((r) => ({ id: r.id, type: r.type, detail: r.detail || '', at: dateOnly(r.at), status: r.status }));
   exportCsv('预警概览', rows, { id: 'ID', type: '类型', detail: '描述', at: '时间', status: '状态' });
 }
 

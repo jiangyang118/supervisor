@@ -23,7 +23,7 @@
       </el-table-column>
       <el-table-column label="操作" width="160">
         <template #default="{ row }">
-          <el-button  @click="openStocktake(row)">盘点</el-button>
+          <el-button text @click="openStocktake(row)">盘点</el-button>
         </template>
       </el-table-column>
     </el-table>

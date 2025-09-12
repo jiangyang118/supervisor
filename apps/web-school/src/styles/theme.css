@@ -30,3 +30,21 @@ body {
   font-size: 18px;
   font-weight: 600;
 }
+
+/* Global override: make Element Plus text buttons flush without padding */
+.el-button.is-text,
+.el-button--text {
+  padding: 0 !important;
+}
+
+/* Operation column buttons: unify colors and spacing */
+.op-action { padding: 0 !important; }
+.op-action.op-primary { color: var(--el-color-primary) !important; }
+.op-action.op-success { color: var(--el-color-success) !important; }
+.op-action.op-warning { color: var(--el-color-warning) !important; }
+.op-action.op-info { color: var(--el-color-info) !important; }
+.op-action.op-danger,
+.el-button.is-text.el-button--danger,
+.el-button--text.el-button--danger {
+  color: var(--el-color-danger) !important;
+}

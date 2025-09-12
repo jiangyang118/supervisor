@@ -42,15 +42,17 @@ const routes: RouteRecordRaw[] = [
   { path: '/system/trustivs-test', component: () => import('../views/TrustivsTest.vue'), meta: { perms: ['system.*'] } },
 
   // Operational ledgers
-  { path: '/morning-check', component: () => import('../views/MorningCheck.vue'), meta: { perms: ['daily.*'] } },
-  { path: '/morning-check/detail', component: () => import('../views/MorningCheckDetail.vue'), meta: { perms: ['daily.*'] } },
-  { path: '/sampling/records', component: () => import('../views/SamplingRecords.vue'), meta: { perms: ['daily.*'] } },
-  { path: '/dine-with', component: () => import('../views/DineWith.vue'), meta: { perms: ['daily.*'] } },
-  { path: '/pesticide-tests', component: () => import('../views/PesticideTests.vue'), meta: { perms: ['daily.*'] } },
-  { path: '/disinfection', component: () => import('../views/Disinfection.vue'), meta: { perms: ['daily.*'] } },
-  { path: '/disinfection/detail', component: () => import('../views/DisinfectionDetail.vue'), meta: { perms: ['daily.*'] } },
-  { path: '/waste', component: () => import('../views/Waste.vue'), meta: { perms: ['daily.*'] } },
-  { path: '/device-safety', component: () => import('../views/DeviceSafety.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/daily-op/morning-check', component: () => import('../views/MorningCheck.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/daily-op/morning-check/detail', component: () => import('../views/MorningCheckDetail.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/daily-op/sampling', component: () => import('../views/SamplingRecords.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/daily-op/dine-with', component: () => import('../views/DineWith.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/daily-op/pesticide-tests', component: () => import('../views/PesticideTests.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/daily-op/disinfection', component: () => import('../views/Disinfection.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/daily-op/disinfection/detail', component: () => import('../views/DisinfectionDetail.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/daily-op/waste', component: () => import('../views/Waste.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/daily-op/device-safety', component: () => import('../views/DeviceSafety.vue'), meta: { perms: ['daily.*'] } },
+  { path: '/daily-op/environment', component: () => import('../views/EnvironmentMonitor.vue'), meta: { perms: ['daily.*'] } },
+
   // 卫生管理模块已下线
   { path: '/system/news', component: () => import('../views/SystemNews.vue'), meta: { perms: ['public.*'] } },
   
@@ -60,16 +62,15 @@ const routes: RouteRecordRaw[] = [
   { path: '/inventory/inbound', component: () => import('../views/InventoryInbound.vue'), meta: { perms: ['inventory.*'] } },
   { path: '/inventory/outbound', component: () => import('../views/InventoryOutbound.vue'), meta: { perms: ['inventory.*'] } },
   { path: '/inventory/stock', component: () => import('../views/InventoryStock.vue'), meta: { perms: ['inventory.*'] } },
-  { path: '/inventory/tickets', component: () => import('../views/InventoryTickets.vue'), meta: { perms: ['inventory.*'] } },
+  
   { path: '/inventory/additives', component: () => import('../views/InventoryAdditives.vue'), meta: { perms: ['inventory.*'] } },
-  { path: '/suppliers', component: () => import('../views/Suppliers.vue'), meta: { perms: ['inventory.*'] } },
-  { path: '/suppliers/new', component: () => import('../views/SupplierEdit.vue'), meta: { perms: ['inventory.*'] } },
-  { path: '/suppliers/edit', component: () => import('../views/SupplierEdit.vue'), meta: { perms: ['inventory.*'] } },
+  { path: '/hr/suppliers', component: () => import('../views/Suppliers.vue'), meta: { perms: ['inventory.*'] } },
+  { path: '/hr/suppliers/new', component: () => import('../views/SupplierEdit.vue'), meta: { perms: ['inventory.*'] } },
+  { path: '/hr/suppliers/edit', component: () => import('../views/SupplierEdit.vue'), meta: { perms: ['inventory.*'] } },
   // removed: warehouses management
   // removed: personnel certificates
   // Environment & devices
   
-  { path: '/environment/monitor', component: () => import('../views/EnvironmentMonitor.vue'), meta: { perms: ['daily.*'] } },
 
   // Public & waste
   { path: '/public-config', component: () => import('../views/PublicConfig.vue'), meta: { perms: ['system.*'] } },

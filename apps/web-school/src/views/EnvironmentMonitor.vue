@@ -4,11 +4,11 @@
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
         <span>环境监测管理</span>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <el-switch v-model="onlyAlerts" active-text="仅显示报警" />
+          <!-- <el-switch v-model="onlyAlerts" active-text="仅显示报警" />
           <el-switch v-model="simulate" active-text="模拟数据" @change="onSimChange" />
           <el-divider direction="vertical" />
           <el-button @click="refresh" type="primary">刷新</el-button>
-          <el-switch v-model="autoRefresh" active-text="自动刷新" />
+          <el-switch v-model="autoRefresh" active-text="自动刷新" /> -->
         </div>
       </div>
     </template>
@@ -104,7 +104,7 @@ const sensors = ref<Device[]>([]);
 const gasAndSmoke = ref<Device[]>([]);
 const autoRefresh = ref(true);
 const onlyAlerts = ref(false);
-const simulate = ref(false);
+const simulate = ref(true);
 let timer: any = null;
 
 type PanelItem = { id: string; title: string; value: string; alert: boolean; seriesKey: string; name?: string; location?: string; lastSeen?: string };
@@ -189,16 +189,73 @@ const chart = ref<HTMLCanvasElement|null>(null);
 function openHistory(p: any) { historyTitle.value = `${p.title} 历史趋势`; historyVisible.value = true; setTimeout(()=> drawChart(seriesMap[p.seriesKey] || []), 0); }
 function drawChart(series: number[]) {
   const cv = chart.value; if (!cv) return; const ctx = cv.getContext('2d')!; const w=cv.width, h=cv.height; ctx.clearRect(0,0,w,h);
+  // layout paddings
+  const padL = 46, padR = 12, padT = 12, padB = 36;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+
   // axes
-  ctx.strokeStyle='#ccc'; ctx.beginPath(); ctx.moveTo(40,h-30); ctx.lineTo(w-10,h-30); ctx.moveTo(40,10); ctx.lineTo(40,h-30); ctx.stroke();
-  const data = series.length? series: [0];
-  const min = Math.min(...data), max=Math.max(...data);
-  const range = (max-min) || 1;
-  ctx.strokeStyle='#409EFF'; ctx.beginPath();
-  data.forEach((v, i)=>{
-    const x = 40 + (w-60) * (i/(Math.max(1,data.length-1)));
-    const y = (h-30) - (h-50) * ((v-min)/range);
-    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  ctx.strokeStyle='#ccc'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(padL, h - padB); ctx.lineTo(w - padR, h - padB); // X axis
+  ctx.moveTo(padL, padT);     ctx.lineTo(padL, h - padB);     // Y axis
+  ctx.stroke();
+
+  const data = series.length ? series : [0];
+  const min = Math.min(...data), max = Math.max(...data);
+  const range = max - min || 1;
+
+  // ticks style
+  ctx.fillStyle = '#666';
+  ctx.font = '12px -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'middle';
+
+  // Y ticks (5 levels)
+  const yLevels = 5;
+  const yDecimals = range < 5 ? 1 : 0;
+  for (let i = 0; i <= yLevels; i++) {
+    const t = i / yLevels;
+    const val = min + (range * (1 - t));
+    const y = padT + innerH * t;
+    // grid
+    ctx.strokeStyle = i === yLevels ? '#ccc' : '#eee';
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(w - padR, y);
+    ctx.stroke();
+    // label
+    ctx.fillStyle = '#666';
+    ctx.fillText(val.toFixed(yDecimals), padL - 6, y);
+  }
+
+  // X ticks (0%,25%,50%,75%,100%)
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  const tickPos = [0, 0.25, 0.5, 0.75, 1];
+  const n = Math.max(1, data.length - 1);
+  tickPos.forEach((p) => {
+    const idx = Math.round(n * p);
+    const x = padL + innerW * (idx / n);
+    // grid line
+    ctx.strokeStyle = p === 0 ? '#ccc' : '#f0f0f0';
+    ctx.beginPath();
+    ctx.moveTo(x, padT);
+    ctx.lineTo(x, h - padB);
+    ctx.stroke();
+    // label: show 1-based index
+    ctx.fillStyle = '#666';
+    ctx.fillText(String(idx + 1), x, h - padB + 6);
+  });
+
+  // series line
+  ctx.strokeStyle = '#409EFF';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = padL + innerW * (i / Math.max(1, data.length - 1));
+    const y = padT + innerH * (1 - (v - min) / range);
+    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   });
   ctx.stroke();
 }

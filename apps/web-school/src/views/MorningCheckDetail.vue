@@ -27,7 +27,7 @@
           <el-tag v-else :type="row.attire==='正常' ? 'success' : 'danger'" effect="plain">{{ row.attire }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="来源" width="100"><template #default="{ row }">{{ row.source || '-' }}</template></el-table-column>
+      <!-- <el-table-column label="来源" width="100"><template #default="{ row }">{{ row.source || '-' }}</template></el-table-column> -->
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
           <el-tag v-if="row.status==='未检测'" type="info" effect="plain">未检测</el-tag>
@@ -66,11 +66,18 @@
           <el-radio label="异常" />
         </el-radio-group>
       </el-form-item>
+      <el-form-item label="卫生情况" required>
+        <el-radio-group v-model="manualForm.hygiene">
+          <el-radio label="正常" />
+          <el-radio label="异常" />
+        </el-radio-group>
+        <span class="form-hint">（指甲/戒指/胡须）</span>
+      </el-form-item>
       <el-form-item label="现场照片">
         <el-upload class="uploader" :show-file-list="false" :http-request="onUpload" :before-upload="beforeUpload" accept="image/*">
           <el-button>选择图片</el-button>
         </el-upload>
-        <el-image v-if="manualForm.photoUrl" :src="manualForm.photoUrl" style="width:120px;height:90px;object-fit:cover;margin-left:8px" />
+        <el-image v-if="manualForm.photoUrl" :src="manualForm.photoUrl" class="photo-preview" />
       </el-form-item>
     </el-form>
     <template #footer>
@@ -105,9 +112,10 @@ import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
 import { ElMessage } from 'element-plus';
 import { useRoute } from 'vue-router';
+import { getCurrentSchoolId } from '../utils/school';
 
 type Employee = { userId: string; name: string };
-type RecordItem = { userId: string; name: string; at: string; temp: number; attire: '正常'|'异常'; source: 'device'|'manual'; result: '正常'|'异常'; photoUrl?: string; handle?: { decision: 'allow'|'suspend'; note: string } };
+type RecordItem = { userId: string; name: string; at: string; temp: number; attire: '正常'|'异常'; hygiene?: '正常'|'异常'; source: 'device'|'manual'; result: '正常'|'异常'; photoUrl?: string; handle?: { decision: 'allow'|'suspend'; note: string } };
 
 const route = useRoute();
 const infoStr = computed(() => {
@@ -117,6 +125,7 @@ const infoStr = computed(() => {
 });
 
 const employees = ref<Employee[]>([]);
+const allStaff = ref<Array<{ id: number|string; name: string }>>([]);
 const records = ref<RecordItem[]>([]);
 
 const tableRows = computed(() => {
@@ -133,9 +142,9 @@ const untested = computed(() => employees.value.filter(e => !records.value.find(
 
 function formatTime(iso: string) { try { return new Date(iso).toLocaleString(); } catch { return iso; } }
 
-function openManual() { manualVisible.value = true; manualForm.userId = undefined as any; manualForm.temp = 36.5; manualForm.attire = '正常'; manualForm.photoUrl = ''; }
+function openManual() { manualVisible.value = true; manualForm.userId = undefined as any; manualForm.temp = 36.5; manualForm.attire = '正常'; manualForm.hygiene = '正常'; manualForm.photoUrl = ''; }
 const manualVisible = ref(false);
-const manualForm = reactive<{ userId?: string; temp: number; attire: '正常'|'异常'; photoUrl?: string }>({ temp: 36.5, attire: '正常', photoUrl: '' });
+const manualForm = reactive<{ userId?: string; temp: number; attire: '正常'|'异常'; hygiene: '正常'|'异常'; photoUrl?: string }>({ temp: 36.5, attire: '正常', hygiene: '正常', photoUrl: '' });
 
 function beforeUpload(file: File) { const ok = file.type.startsWith('image/'); if (!ok) alert('请上传图片文件'); return ok; }
 async function onUpload(opt: any) {
@@ -148,10 +157,10 @@ async function onUpload(opt: any) {
 }
 
 function saveManual() {
-  if (!manualForm.userId || !manualForm.temp || !manualForm.attire) { ElMessage.warning('请完整填写手动登记信息'); return; }
+  if (!manualForm.userId || !manualForm.temp || !manualForm.attire || !manualForm.hygiene) { ElMessage.warning('请完整填写手动登记信息'); return; }
   const emp = employees.value.find(e => e.userId === manualForm.userId);
   if (!emp) return;
-  records.value.push({ userId: emp.userId, name: emp.name, at: new Date().toISOString(), temp: manualForm.temp, attire: manualForm.attire, source: 'manual', result: manualForm.temp >= 37.3 || manualForm.attire==='异常' ? '异常' : '正常', photoUrl: manualForm.photoUrl });
+  records.value.push({ userId: emp.userId, name: emp.name, at: new Date().toISOString(), temp: manualForm.temp, attire: manualForm.attire, hygiene: manualForm.hygiene, source: 'manual', result: (manualForm.temp >= 37.3 || manualForm.attire==='异常' || manualForm.hygiene==='异常') ? '异常' : '正常', photoUrl: manualForm.photoUrl });
   manualVisible.value = false;
   manualForm.userId = undefined as any; manualForm.photoUrl='';
   updateParentTaskCounts();
@@ -174,9 +183,17 @@ async function syncFromDevice() {
     const resp = await api.megoMorningChecks();
     const d = (route.query.date as string) || new Date().toISOString().slice(0,10);
     const sameDay = (ts: string) => (ts||'').slice(0,10) === d;
-    const mapped: RecordItem[] = (resp.data || [])
+    let mapped: RecordItem[] = (resp.data || [])
       .filter((x:any) => sameDay(x.checkTime || ''))
       .map((x:any) => ({ userId: x.userId || x.raw?.userId || String(x.id), name: x.raw?.name || x.userId || '-', at: (x.checkTime||'').replace(' ','T'), temp: Number(x.foreheadTemp || 0), attire: (x.health===0?'正常':'异常'), source: 'device', result: x.health===0 ? '正常' : '异常' }));
+    // Try align device records to personnel by name so that manual selection list (from 人员资质) matches
+    if (allStaff.value.length) {
+      const byName = new Map(allStaff.value.map(s => [String(s.name).trim(), s] as const));
+      mapped = mapped.map(r => {
+        const m = byName.get(String(r.name).trim());
+        return m ? { ...r, userId: String(m.id), name: m.name } : r;
+      });
+    }
     // merge by userId (device data不可编辑，直接覆盖)
     const ids = new Set(mapped.map(m => m.userId));
     records.value = [
@@ -206,9 +223,16 @@ function updateParentTaskCounts() {
 
 onMounted(async () => {
   try {
-    const emp = await api.megoEmployees();
-    employees.value = (emp.data || []).map((x:any)=> ({ userId: x.userId, name: x.name||x.userId }));
-  } catch { employees.value = []; }
+    // Load personnel from 人员资质作为选择人员来源
+    const sid = getCurrentSchoolId();
+    const res = await api.personnelList({ schoolId: sid, page: 1, pageSize: 1000 });
+    const items = (res as any)?.items || [];
+    // If this detail page was opened for a specific canteen (by name), filter accordingly
+    const canteenName = String(route.query.canteen || '').trim();
+    const filtered = canteenName ? items.filter((it: any) => String(it.canteenName || '').trim() === canteenName) : items;
+    allStaff.value = filtered.map((it: any) => ({ id: it.id, name: it.name }));
+    employees.value = allStaff.value.map(s => ({ userId: String(s.id), name: s.name }));
+  } catch { employees.value = []; allStaff.value = []; }
   try { await syncFromDevice(); } catch {}
   updateParentTaskCounts();
 });
@@ -219,4 +243,6 @@ onMounted(async () => {
 .sub { margin-top:4px; color:#888; }
 .actions > * { margin-left:8px; }
 .uploader { display:inline-block; }
+.form-hint { color:#909399; font-size:12px; margin-left: 8px; }
+.photo-preview { width:120px; height:90px; object-fit:cover; margin-left:8px; border: 1px solid var(--el-border-color); border-radius: 4px; }
 </style>

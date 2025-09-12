@@ -30,3 +30,9 @@ body {
   font-size: 18px;
   font-weight: 600;
 }
+
+/* Global override: make Element Plus text buttons flush without padding */
+.el-button.is-text,
+.el-button--text {
+  padding: 0 !important;
+}

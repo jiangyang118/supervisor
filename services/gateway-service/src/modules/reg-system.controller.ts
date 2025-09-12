@@ -69,8 +69,10 @@ export class RegSystemController {
   @Perm('users.manage')
   createUser(
     @Body() b: { username: string; displayName: string; roles?: string[]; enabled?: boolean },
+    @Req() req: Request,
   ) {
-    return this.svc.createUser(b);
+    const actor: any = (req as any)?.user || {};
+    return this.svc.createUser({ ...(b as any), createdBy: actor?.username });
   }
 
   // Create school-side account and bind to a school

@@ -69,7 +69,7 @@
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12" :md="12" :lg="6" :xl="6">
-        <el-card :class="['card','clickable','kpi-card','card-sampling', samplingOk ? 'ok' : 'warn']" @click="go('/sampling/records')">
+        <el-card :class="['card','clickable','kpi-card','card-sampling', samplingOk ? 'ok' : 'warn']" @click="go('/daily-op/sampling/')">
           <template #header>
             <div class="kpi-header">
               <div class="kpi-title-wrap">

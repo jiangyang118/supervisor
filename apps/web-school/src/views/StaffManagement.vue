@@ -11,34 +11,31 @@
         </div>
       </div>
     </template>
-    <el-table :data="rows"  border>
+    <el-table :data="rows" border stripe class="staff-table">
       <el-table-column prop="name" label="人员姓名" width="140" />
-      <el-table-column prop="canteenName" label="所属食堂" width="180" />
-      <el-table-column prop="healthCertNo" label="健康证编号" width="180" />
-      <el-table-column prop="healthCertAuthority" label="发证机构" width="200" />
-      <el-table-column prop="healthCertExpireAt" label="有效期至" width="140">
-        <template #default="{ row }">{{ (row.healthCertExpireAt||'').slice(0,10) }}</template>
+      <el-table-column prop="canteenName" label="所属食堂" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="phone" label="手机号" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="healthCertNo" label="健康证编号" min-width="160" show-overflow-tooltip />
+      <el-table-column prop="healthCertAuthority" label="发证机构" min-width="180" show-overflow-tooltip />
+      <el-table-column label="有效期至" width="160">
+        <template #default="{ row }">{{ dateOnly(row.healthCertExpireAt) }}</template>
       </el-table-column>
-      <el-table-column prop="status" label="状态" width="100">
+      <el-table-column label="状态" width="100">
         <template #default="{ row }">
-          <el-tag :type="row.status==='过期' ? 'danger' : (row.status==='临期' ? 'warning' : 'success')" effect="plain">{{ row.status }}</el-tag>
+          <el-tag :type="row.status==='过期' ? 'danger' : (row.status==='临期' ? 'warning' : 'success')" effect="light" round size="small">{{ row.status }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <el-button  @click="view(row)">查看</el-button>
-          <el-button  type="primary" @click="edit(row)">编辑</el-button>
-          <el-popconfirm title="确认删除该人员？" @confirm="onDelete(row)">
-            <template #reference>
-              <el-button  type="danger">删除</el-button>
-            </template>
-          </el-popconfirm>
+          <ActionCell :actions="[
+            { label: '查看', onClick: () => view(row), type: 'info' },
+            { label: '编辑', onClick: () => edit(row), type: 'primary' },
+            { label: '删除', onClick: () => onDelete(row), danger: true, confirm: '确认删除该人员？' },
+          ]" :inline="2" />
         </template>
       </el-table-column>
     </el-table>
-  </el-card>
-
-  <el-dialog v-model="visible" :title="form.id ? '编辑人员' : '新增人员'" width="720px">
+    <el-dialog v-model="visible" :title="form.id ? '编辑人员' : '新增人员'" width="720px">
     <el-form :model="form" :rules="rules" ref="formRef" label-width="120px">
       <el-divider content-position="left">基本信息</el-divider>
       <el-form-item label="姓名" prop="name"><el-input v-model="form.name" /></el-form-item>
@@ -80,6 +77,9 @@
       <el-button type="primary" :loading="saving" @click="save">保存</el-button>
     </template>
   </el-dialog>
+  </el-card>
+
+  
 </template>
 
 <script setup lang="ts">
@@ -88,6 +88,8 @@ import { ElMessage } from 'element-plus';
 import { api } from '../services/api';
 import { useRouter } from 'vue-router';
 import { getCurrentSchoolId } from '../utils/school';
+import { dateOnly } from '../utils/datetime';
+import ActionCell from '../components/ActionCell.vue';
 
 const filters = reactive({ name: '', phone: '' });
 const rows = ref<any[]>([]);
@@ -153,4 +155,5 @@ onMounted(() => { loadCanteens(); load(); });
 </script>
 
 <style scoped>
+.staff-table :deep(.el-table__cell) { padding: 8px 12px; }
 </style>

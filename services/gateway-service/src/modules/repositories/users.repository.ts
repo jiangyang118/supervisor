@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { DbService } from '../db.service';
 
 @Injectable()
@@ -11,7 +11,27 @@ export class UsersRepository {
       const { rows } = await this.db.query<any>(
         `select column_name as c from information_schema.columns where table_schema = database() and table_name = 'users'`
       );
-      this.cols = new Set((rows || []).map((r: any) => String(r.c)));
+      const cols = new Set((rows || []).map((r: any) => String(r.c)));
+      // Best-effort schema alignment: add audit columns if missing
+      try {
+        if (!cols.has('created_by')) {
+          await this.db.query('alter table users add column created_by varchar(255) null');
+          cols.add('created_by');
+        }
+      } catch {}
+      try {
+        if (!cols.has('created_at')) {
+          await this.db.query('alter table users add column created_at datetime default current_timestamp');
+          cols.add('created_at');
+        }
+      } catch {}
+      try {
+        if (!cols.has('updated_at')) {
+          await this.db.query('alter table users add column updated_at datetime default current_timestamp on update current_timestamp');
+          cols.add('updated_at');
+        }
+      } catch {}
+      this.cols = cols;
     } catch {
       this.cols = new Set<string>();
     }
@@ -140,8 +160,17 @@ export class UsersRepository {
     if (cols.has('remark')) { fields.push('remark'); vals.push(b.remark || null); }
     if (cols.has('created_by')) { fields.push('created_by'); vals.push(b.createdBy || null); }
     const sql = `insert into users(${fields.join(',')}) values(${fields.map(() => '?').join(',')})`;
-    const res = await this.db.query(sql, vals);
-    return Number(res.insertId || 0);
+    try {
+      const res = await this.db.query(sql, vals);
+      return Number(res.insertId || 0);
+    } catch (e: any) {
+      const code = String(e?.code || e?.errno || '');
+      // MySQL: ER_DUP_ENTRY = 1062
+      if (code === 'ER_DUP_ENTRY' || Number(code) === 1062) {
+        throw new BadRequestException('用户名已存在，或手机号对应账号已存在');
+      }
+      throw e;
+    }
   }
 
   async updateOne(id: number, patch: { displayName?: string; phone?: string; remark?: string; enabled?: boolean }) {

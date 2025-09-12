@@ -151,6 +151,7 @@ import { exportCsv } from '../utils/export';
 import { api, API_BASE } from '../services/api';
 import { getCurrentSchoolId } from '../utils/school';
 import { ElMessage } from 'element-plus';
+import { dateOnly } from '../utils/datetime';
 
 const handlePageChange = (p: number) => {
   page.value = p;
@@ -303,13 +304,7 @@ function onExportExceptions() {
     measure: '处理措施',
   });
 }
-function formatTime(iso: string) {
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
-}
+function formatTime(iso: string) { return dateOnly(iso); }
 
 let off: any = null;
 onMounted(() => {

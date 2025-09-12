@@ -12,7 +12,9 @@
       <el-table-column prop="id" label="ID" width="140" />
       <el-table-column prop="org" label="监管单位" />
       <el-table-column prop="status" label="状态" width="120" />
-      <el-table-column prop="at" label="时间" width="180" />
+      <el-table-column label="时间" width="140">
+        <template #default="{ row }">{{ dateOnly(row.at) }}</template>
+      </el-table-column>
       <el-table-column label="操作" width="220"
         ><template #default="{ row }">
           <el-button
@@ -38,6 +40,7 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue';
 import { api } from '../services/api';
+import { dateOnly } from '../utils/datetime';
 const form = reactive({ org: '示例市市场监管局', contact: '李监管', remark: '' });
 const rows = ref<any[]>([]);
 async function load() {

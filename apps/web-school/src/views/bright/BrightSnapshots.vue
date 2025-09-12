@@ -17,7 +17,9 @@
     <el-table :data="snaps"  border>
       <el-table-column prop="id" label="快照ID" width="120" />
       <el-table-column prop="cameraId" label="通道" />
-      <el-table-column prop="at" label="时间" width="180" />
+      <el-table-column label="日期" width="140">
+        <template #default="{ row }">{{ dateOnly(row.at) }}</template>
+      </el-table-column>
       <el-table-column label="图片">
         <template #default="{ row }"
           ><el-image :src="row.url" fit="cover" style="width: 120px; height: 80px"
@@ -30,6 +32,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../../services/api';
+import { dateOnly } from '../../utils/datetime';
 import { getCurrentSchoolId } from '../../utils/school';
 const snaps = ref<any[]>([]);
 const cameras = ref<Array<{ id: string; name: string }>>([]);

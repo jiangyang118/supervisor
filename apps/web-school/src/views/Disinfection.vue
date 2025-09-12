@@ -3,11 +3,10 @@
     <template #header>
       <div style="display: flex; align-items: center; justify-content: space-between">
         <span>消毒管理</span>
-        <div>
-          <el-button @click="onDeviceConnect">设备接入</el-button>
-          <el-button type="primary" @click="openCreate">手动录入</el-button>
-          <el-button @click="showExceptions">异常处置</el-button>
-        </div>
+
+         
+          <el-button type="primary" @click="openCreate">录入</el-button>
+  
       </div>
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
@@ -18,13 +17,7 @@
           <el-option label="高温" value="高温" />
         </el-select>
       </el-form-item>
-      <el-form-item label="异常">
-        <el-select v-model="filters.exception" clearable placeholder="全部" style="width: 120px">
-        
-          <el-option label="仅异常" value="true" />
-          <el-option label="仅正常" value="false" />
-        </el-select>
-      </el-form-item>
+     
       <el-form-item label="日期">
         <el-date-picker v-model="filters.range" type="daterange" unlink-panels 
           start-placeholder="开始日期"
@@ -40,19 +33,19 @@
       <el-table-column label="食堂" min-width="160"><template #default="{ row }">{{ canteenName(row.canteenId) }}</template></el-table-column>
       <el-table-column prop="items" label="消毒区域/物品" min-width="200" />
       <el-table-column prop="method" label="消毒方式" width="120" />
-      <el-table-column label="时长/温度（是否达标）" min-width="220">
+      <!-- <el-table-column label="时长/温度（是否达标）" min-width="220">
         <template #default="{ row }">
           <span>{{ row.duration }} 分钟 / {{ row.temperature ?? '-' }} ℃（
             <span :style="{ color: row.exception ? '#F56C6C' : '#67C23A' }">{{ row.exception ? '未达标' : '达标' }}</span>
           ）</span>
         </template>
-      </el-table-column>
+      </el-table-column> -->
       <el-table-column prop="responsible" label="责任人" width="140" />
       <el-table-column label="操作" width="220">
         <template #default="{ row }">
-          <el-button  @click="viewDetail(row)">查看详情</el-button>
-          <el-button  @click="onExportOne(row)">导出</el-button>
-          <el-button v-if="row.exception"  type="warning" @click="openMeasure(row)">异常处置</el-button>
+          <el-button text  @click="viewDetail(row)">查看</el-button>
+         
+         
         </template>
       </el-table-column>
     </el-table>
@@ -72,16 +65,21 @@
           <el-option label="高温" value="高温" />
         </el-select>
       </el-form-item>
-      <el-form-item label="时长(分钟)">
+      <!-- <el-form-item label="时长(分钟)">
         <el-input-number v-model="form.duration" :min="1" />
       </el-form-item>
-      <el-form-item label="温度(℃)"><el-input-number v-model="form.temperature" :min="0" :precision="2" /></el-form-item>
+      <el-form-item label="温度(℃)"><el-input-number v-model="form.temperature" :min="0" :precision="2" /></el-form-item> -->
       <el-form-item label="物品/区域">
         <el-input v-model="form.items" />
       </el-form-item>
       <el-form-item label="责任人"><el-input v-model="form.responsible" placeholder="可选" /></el-form-item>
-      <el-form-item label="图片URL">
-        <el-input v-model="form.imageUrl" placeholder="http(s)://..." />
+      <el-form-item label="图片上传">
+        <div style="display:flex;align-items:center;gap:12px">
+          <el-upload :show-file-list="false" :http-request="onUploadImage" accept="image/*">
+            <el-button>选择图片</el-button>
+          </el-upload>
+          <el-image v-if="form.imageUrl" :src="form.imageUrl" style="width: 120px; height: 90px; object-fit: cover" />
+        </div>
       </el-form-item>
     </el-form>
     <template #footer>
@@ -148,6 +146,22 @@ const openCreate = () => {
   form.imageUrl = '';
   createVisible.value = true;
 };
+async function onUploadImage(opt: any) {
+  const file: File = opt.file;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const base64 = String(reader.result);
+      const { url } = await api.uploadFile(file.name, base64);
+      form.imageUrl = url;
+      opt.onSuccess?.({ url }, file);
+    } catch (e) {
+      opt.onError?.(e);
+    }
+  };
+  reader.onerror = (e) => opt.onError?.(e);
+  reader.readAsDataURL(file);
+}
 async function save() {
   if (!form.method || !form.duration || !form.items) {
     ElMessage.warning('请填写方式、时长与物品');
@@ -241,7 +255,6 @@ function onExportOne(row: any) {
 }
 const router = useRouter();
 function viewDetail(row: any) { router.push({ path: '/disinfection/detail', query: { id: row.id } }); }
-function onDeviceConnect() { connectSSE(); ElMessage.success('已尝试连接设备'); }
 function showExceptions() { filters.exception = 'true' as any; applyFilters(); }
 
 let off: any = null;

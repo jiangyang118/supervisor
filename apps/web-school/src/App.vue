@@ -34,22 +34,19 @@
           <el-sub-menu v-if="has('bright.*')" index="bright">
             <template #title>互联网+明厨亮灶</template>
             <el-menu-item index="/bright-kitchen/live">实时视频</el-menu-item>
+            <el-menu-item index="/ai/events">AI 违规抓拍明细</el-menu-item>
             <el-menu-item index="/bright-kitchen/playback">视频回放</el-menu-item>
             <el-menu-item index="/bright-kitchen/snapshots">快照留存</el-menu-item>
-            <el-menu-item index="/bright-kitchen/channels">摄像头/NVR管理</el-menu-item>
-            <el-divider />
-            <el-menu-item index="/ai/events">AI 违规抓拍明细</el-menu-item>
-            <el-menu-item index="/ai/summary">AI 行为统计与导出</el-menu-item>
           </el-sub-menu>
           <el-sub-menu v-if="has('daily.*')" index="daily">
             <template #title>日常运营管理</template>
-            <el-menu-item index="/morning-check">晨检管理</el-menu-item>
-            <el-menu-item index="/sampling/records">留样管理</el-menu-item>
-            <el-menu-item index="/disinfection">消毒管理</el-menu-item>
-            <el-menu-item index="/environment/monitor">环境监测管理</el-menu-item>
-            <el-menu-item index="/pesticide-tests">农残快检管理</el-menu-item>
-            <el-menu-item index="/waste">废弃物管理</el-menu-item>
-            <el-menu-item index="/device-safety">设备安全管理</el-menu-item>
+            <el-menu-item index="/daily-op/morning-check">晨检管理</el-menu-item>
+            <el-menu-item index="/daily-op/sampling">留样管理</el-menu-item>
+            <el-menu-item index="/daily-op/disinfection">消毒管理</el-menu-item>
+            <el-menu-item index="/daily-op/environment">环境监测管理</el-menu-item>
+            <el-menu-item index="/daily-op/pesticide-tests">农残快检管理</el-menu-item>
+            <el-menu-item index="/daily-op/waste">废弃物管理</el-menu-item>
+            <el-menu-item index="/daily-op/device-safety">设备安全管理</el-menu-item>
     
           </el-sub-menu>
           <el-sub-menu v-if="has('inventory.*')" index="inventory">
@@ -58,14 +55,14 @@
             <el-menu-item index="/inventory/inbound">入库登记</el-menu-item>
             <el-menu-item index="/inventory/outbound">出库登记</el-menu-item>
             <el-menu-item index="/inventory/stock">库存记录</el-menu-item>
-            <el-menu-item index="/inventory/tickets">索票索证管理</el-menu-item>
+            
             <!-- 仓库信息管理已下线 -->
           </el-sub-menu>
           <el-sub-menu v-if="has('hr.*') || has('inventory.*')" index="hr">
             <template #title>资质证件管理</template>
             <el-menu-item v-if="has('hr.*')" index="/hr/staff">人员资质</el-menu-item>
             <el-menu-item v-if="has('hr.*')" index="/hr/canteen-licenses">食堂资质</el-menu-item>
-            <el-menu-item index="/suppliers">供应商资质</el-menu-item>
+            <el-menu-item index="/hr/suppliers">供应商资质</el-menu-item>
           </el-sub-menu>
           
           <!-- 公示与反馈模块已下线：相关入口已移除 -->
@@ -75,9 +72,9 @@
             <el-menu-item index="/system/canteen">食堂信息维护</el-menu-item>
             <el-menu-item v-if="has('users.manage')" index="/system/users">用户管理</el-menu-item>
             <el-menu-item v-if="has('users.manage')" index="/system/roles">角色管理</el-menu-item>
-            <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item>
-            <el-menu-item index="/public-config">公示内容配置</el-menu-item>
-            <el-menu-item index="/system/announcements">公告公文管理</el-menu-item>
+            <!-- <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item> -->
+            <!-- <el-menu-item index="/public-config">公示内容配置</el-menu-item> -->
+            <!-- <el-menu-item index="/system/announcements">公告公文管理</el-menu-item> -->
             <el-menu-item index="/system/app-download">移动端扫码</el-menu-item>
             <el-menu-item index="/devices">智能终端设备管理</el-menu-item>
             <el-menu-item index="/system/trustivs-test">TrustIVS 测试</el-menu-item>
@@ -135,17 +132,17 @@ function mapPrimaryMenu(path: string): string {
     '/hr/staff': '/hr/staff',
     '/hr/canteen-licenses': '/hr/canteen-licenses',
     // Daily ops
-    '/morning-check': '/morning-check',
-    '/sampling/records': '/sampling/records',
+    '/daily-op/morning-check': '/daily-op/morning-check',
+    '/daily-op/sampling': '/daily-op/sampling',
     '/pesticide-tests': '/pesticide-tests',
     '/disinfection': '/disinfection',
-    '/waste': '/waste',
+    '/daily-op/waste': '/daily-op/waste',
     // Inventory
     '/inventory/items': '/inventory/items',
     '/inventory/inbound': '/inventory/inbound',
     '/inventory/outbound': '/inventory/outbound',
     '/inventory/stock': '/inventory/stock',
-    '/inventory/tickets': '/inventory/tickets',
+    
     '/inventory/additives': '/inventory/additives',
     // Public module removed
     '/public-config': '/public-config',
@@ -169,12 +166,12 @@ const openeds = computed(() => {
   if (p.startsWith('/ai/') || p.startsWith('/bright-kitchen/')) return ['bright'];
   if (p.startsWith('/analytics')) return ['overview'];
   if (
-    p.startsWith('/morning-check') ||
-    p.startsWith('/sampling/') ||
-    p.startsWith('/pesticide-tests') ||
-    p.startsWith('/disinfection') ||
-    p.startsWith('/waste') ||
-    p.startsWith('/environment/monitor')
+    p.startsWith('/daily-op/morning-check') ||
+    p.startsWith('/daily-op/sampling/') ||
+    p.startsWith('/daily-op/pesticide-tests') ||
+    p.startsWith('/daily-op/disinfection') ||
+    p.startsWith('/daily-op/waste') ||
+    p.startsWith('/daily-op/environment/monitor')
   )
     return ['daily'];
   if (

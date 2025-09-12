@@ -14,7 +14,9 @@
       <el-table-column prop="type" label="预警类型" width="220" />
       <el-table-column prop="title" label="预警标题" />
       <el-table-column prop="location" label="触发主体/位置" width="220" />
-      <el-table-column prop="at" label="时间" width="180" />
+      <el-table-column label="时间" width="140">
+        <template #default="{ row }">{{ dateOnly(row.at) }}</template>
+      </el-table-column>
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
           <el-tag :type="row.status === '未处理' ? 'danger' : 'success'">{{ row.status }}</el-tag>
@@ -37,6 +39,7 @@ import { computed } from 'vue';
 import { Download } from '@element-plus/icons-vue';
 import { useWarningStore } from '../../stores/warning';
 import { exportCsv } from '../../utils/export';
+import { dateOnly } from '../../utils/datetime';
 
 const store = useWarningStore();
 
@@ -62,7 +65,7 @@ function handleOne(row: any) {
   if (row.status === '未处理') store.markAsProcessed([row.id]);
 }
 function doExport() {
-  const rows = items.value.map((r) => ({ ...r, at: fmt(r.at) }));
+  const rows = items.value.map((r) => ({ ...r, at: dateOnly(r.at) }));
   exportCsv('预警概览', rows, {
     type: '预警类型',
     title: '预警标题',

@@ -102,7 +102,8 @@ export class SystemController {
     @Req() req: any,
   ) {
     // Create user then bind to current school
-    const res = await this.svc.createUser(b as any);
+    const actor = (req?.user || {}) as { username?: string };
+    const res = await this.svc.createUser({ ...(b as any), createdBy: actor?.username });
     const uid = Number((res as any)?.id || 0);
     const bodySid = b?.schoolId && Number.isFinite(Number(b.schoolId)) ? Number(b.schoolId) : 0;
     const schools = Array.isArray(req?.user?.schools) ? (req.user.schools as number[]) : [];

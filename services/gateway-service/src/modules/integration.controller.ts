@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, UploadedFiles, UseInterceptors, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UploadedFiles, UseInterceptors, UseGuards, NotFoundException } from '@nestjs/common';
 import { z } from 'zod';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { abnormalTempFlag, computeHealth, discoverCandidates, fetchEmployees, parseRange } from './integration.utils';
@@ -155,6 +155,11 @@ export class IntegrationController {
   @Get('api/morning-checks')
   async listMorningChecks() {
     try {
+      // Allow hiding this endpoint via env flag
+      const hide = String(process.env.HIDE_MORNING_CHECKS_API || '').toLowerCase();
+      if (hide === '1' || hide === 'true' || hide === 'yes') {
+        throw new NotFoundException();
+      }
       const rows = await this.morningChecksRepo.list(1000);
       return { data: rows };
     } catch {

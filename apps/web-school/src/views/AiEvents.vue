@@ -207,7 +207,9 @@
           <span v-else>—</span>
         </template>
       </el-table-column>
-      <el-table-column prop="at" label="时间" width="180" />
+      <el-table-column label="日期" width="140">
+        <template #default="{ row }">{{ dateOnly(row.at) }}</template>
+      </el-table-column>
       <el-table-column prop="status" label="状态" width="120">
         <template #default="{ row }">
           <el-tag
@@ -274,6 +276,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { exportCsv } from '../utils/export';
+import { dateOnly } from '../utils/datetime';
 import { api } from '../services/api';
 import { getCurrentSchoolId } from '../utils/school';
 import { useRoute } from 'vue-router';

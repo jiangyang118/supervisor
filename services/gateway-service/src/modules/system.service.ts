@@ -282,7 +282,7 @@ export class SystemService {
     await this.usersRepo.setUserRoles(uid, roles || []);
     return { ok: true } as any;
   }
-  async createUser(b: { name?: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean; password?: string } | { username: string; displayName?: string; roles?: string[]; enabled?: boolean; password?: string }) {
+  async createUser(b: { name?: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean; password?: string; createdBy?: string } | { username: string; displayName?: string; roles?: string[]; enabled?: boolean; password?: string; createdBy?: string }) {
     // Support both shapes:
     // - School-side: { name, phone?, roles?, remark?, enabled? }
     // - Regulator-side: { username, displayName?, roles?, enabled? }
@@ -291,7 +291,7 @@ export class SystemService {
       const username = String(asAny.username).trim();
       if (!username) throw new BadRequestException('username required');
       const displayName = (asAny.displayName || username).trim();
-      const insertId = await this.usersRepo.insertOne({ username, displayName, enabled: asAny.enabled ?? true });
+      const insertId = await this.usersRepo.insertOne({ username, displayName, enabled: asAny.enabled ?? true, createdBy: asAny.createdBy });
       if (asAny.password && String(asAny.password).trim()) {
         await this.usersRepo.setCredential(insertId, String(asAny.password).trim());
       }
@@ -301,7 +301,7 @@ export class SystemService {
     if (!asAny?.name) throw new BadRequestException('name required');
     const displayName = String(asAny.name).trim();
     const username = (asAny.phone && String(asAny.phone).trim()) || `u${Date.now()}`;
-    const insertId = await this.usersRepo.insertOne({ username, displayName, enabled: asAny.enabled ?? true, phone: asAny.phone?.trim(), remark: asAny.remark?.trim(), createdBy: '系统' });
+    const insertId = await this.usersRepo.insertOne({ username, displayName, enabled: asAny.enabled ?? true, phone: asAny.phone?.trim(), remark: asAny.remark?.trim(), createdBy: asAny.createdBy || '系统' });
     if (asAny.password && String(asAny.password).trim()) {
       await this.usersRepo.setCredential(insertId, String(asAny.password).trim());
     }

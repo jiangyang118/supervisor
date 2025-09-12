@@ -8,10 +8,10 @@
           <el-select v-model="canteenId" placeholder="选择食堂" style="width:200px; margin-right:8px">
             <el-option v-for="c in canteens" :key="c.id" :label="c.name" :value="c.id" />
           </el-select>
-          <el-button type="primary" @click="autoCreate">自动创建晨检任务</el-button>
-          <el-button @click="syncExpected">自动同步应检人数</el-button>
-          <el-button @click="autoCollect">数据自动采集</el-button>
-          <el-button @click="openManualChannel">手动补录通道</el-button>
+          <el-button type="primary" @click="autoCreate">创建晨检任务</el-button>
+          <el-button @click="syncExpected">同步应检人数</el-button>
+          <el-button @click="autoCollect">同步设备数据</el-button>
+          <el-button @click="openManualChannel">手动补录</el-button>
         </div>
       </div>
     </template>
@@ -28,11 +28,18 @@
           <el-tag :type="statusType(row)" effect="plain">{{ statusLabel(row) }}</el-tag>
         </template>
       </el-table-column>
+      <el-table-column label="卫生情况" width="120">
+        <template #default="{ row }">
+          <el-tag :type="(row.abnormal && Number(row.abnormal) > 0) ? 'danger' : 'success'" effect="light" round>
+            {{ (row.abnormal && Number(row.abnormal) > 0) ? '异常' : '正常' }}
+          </el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="操作" min-width="280">
         <template #default="{ row }">
-          <el-button  @click="view(row)">查看详情</el-button>
-          <el-button v-if="statusLabel(row)==='进行中'"  @click="view(row)">手动登记</el-button>
-          <el-button  @click="exportRow(row)">导出</el-button>
+          <el-button text @click="view(row)">查看详情</el-button>
+          <el-button text v-if="statusLabel(row)==='进行中'"  @click="view(row)">手动登记</el-button>
+          <el-button text  @click="exportRow(row)">导出</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -110,7 +117,7 @@ function statusLabel(t: Task) {
 }
 function statusType(t: Task) { const s = statusLabel(t); return s==='未开始' ? 'info' : s==='进行中' ? 'primary' : s==='有异常' ? 'warning' : 'success'; }
 
-function view(t: Task) { router.push({ path: '/morning-check/detail', query: { date: t.date, canteen: t.canteen } }); }
+function view(t: Task) { router.push({ path: '/daily-op/morning-check/detail', query: { date: t.date, canteen: t.canteen } }); }
 function exportRow(t: Task) { exportCsv(`晨检-${t.date}-${t.canteen}`, [{ date: t.date, canteen: t.canteen, expected: t.expected, actual: t.actual, abnormal: t.abnormal, rate: rate(t), status: statusLabel(t) }], { date:'日期', canteen:'食堂', expected:'应检', actual:'实检', abnormal:'异常', rate:'完成率', status:'状态' }); }
 
 function openManualChannel() {

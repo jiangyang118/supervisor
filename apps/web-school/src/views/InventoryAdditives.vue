@@ -14,7 +14,9 @@
       <el-table-column prop="name" label="添加剂" />
       <el-table-column prop="amount" label="用量(g)" width="120" />
       <el-table-column prop="dish" label="对应菜品" />
-      <el-table-column prop="at" label="时间" width="180" />
+      <el-table-column label="日期" width="140">
+        <template #default="{ row }">{{ dateOnly(row.at) }}</template>
+      </el-table-column>
     </el-table>
   </el-card>
 
@@ -40,6 +42,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue';
 import { exportCsv } from '../utils/export';
+import { dateOnly } from '../utils/datetime';
 type Row = { id: string; name: string; amount: number; dish: string; at: string };
 const rows = ref<Row[]>([
   { id: 'AD-001', name: '食盐', amount: 10, dish: '青菜', at: new Date().toLocaleString() },

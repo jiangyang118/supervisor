@@ -42,6 +42,9 @@ export class SchoolUsersRepository {
       const cols = await this.ensureUserCols();
       const hasPhone = cols.has('phone');
       const hasRemark = cols.has('remark');
+      const hasCreatedBy = cols.has('created_by');
+      const hasCreated = cols.has('created_at');
+      const hasUpdated = cols.has('updated_at');
       const where: string[] = [];
       const args: any[] = [];
       where.push('su.user_id = u.id');
@@ -62,12 +65,18 @@ export class SchoolUsersRepository {
       }
       const selectPhone = hasPhone ? 'u.phone' : 'null as phone';
       const selectRemark = hasRemark ? 'u.remark' : 'null as remark';
+      const selectCreatedBy = hasCreatedBy ? 'u.created_by as createdBy' : 'null as createdBy';
+      const selectCreated = hasCreated ? 'date(u.created_at) as createdAt' : 'null as createdAt';
+      const selectUpdated = hasUpdated ? 'date(u.updated_at) as updatedAt' : 'null as updatedAt';
       const groupExtras: string[] = [];
       if (hasPhone) groupExtras.push('u.phone');
       if (hasRemark) groupExtras.push('u.remark');
+      if (hasCreatedBy) groupExtras.push('u.created_by');
+      if (hasCreated) groupExtras.push('u.created_at');
+      if (hasUpdated) groupExtras.push('u.updated_at');
       const sql = `
         select u.id, u.username, u.display_name as displayName, u.enabled,
-               ${selectPhone}, ${selectRemark},
+               ${selectPhone}, ${selectRemark}, ${selectCreatedBy}, ${selectCreated}, ${selectUpdated},
                s.id as schoolId, s.name as schoolName
           from school_users su
           join users u on su.user_id = u.id
@@ -82,7 +91,10 @@ export class SchoolUsersRepository {
         displayName: r.displayName,
         enabled: !!Number(r.enabled),
         phone: r.phone || undefined,
-        remark: r.remark || undefined,
+        remark: r.remark ?? '',
+        createdBy: r.createdBy ?? '',
+        createdAt: r.createdAt ?? '',
+        updatedAt: r.updatedAt ?? '',
         schoolId: Number(r.schoolId),
         schoolName: r.schoolName,
       }));

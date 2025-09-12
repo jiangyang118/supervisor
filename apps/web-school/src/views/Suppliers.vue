@@ -1,62 +1,59 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display: flex; align-items: center; justify-content: space-between">
-       
-        <div>
-          <el-input
-            v-model="filters.q"
-            placeholder="名称/电话/执照号"
-            style="width: 220px; margin-right: 8px"
-          />
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span>供应商资质</span>
+        <div style="display:flex;gap:8px;align-items:center">
+         
           <el-select
             v-model="filters.enabled"
-            placeholder="启用"
-            style="width: 120px; margin-right: 8px"
+            placeholder="全部"
+            style="width: 120px"
             clearable
           >
-            <el-option  value="true" />
-            <el-option  value="false" />
+            <el-option value="true" label="启用" />
+            <el-option value="false"    label="禁用" />
           </el-select>
-          <el-checkbox v-model="filters.expired" style="margin-right:8px">仅显示已过期</el-checkbox>
+         
           <el-date-picker
             v-model="filters.expireRange"
             type="datetimerange"
             start-placeholder="到期开始"
             end-placeholder="到期结束"
-            style="margin-right:8px"
+            format="YYYY-MM-DD"
           />
           <el-button @click="load">查询</el-button>
-          <el-divider direction="vertical" />
-          <el-button   @click="onExportCsv">导出 CSV</el-button>
-          <el-button   @click="openImport">导入 CSV</el-button>
-          <el-button type="primary"   @click="goCreate">新增供应商</el-button>
+          <el-button @click="onExportCsv">导出 CSV</el-button>
+          <el-button @click="openImport">导入 CSV</el-button>
+          <el-button type="primary" @click="goCreate">新增供应商</el-button>
         </div>
       </div>
     </template>
-    <el-table :data="rows"   border @selection-change="onSelChange" :row-class-name="rowClassName">
+    <el-table :data="rows" border stripe  class="qual-table" @selection-change="onSelChange" :row-class-name="rowClassName">
       <el-table-column type="selection" width="46" />
       <el-table-column prop="name" label="供应商名称" />
       <el-table-column prop="license" label="营业执照编号" />
       <el-table-column prop="foodLicense" label="食品生产/经营许可证编号" />
-      <el-table-column label="有效期至" width="180">
+      <el-table-column label="启用" width="100">
         <template #default="{ row }">
-          <span :style="{ color: row.statusTag === '过期' ? '#f56c6c' : (row.statusTag === '临期' ? '#e6a23c' : '#606266') }">{{ fmtTime(row.nextExpireAt) || '-' }}</span>
+          <el-switch :model-value="!!row.enabled" @change="(v:boolean)=>toggleEnable(row, v)" />
         </template>
+      </el-table-column>
+      <el-table-column label="有效期至" width="140">
+        <template #default="{ row }">{{ dateOnly(row.nextExpireAt) || '-' }}</template>
       </el-table-column>
       <el-table-column label="状态" width="120">
         <template #default="{ row }">
-          <el-tag :type="row.statusTag==='过期' ? 'danger' : (row.statusTag==='临期' ? 'warning' : 'success')" effect="plain">{{ row.statusTag }}</el-tag>
+          <el-tag :type="row.statusTag==='过期' ? 'danger' : (row.statusTag==='临期' ? 'warning' : 'success')" effect="light" round size="small">{{ row.statusTag }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="300">
+      <el-table-column label="操作" width="220">
         <template #default="{ row }">
-          <el-button   @click="view(row)">查看</el-button>
-          <el-button   @click="toggleEnable(row, !(row.enabled ?? true))">
-            {{ (row.enabled ?? true) ? '禁用' : '启动' }}
-          </el-button>
-          <el-button   @click="openEdit(row)">编辑</el-button>
-          <el-button   type="danger" @click="del(row)">删除</el-button>
+          <ActionCell :actions="[
+            { label: '查看', onClick: () => view(row), type: 'info' },
+            { label: '编辑', onClick: () => openEdit(row), type: 'primary' },
+            { label: '删除', onClick: () => del(row), danger: true, confirm: '确认删除该供应商？' },
+          ]" :inline="2" />
         </template>
       </el-table-column>
     </el-table>
@@ -156,6 +153,8 @@ import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { getCurrentSchoolId } from '../utils/school';
+import { dateOnly } from '../utils/datetime';
+import ActionCell from '../components/ActionCell.vue';
 
 const rows = ref<any[]>([]);
 const total = ref(0);
@@ -321,27 +320,12 @@ onBeforeUnmount(() => {
   } catch {}
 });
 
-function fmtTime(v?: string) {
-  if (!v) return '';
-  try {
-    const d = new Date(v);
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return (
-      d.getFullYear() +
-      '-' + pad(d.getMonth() + 1) +
-      '-' + pad(d.getDate()) +
-      ' ' + pad(d.getHours()) +
-      ':' + pad(d.getMinutes()) +
-      ':' + pad(d.getSeconds())
-    );
-  } catch {
-    return v as string;
-  }
-}
+// 时间格式已统一使用 dateOnly
 </script>
 
 <style scoped>
 .row-expired td {
   background: #fff6f7;
 }
+.qual-table :deep(.el-table__cell) { padding: 8px 12px; }
 </style>

@@ -1,18 +1,14 @@
 <template>
   <el-card>
     <template #header>食堂信息维护</template>
-    <div style="margin-bottom:8px;display:flex;gap:12px;align-items:center">
-      <div>
-        <span style="margin-right:6px;color:#666">状态筛选</span>
+    <div style="margin-bottom:8px;display:flex;gap:12px;align-items:center;justify-content: space-between;">
         <el-select v-model="statusFilter" style="width: 160px">
           <el-option label="全部" value="all" />
           <el-option label="仅启用" value="enabled" />
           <el-option label="仅停用" value="disabled" />
         </el-select>
-      </div>
       <el-button type="primary" @click="openCreate">新增食堂</el-button>
     </div>
-
     <el-table :data="rows"  border>
       <el-table-column prop="name" label="食堂名称" min-width="160" />
       <el-table-column prop="code" label="食堂编号" width="140" />
@@ -23,13 +19,16 @@
           <el-switch :model-value="!!row.enabled"  @change="(v:boolean)=>toggleEnabled(row, v)" />
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="120">
-        <template #default="{ row }"><el-button  @click="openEdit(row)">编辑</el-button></template>
+      <el-table-column label="操作" width="200">
+        <template #default="{ row }">
+          <ActionCell :actions="[
+            { label: '编辑', onClick: () => openEdit(row), type: 'primary' },
+            { label: '删除', onClick: () => onDelete(row), danger: true, confirm: '确认删除该食堂？该操作不可恢复' },
+          ]" :inline="2" />
+        </template>
       </el-table-column>
     </el-table>
-  </el-card>
-
-  <el-dialog v-model="visible" :title="editing? '编辑食堂':'新增食堂'" width="560px">
+    <el-dialog v-model="visible" :title="editing? '编辑食堂':'新增食堂'" width="560px">
     <el-form :model="form" label-width="120px">
       <el-form-item label="食堂名称" required><el-input v-model="form.name" /></el-form-item>
       <el-form-item label="食堂编号"><el-input v-model="form.code" /></el-form-item>
@@ -43,6 +42,9 @@
       <el-button type="primary" @click="save">保存</el-button>
     </template>
   </el-dialog>
+  </el-card>
+
+
 </template>
 
 <script setup lang="ts">
@@ -50,6 +52,7 @@ import { ref, reactive, onMounted, watch } from 'vue';
 import { api } from '../services/api';
 import { getCurrentSchoolId } from '../utils/school';
 import { ElMessage } from 'element-plus';
+import ActionCell from '../components/ActionCell.vue';
 const rows = ref<any[]>([]);
 const statusFilter = ref<'enabled'|'disabled'|'all'>('all');
 async function load() {
@@ -94,6 +97,16 @@ async function toggleEnabled(row: any, val: boolean) {
   } catch (e) {
     row.enabled = old ? 1 : 0;
     ElMessage.error('更新状态失败');
+  }
+}
+
+async function onDelete(row: any) {
+  try {
+    await api.canteenDetailDelete(Number(row.id));
+    ElMessage.success('已删除');
+    await load();
+  } catch (e) {
+    ElMessage.error('删除失败');
   }
 }
 </script>

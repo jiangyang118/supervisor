@@ -1,34 +1,35 @@
 <template>
   <el-card>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <h3 style="margin:0">食堂资质</h3>
+    <template #header>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span >食堂资质</span>
       <div>
         <el-button type="primary" @click="openDialog()">新增食堂</el-button>
-      
       </div>
-    </div>
-    <el-table :data="rows" border>
+      </div>
+    </template>
+    <el-table :data="rows" border stripe  class="qual-table">
       <el-table-column prop="canteenName" label="食堂名称" min-width="160" />
       <el-table-column prop="address" label="地址" min-width="200" />
       <el-table-column prop="manager" label="负责人" width="120" />
       <el-table-column prop="phone" label="联系电话" width="140" />
       <el-table-column prop="bizLicenseNo" label="营业执照编号" min-width="180" />
       <el-table-column prop="foodPermitNo" label="食品经营许可证编号" min-width="200" />
-      <el-table-column prop="expireAt" label="有效期至" width="140" />
+      <el-table-column label="有效期至" width="140">
+        <template #default="{ row }">{{ dateOnly(row.expireAt) }}</template>
+      </el-table-column>
       <el-table-column prop="status" label="状态" width="120">
         <template #default="{ row }">
-          <el-tag :type="tagType(row.status)">{{ row.status }}</el-tag>
+          <el-tag :type="tagType(row.status)" effect="light" round >{{ row.status }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
-          <el-button  @click="view(row)">查看</el-button>
-          <el-button  type="primary" @click="edit(row)">编辑</el-button>
-          <el-popconfirm title="确认删除该食堂资质？" @confirm="onDelete(row)">
-            <template #reference>
-              <el-button  type="danger">删除</el-button>
-            </template>
-          </el-popconfirm>
+          <ActionCell :actions="[
+            { label: '查看', onClick: () => view(row), type: 'info' },
+            { label: '编辑', onClick: () => edit(row), type: 'primary' },
+            { label: '删除', onClick: () => onDelete(row), danger: true, confirm: '确认删除该食堂资质？' },
+          ]" :inline="99" />
         </template>
       </el-table-column>
     </el-table>
@@ -86,6 +87,8 @@ import { ElMessage } from 'element-plus';
 import { API_BASE } from '../services/api';
 import { api } from '../services/api';
 import { getCurrentSchoolId } from '../utils/school';
+import ActionCell from '../components/ActionCell.vue';
+import { dateOnly } from '../utils/datetime';
 
 type Row = { canteenId: number | null; canteenName: string; address?: string; manager?: string; phone?: string; bizLicenseNo: string; foodPermitNo: string; expireAt: string; status: '有效' | '临期' | '过期' };
 const rows = ref<Row[]>([]);
@@ -244,3 +247,7 @@ function onCanteenSelect(id: number) {
   form.value.phone = c.phone || '';
 }
 </script>
+
+<style scoped>
+.qual-table :deep(.el-table__cell) { padding: 8px 12px; }
+</style>

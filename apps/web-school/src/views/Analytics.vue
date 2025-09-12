@@ -78,7 +78,9 @@
               <el-table-column prop="type" label="类型" width="100" />
               <el-table-column prop="title" label="标题" />
               <el-table-column prop="level" label="等级" width="100" />
-              <el-table-column prop="at" label="时间" width="200" />
+              <el-table-column label="日期" width="140">
+                <template #default="{ row }">{{ dateOnly(row.at) }}</template>
+              </el-table-column>
             </el-table>
           </el-card>
         </el-col>
@@ -96,6 +98,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { api, API_BASE } from '../services/api';
+import { dateOnly } from '../utils/datetime';
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
 import { PieChart } from 'echarts/charts';

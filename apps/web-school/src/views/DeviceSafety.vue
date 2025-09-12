@@ -1,24 +1,23 @@
 <template>
   <el-card>
     <template #header>
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <span>设备安全管理</span>
-        <div>
+      <div class="header-bar">
+        <span class="title">设备安全管理</span>
+        <div class="actions">
           <el-button type="primary" @click="openCreate">新增</el-button>
-          <el-button @click="exportList">导出</el-button>
         </div>
       </div>
     </template>
 
-    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+    <div class="filter-bar">
       <el-select v-model="canteenId" placeholder="全部食堂" clearable filterable style="width:220px">
         <el-option v-for="c in canteens" :key="String(c.id)" :label="c.name" :value="Number(c.id)" />
       </el-select>
-      <el-date-picker v-model="range" type="daterange" unlink-panels range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" :shortcuts="shortcuts" />
+      <el-date-picker v-model="range" style="width:260px" type="daterange" unlink-panels range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" :shortcuts="shortcuts" />
       <el-button :loading="loading" @click="load">查询</el-button>
     </div>
 
-    <el-table :data="rows" border >
+    <el-table :data="rows" border stripe size="small" class="ds-table">
       <el-table-column prop="checkDate" label="检查日期" width="160">
         <template #default="{ row }">{{ fmt(row.checkDate) }}</template>
       </el-table-column>
@@ -28,14 +27,13 @@
       <el-table-column prop="deviceName" label="检查设备" min-width="160" />
       <el-table-column label="检查结果" width="120">
         <template #default="{ row }">
-          <el-tag :type="row.result === '异常' ? 'danger' : 'success'">{{ row.result }}</el-tag>
+          <el-tag :type="row.result === '异常' ? 'danger' : 'success'" effect="light" round size="small">{{ row.result }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column prop="handler" label="检查人" width="140" />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="120" fixed="right">
         <template #default="{ row }">
-          <el-button  @click="viewDetail(row)">查看详情</el-button>
-          <el-button  text @click="exportOne(row)">导出</el-button>
+          <el-button text type="primary" @click="viewDetail(row)">查看详情</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -124,7 +122,7 @@
 import { ref, reactive, onMounted, onBeforeUnmount } from 'vue';
 import { api } from '../services/api';
 import { getCurrentSchoolId } from '../utils/school';
-import { exportCsv } from '../utils/export';
+import { dateOnly } from '../utils/datetime';
 import { ElMessage } from 'element-plus';
 
 const rows = ref<any[]>([]);
@@ -139,7 +137,7 @@ const shortcuts = [
   { text: '近30天', value: () => { const e=new Date(); const s=new Date(e); s.setDate(s.getDate()-29); return [s,e] as [Date,Date]; }},
 ];
 
-function fmt(iso?: string) { try { return iso? new Date(iso).toLocaleString():''; } catch { return iso as any; } }
+function fmt(iso?: string) { return dateOnly(iso); }
 function canteenName(id?: number) { return canteens.value.find((c:any)=> Number(c.id)===Number(id))?.name || '-'; }
 
 async function load() {
@@ -249,29 +247,7 @@ async function viewDetail(row: any) {
   } catch { ElMessage.error('加载详情失败'); }
 }
 
-function exportList() {
-  const mapped = rows.value.map((r:any)=> ({
-    date: fmt(r.checkDate),
-    canteen: canteenName(r.canteenId),
-    device: r.deviceName,
-    result: r.result,
-    handler: r.handler || '',
-  }));
-  exportCsv('设备安全检查', mapped, { date: '检查日期', canteen: '食堂', device: '检查设备', result: '检查结果', handler: '检查人' });
-}
-
-function exportOne(r:any) {
-  exportCsv('设备安全检查-明细', [{
-    date: fmt(r.checkDate),
-    canteen: canteenName(r.canteenId),
-    device: r.deviceName,
-    items: r.items,
-    result: r.result,
-    description: r.description || '',
-    measures: r.measures || '',
-    handler: r.handler || '',
-  }], { date: '检查日期', canteen: '食堂', device: '检查设备', items: '检查项目', result: '检查结果', description: '结果描述', measures: '处理措施', handler: '处理人' });
-}
+// 导出功能已移除
 
 onMounted(() => {
   api.canteensList(String(getCurrentSchoolId())).then((list)=> { canteens.value = list || []; }).catch(()=> { canteens.value = []; });
@@ -282,3 +258,9 @@ onMounted(() => {
 });
 </script>
 
+<style scoped>
+.header-bar { display: flex; align-items: center; justify-content: space-between; }
+.title { font-weight: 600; }
+.filter-bar { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.ds-table :deep(.el-table__cell) { padding: 8px 12px; }
+</style>

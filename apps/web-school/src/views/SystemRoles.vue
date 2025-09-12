@@ -1,12 +1,16 @@
 <template>
   <el-card>
-    <template #header>角色管理</template>
-    <div style="margin-bottom:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <el-input v-model="q" placeholder="搜索角色名称/备注" clearable style="width: 220px" @keyup.enter.native="loadRoles" />
-      <el-button @click="loadRoles">查询</el-button>
-      <el-divider direction="vertical" />
-      <el-button type="primary" @click="openCreate">新增角色</el-button>
-    </div>
+    <template #header>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span>角色管理</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <el-input v-model="qName" placeholder="角色名称" style="width:180px" @keyup.enter.native="loadRoles" />
+          <el-input v-model="qRemark" placeholder="备注" style="width:180px" @keyup.enter.native="loadRoles" />
+          <el-button @click="loadRoles">查询</el-button>
+          <el-button type="primary" @click="openCreate">新增角色</el-button>
+        </div>
+      </div>
+    </template>
     <el-table :data="roleRows"  border>
       <el-table-column prop="name" label="角色名称" width="220" />
       <el-table-column prop="remark" label="备注" />
@@ -37,18 +41,21 @@ import { api } from '../services/api';
 import { ElMessage } from 'element-plus';
 import RoleDialog from '../components/RoleDialog.vue';
 import { getCurrentSchoolId } from '../utils/school';
+import { mapMenuIdsToPermsFromTree } from '../utils/menuPerms';
 
 const roles = ref<Array<{ id: number; schoolId: number; name: string; remark?: string; createdAt: string; updatedAt: string }>>([]);
 const showDialog = ref(false);
 const editing = ref<{ id?: number; name: string; remark?: string } | null>(null);
-const q = ref('');
+const qName = ref('');
+const qRemark = ref('');
 const roleRows = computed(() => roles.value);
 const dateOnly = (s?: string) => (s ? String(s).slice(0, 10) : '');
 
 async function loadRoles() {
   const sid = getCurrentSchoolId();
   const schoolId = sid ? Number(sid) : undefined;
-  roles.value = await api.sysRoles({ schoolId, q: q.value.trim() || undefined });
+  const query = [qName.value.trim(), qRemark.value.trim()].filter((s) => s).join(' ');
+  roles.value = await api.sysRoles({ schoolId, q: query || undefined });
 }
 async function load() {
   await loadRoles();
@@ -62,8 +69,9 @@ async function onSubmitDialog(v: { name: string; remark?: string; menuIds: strin
   try {
     if (editing.value?.id) {
       await api.sysRoleUpdate(editing.value.id, { name: v.name, remark: v.remark || '' });
-      // Update permissions mapped from selected menus
-      const perms = mapMenuIdsToPerms(v.menuIds);
+      // Update permissions mapped from menu selections using backend permission list
+      const tree = await api.sysPermissions();
+      const perms = mapMenuIdsToPermsFromTree(v.menuIds || [], tree as any);
       await api.sysRoleSetPermissions(v.name, perms);
       ElMessage.success('角色已更新');
     } else {
@@ -71,7 +79,8 @@ async function onSubmitDialog(v: { name: string; remark?: string; menuIds: strin
       const schoolId = sid ? Number(sid) : undefined;
       await api.sysRoleCreate(v.name, v.remark || '', schoolId);
       // Set permissions for newly created role
-      const perms = mapMenuIdsToPerms(v.menuIds);
+      const tree = await api.sysPermissions();
+      const perms = mapMenuIdsToPermsFromTree(v.menuIds || [], tree as any);
       await api.sysRoleSetPermissions(v.name, perms);
       ElMessage.success('角色已创建');
     }
@@ -88,20 +97,7 @@ async function remove(row: any) {
   await loadRoles();
 }
 
-function mapMenuIdsToPerms(ids: string[]): string[] {
-  const set = new Set<string>();
-  for (const id of ids || []) {
-    if (id.startsWith('store_')) set.add('inventory.*');
-    else if (id.startsWith('daily_')) set.add('daily.*');
-    else if (id.startsWith('hr_')) set.add('hr.*');
-    else if (id.startsWith('video_') || id.startsWith('check_')) set.add('bright.*');
-    else if (id.startsWith('home_')) set.add('overview.*');
-    else if (id.startsWith('env_')) set.add('env.*');
-    else if (id.startsWith('public_')) set.add('public.*');
-    else if (id.startsWith('sys_')) set.add('system.*');
-  }
-  return Array.from(set);
-}
+// mapping moved to utils/menuPerms
 </script>
 
 <style scoped>

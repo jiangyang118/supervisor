@@ -69,6 +69,7 @@ import { exportCsv } from '../utils/export';
 import { api } from '../services/api';
 import { getCurrentSchoolIdNum } from '../utils/school';
 import { ElMessage } from 'element-plus';
+import { dateOnly } from '../utils/datetime';
 const rows = ref<any[]>([]);
 const filters = reactive<{ result: '' | '合格' | '不合格' | null; range: [Date, Date] | null }>({
   result: '' as any,
@@ -135,13 +136,7 @@ const onExportCsv = () =>
     remark: '备注',
     date: '时间',
   });
-function formatTime(iso: string) {
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
-}
+function formatTime(iso: string) { return dateOnly(iso); }
 let off: any = null;
 onMounted(() => {
   load();

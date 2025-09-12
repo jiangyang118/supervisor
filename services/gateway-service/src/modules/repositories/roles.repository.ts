@@ -31,6 +31,7 @@ export class RolesRepository {
     const roleRes = await this.db.query<any>('select id from roles where name = ? limit 1', [name]);
     const roleId = Number(roleRes.rows?.[0]?.id || 0);
     if (!roleId) throw new Error('role not found');
+    await this.ensurePermissionKeys(perms || []);
     await this.db.query('delete from role_permissions where role_id = ?', [roleId]);
     if (perms && perms.length) {
       const values: any[] = [];
@@ -68,6 +69,7 @@ export class RolesRepository {
     const roleRes = await this.db.query<any>(sql + ' limit 1', args);
     const roleId = Number(roleRes.rows?.[0]?.id || 0);
     if (!roleId) throw new Error('role not found');
+    await this.ensurePermissionKeys(perms || []);
     await this.db.query('delete from role_permissions where role_id = ?', [roleId]);
     if (perms && perms.length) {
       const values: any[] = [];
@@ -75,6 +77,31 @@ export class RolesRepository {
       await this.db.query('insert into role_permissions(role_id, permission_key) values ' + placeholders, values);
     }
     return { ok: true } as any;
+  }
+
+  private async ensurePermissionKeys(keys: string[]) {
+    try {
+      const uniq = Array.from(new Set((keys || []).filter(Boolean)));
+      if (!uniq.length) return;
+      const placeholders = uniq.map(() => '?').join(',');
+      const { rows } = await this.db.query<any>(`select \`key\` from permissions where \`key\` in (${placeholders})`, uniq);
+      const existing = new Set<string>((rows || []).map((r: any) => String(r.key)));
+      const missing = uniq.filter((k) => !existing.has(k));
+      if (!missing.length) return;
+      const labels: Record<string, string> = {
+        'overview.*': '总览模块（全部）',
+        'daily.*': '日常运营模块（全部）',
+        'inventory.*': '出入库模块（全部）',
+        'hr.*': '资质证件模块（全部）',
+        'bright.*': '明厨亮灶模块（全部）',
+        'system.*': '系统配置（全部）',
+      };
+      const values: any[] = [];
+      const pairs = missing.map((k) => { values.push(k, labels[k] || k); return '(?,?)'; }).join(',');
+      await this.db.query('insert ignore into permissions(`key`, label) values ' + pairs, values);
+    } catch {
+      // best effort; ignore if permissions table absent
+    }
   }
 
   async createIfNotExists(name: string, remark?: string) {

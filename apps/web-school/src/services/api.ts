@@ -826,24 +826,7 @@ export const api = {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return res.json();
   },
-  invTickets: (schoolId?: string) =>
-    get<any[]>(
-      `/school/inventory/tickets${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
-    ),
-  invTicketCreate: async (body: {
-    productId: string;
-    type: string;
-    imageUrl?: string;
-    schoolId?: string;
-  }) => {
-    const res = await fetch(`${BASE}/school/inventory/tickets`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
-  },
+  
   invAdditives: (schoolId?: string) =>
     get<any[]>(
       `/school/inventory/additives${schoolId ? `?schoolId=${encodeURIComponent(schoolId)}` : ''}`,
@@ -1353,7 +1336,16 @@ export const api = {
   sysApps: () => get<any[]>(`/school/system/apps`),
   sysUsers: (schoolId?: string | number) => get<any[]>(`/school/system/users${schoolId!==undefined&&schoolId!==null&&String(schoolId) !== '' ? `?schoolId=${encodeURIComponent(String(schoolId))}` : ''}`),
   sysUserCreate: async (body: { name: string; phone?: string; roles?: string[]; remark?: string; enabled?: boolean; password?: string }) => {
-    return post(`/school/system/users`, body);
+    const r = await fetch(`${BASE}/school/system/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) {
+      try { const data = await r.json(); throw new Error(data?.message || `HTTP ${r.status}`); }
+      catch { throw new Error(`HTTP ${r.status}`); }
+    }
+    return r.json();
   },
   sysUserUpdate: async (id: number | string, patch: { name?: string; phone?: string; remark?: string; enabled?: boolean }) => {
     const r = await fetch(`${BASE}/school/system/users`, {

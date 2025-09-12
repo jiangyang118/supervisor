@@ -18,7 +18,7 @@
         </el-select>
         <el-button type="primary" :loading="loading" @click="load">查询</el-button>
         <el-divider direction="vertical" />
-        <el-button type="success" @click="drawerVisible = true">新增设备（米果晨检仪）</el-button>
+        <el-button type="success" @click="drawerVisible = true">新增智能终端</el-button>
       </div>
     </template>
     <el-table :data="rows"  border>

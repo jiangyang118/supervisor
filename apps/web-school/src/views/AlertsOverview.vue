@@ -12,13 +12,13 @@
     <el-form :inline="true" label-width="84px" style="margin-bottom:12px">
 
       <el-form-item label="食堂">
-        <el-select v-model="canteenId" placeholder="全部食堂" clearable filterable style="width: 220px">
+        <el-select v-model="canteenId" placeholder="全部食堂" clearable filterable style="width: 120px">
           <el-option v-for="c in canteens" :key="String(c.id)" :label="c.name" :value="Number(c.id)" />
         </el-select>
       </el-form-item>
 
       <el-form-item label="预警类型">
-        <el-select v-model="typeLabels" placeholder="选择类型" multiple collapse-tags collapse-tags-tooltip clearable style="width: 420px">
+        <el-select v-model="typeLabels" placeholder="选择类型" multiple collapse-tags collapse-tags-tooltip clearable style="width: 220px">
           <el-option v-for="opt in TYPE_ENUM" :key="opt.label" :label="opt.label" :value="opt.label" />
         </el-select>
       </el-form-item>
@@ -111,6 +111,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue';
+import { useRouter } from 'vue-router';
 import { api } from '../services/api';
 import { dateOnly } from '../utils/datetime';
 import { getCurrentSchoolId } from '../utils/school';
@@ -125,8 +126,8 @@ const TYPE_ENUM = [
   { label: '农残检测', value: '农残检测' },
   { label: '晨检异常', value: '晨检异常' },
   { label: '健康证到期', value: '健康证到期' },
-  { label: '设备安全异常（设备安全检查结果不通过提示异常）', value: '设备安全异常' },
-  { label: '消毒管理（当日未提交消毒记录提示异常）', value: '消毒管理' },
+  { label: '设备安全异常', value: '设备安全异常' },
+  { label: '消毒管理', value: '消毒管理' },
 ] as const;
 const STATUS_ENUM = [
   { label: '全部', value: undefined },
@@ -159,6 +160,7 @@ function fmt(iso?: string) {
 const nowText = ref('');
 const todayTotal = ref(0);
 let timer: any;
+const router = useRouter();
 function tickNow() {
   const d = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -180,8 +182,23 @@ async function batchMark() {
 }
 async function handleOne(row: any) {
   if (row.status === '未处理') {
-    try { await api.analyticsAlertHandle({ id: row.id, type: row.type, measure: '已处理' }); row.status = '已处理'; } catch {}
+    try {
+      await api.analyticsAlertHandle({ id: row.id, type: row.type, measure: '已处理' });
+      row.status = '已处理';
+    } catch {}
+    return;
   }
+  const t: string = row.type || '';
+  if (t.includes('AI') || t === '日常行为AI预警') {
+    router.push({ path: '/ai/events' });
+    return;
+  }
+  if (t.includes('消毒')) { router.push({ path: '/daily-op/disinfection' }); return; }
+  if (t.includes('农残')) { router.push({ path: '/daily-op/pesticide-tests' }); return; }
+  if (t.includes('设备安全')) { router.push({ path: '/daily-op/device-safety' }); return; }
+  if (t.includes('环境')) { router.push({ path: '/daily-op/environment' }); return; }
+  if (t.includes('健康证')) { router.push({ path: '/hr/staff' }); return; }
+  if (t.includes('证件过期')) { router.push({ path: '/hr/canteen-licenses' }); return; }
 }
 function doExport() {
   const rows = warnRows.value.map((r) => ({ id: r.id, type: r.type, detail: r.detail || '', at: dateOnly(r.at), status: r.status }));

@@ -14,6 +14,7 @@
     </template>
 
     <el-table :data="tableRows"  border>
+      <el-table-column type="index" label="序号" width="64" align="center" />
       <el-table-column prop="name" label="姓名" width="140" />
       <el-table-column label="检测时间" width="180">
         <template #default="{ row }">{{ row.at ? formatTime(row.at) : '-' }}</template>

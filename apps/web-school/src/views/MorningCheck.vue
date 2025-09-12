@@ -9,9 +9,9 @@
             <el-option v-for="c in canteens" :key="c.id" :label="c.name" :value="c.id" />
           </el-select>
           <el-button type="primary" @click="openCreate">创建晨检任务</el-button>
-          <el-button @click="syncExpected">同步应检人数</el-button>
+          <!-- <el-button @click="syncExpected">同步应检人数</el-button> -->
           <el-button @click="autoCollect">同步设备数据</el-button>
-          <el-button @click="openManualChannel">手动补录</el-button>
+          <!-- <el-button @click="openManualChannel">手动补录</el-button> -->
         </div>
       </div>
     </template>
@@ -59,12 +59,12 @@
       <el-form-item label="应检人数" required>
         <el-input-number v-model="createForm.expected" :min="0" :step="1" />
       </el-form-item>
-      <el-form-item label="实检人数" required>
+      <!-- <el-form-item label="实检人数" required>
         <el-input-number v-model="createForm.actual" :min="0" :step="1" />
       </el-form-item>
       <el-form-item label="异常人数" required>
         <el-input-number v-model="createForm.abnormal" :min="0" :step="1" />
-      </el-form-item>
+      </el-form-item> -->
     </el-form>
     <template #footer>
       <el-button @click="createVisible = false">取消</el-button>

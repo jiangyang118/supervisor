@@ -2,6 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, ForbiddenException, Optional
 import { Reflector } from '@nestjs/core';
 import type { AuthUser } from './auth.types';
 import { PERM_METADATA } from './perm.decorator';
+import { PUBLIC_METADATA } from './public.decorator';
 import { RolesRepository } from './repositories/roles.repository';
 import { SystemService } from './system.service';
 
@@ -46,6 +47,13 @@ export class PermissionGuard implements CanActivate {
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
     const req = ctx.switchToHttp().getRequest();
     const user = (req?.user || {}) as AuthUser;
+    try {
+      const isPublic = this.reflector.getAllAndOverride<boolean>(PUBLIC_METADATA, [
+        ctx.getHandler(),
+        ctx.getClass(),
+      ]);
+      if (isPublic) return true;
+    } catch {}
     const required = this.reflector.getAllAndOverride<string[]>(PERM_METADATA, [
       ctx.getHandler(),
       ctx.getClass(),

@@ -10,31 +10,54 @@
       </div>
     </template>
     <el-form :inline="true" :model="filters" style="margin-bottom: 8px">
-      <el-form-item label="所属食堂">
-        <el-select v-model="filters.canteenId" clearable filterable placeholder="全部食堂" style="min-width: 200px">
-          <el-option v-for="c in canteens" :key="c.id" :label="c.name" :value="c.id" />
-        </el-select>
-      </el-form-item>
-      <el-form-item label="种类">
-        <el-select v-model="filters.category" clearable placeholder="请选择">
-          <el-option
-            v-for="c in categories"
-            :key="c.id || c"
-            :label="c.name || c"
-            :value="c.name || c"
-          />
-        </el-select>
-        <el-button link type="primary" @click="openCategoryDialog">新增类别</el-button>
-      </el-form-item>
-      <el-form-item label="日期">
-        <el-date-picker v-model="filters.range" type="daterange" unlink-panels start-placeholder="开始日期" end-placeholder="结束日期" range-separator="-" />
-      </el-form-item>
-      <el-form-item>
-        <el-button @click="applyFilters">查询</el-button>
-      </el-form-item>
+
+          <el-form-item label="所属食堂">
+            <el-select
+              v-model="filters.canteenId"
+              clearable
+              filterable
+              placeholder="全部食堂"
+              style="min-width: 200px"
+            >
+              <el-option v-for="c in canteens" :key="c.id" :label="c.name" :value="c.id" />
+            </el-select>
+          </el-form-item>
+ 
+          <el-form-item label="种类" >
+            <el-select
+              v-model="filters.category"
+              clearable
+              placeholder="请选择"
+              style="width: 120px"
+            >
+              <el-option
+                v-for="c in categories"
+                :key="c.id || c"
+                :label="c.name || c"
+                :value="c.name || c"
+              />
+            </el-select>
+            <el-button link type="primary" @click="openCategoryDialog">新增类别</el-button>
+          </el-form-item>
+
+          <el-form-item label="日期">
+            <el-date-picker
+              v-model="filters.range"
+              type="daterange"
+              unlink-panels
+              start-placeholder="开始日期"
+              end-placeholder="结束日期"
+              range-separator="-"
+            />
+          </el-form-item>
+
+          <el-form-item>
+            <el-button @click="applyFilters">查询</el-button>
+          </el-form-item>
+
     </el-form>
-    <el-table :data="rows"  border>
-      <el-table-column prop="id" label="ID" width="140" />
+    <el-table :data="rows" border>
+      
       <el-table-column label="日期" width="120">
         <template #default="{ row }">{{ dateOnly(row.date) }}</template>
       </el-table-column>
@@ -45,7 +68,7 @@
       <el-table-column prop="person" label="收运人" />
       <el-table-column label="操作" width="120">
         <template #default="{ row }">
-          <el-button type="danger"  @click="deleteRow(row)">删除</el-button>
+          <el-button type="danger" @click="deleteRow(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -95,7 +118,7 @@
       />
       <el-button type="primary" @click="addCategory">添加</el-button>
     </div>
-    <el-table :data="categories as any"  border>
+    <el-table :data="categories as any" border>
       <el-table-column label="名称" prop="name" />
       <el-table-column label="启用" width="120">
         <template #default="{ row }">
@@ -104,7 +127,7 @@
       </el-table-column>
       <el-table-column label="操作" width="140">
         <template #default="{ row }">
-          <el-button type="danger"  @click="deleteCategory(row)">删除</el-button>
+          <el-button type="danger" @click="deleteCategory(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -133,7 +156,11 @@ type Row = {
   person: string;
 };
 const rows = ref<Row[]>([]);
-const filters = reactive<{ canteenId?: number | null; category: string | undefined; range: [Date, Date] | null }>({
+const filters = reactive<{
+  canteenId?: number | null;
+  category: string | undefined;
+  range: [Date, Date] | null;
+}>({
   canteenId: null,
   category: undefined,
   range: null,
@@ -159,7 +186,14 @@ const applyFilters = async () => {
   }));
 };
 const createVisible = ref(false);
-const form = reactive({ canteenId: null as number | null, date: new Date(), category: '', amount: 0, buyer: '', person: '' });
+const form = reactive({
+  canteenId: null as number | null,
+  date: new Date(),
+  category: '',
+  amount: 0,
+  buyer: '',
+  person: '',
+});
 const categoryDialogVisible = ref(false);
 const newCategory = ref('');
 const openCategoryDialog = () => {
@@ -238,14 +272,21 @@ async function deleteRow(row: Row) {
 let off: any = null;
 const canteens = ref<Array<{ id: number; name: string }>>([]);
 async function loadCanteens() {
-  try { const sid = getCurrentSchoolIdNum(); const list = await api.canteensList(String(sid)); canteens.value = (list || []).map((c:any)=>({ id: Number(c.id), name: c.name })); } catch { canteens.value = []; }
+  try {
+    const sid = getCurrentSchoolIdNum();
+    const list = await api.canteensList(String(sid));
+    canteens.value = (list || []).map((c: any) => ({ id: Number(c.id), name: c.name }));
+  } catch {
+    canteens.value = [];
+  }
 }
 onMounted(async () => {
   await loadCanteens();
   await loadCategories();
   await applyFilters();
   const h = async () => {
-    await loadCanteens(); await applyFilters();
+    await loadCanteens();
+    await applyFilters();
   };
   window.addEventListener('school-changed', h as any);
   off = () => window.removeEventListener('school-changed', h as any);

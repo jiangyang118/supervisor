@@ -64,21 +64,18 @@ const dialogTitle = computed(() => (props.role?.id ? '编辑角色' : '新增角
 const menus = [
   { id:'home', label:'首页' },
   { id:'home_warning', label:'预警概览' },
-  { id:'check', label:'智能检查管理', children:[
-    { id:'check_ai', label:'AI 违规抓拍明细' },
-    { id:'check_stat', label:'行为统计与导出' },
-  ]},
   { id:'video', label:'互联网+明厨亮灶', children:[
     { id:'video_live', label:'实时视频' },
+    { id:'video_ai', label:'AI 违规抓拍明细' },
     { id:'video_replay', label:'视频回放' },
     { id:'video_snapshot', label:'快照留存' },
-    { id:'video_nvr', label:'摄像头/NVR管理' },
   ]},
   { id:'daily', label:'日常运营管理', children:[
     { id:'daily_morning', label:'晨检管理' },
     { id:'daily_sample', label:'留样管理' },
     { id:'daily_residue', label:'农残快检管理' },
     { id:'daily_disinfection', label:'消毒管理' },
+    { id:'daily_environment', label:'环境监测管理' },
     { id:'daily_waste', label:'废弃物管理' },
     { id:'daily_device_safety', label:'设备安全管理' },
   ]},
@@ -87,19 +84,17 @@ const menus = [
     { id:'store_in', label:'入库登记' },
     { id:'store_out', label:'出库登记' },
     { id:'store_stock', label:'库存记录' },
-    
+    { id:'store_additives', label:'食品添加剂' },
   ]},
   { id:'hr', label:'资质证件管理', children:[
     { id:'hr_staff', label:'人员资质' },
-    { id:'hr_license', label:'人员健康证' },
-    { id:'hr_training', label:'培训课程' },
-    { id:'hr_exam', label:'考试管理' },
+    { id:'hr_license', label:'食堂资质' },
+    { id:'hr_suppliers', label:'供应商资质' },
   ]},
   { id:'sys', label:'系统配置', children:[
     { id:'sys_canteen', label:'食堂信息维护' },
     { id:'sys_users', label:'用户管理' },
     { id:'sys_roles', label:'角色管理' },
-    { id:'sys_audit', label:'关联监管端审核' },
     { id:'sys_mobile', label:'移动端扫码' },
     { id:'sys_device', label:'智能终端设备管理' },
   ]},

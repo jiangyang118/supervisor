@@ -1,6 +1,6 @@
 <template>
   <el-card>
-    <template #header>明厨亮灶 - 快照留存</template>
+    <template #header>快照留存</template>
     <div style="margin-bottom: 8px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap">
       <el-select
         v-model="cameraId"

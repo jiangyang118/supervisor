@@ -3,8 +3,12 @@
     <!-- 顶部全局状态栏 -->
     <el-card class="topbar" shadow="never">
       <div class="topbar-row">
-        <div class="tb-item clickable" @click="go('/overview/alerts')">
-          今日预警总数：<el-tag type="danger">{{ todayWarnings }}</el-tag>
+        <div class="tb-item clickable warning-total" @click="go('/overview/alerts')">
+          <span class="label">今日预警</span>
+          <span class="warning-badge" :class="{ zero: todayWarnings === 0 }">
+            <el-icon class="warn-icon"><Bell /></el-icon>
+            <span class="num">{{ todayWarnings }}</span>
+          </span>
         </div>
         <div class="tb-item">当前时间：{{ nowStr }}</div>
       </div>
@@ -13,7 +17,7 @@
     <!-- 一行四卡：晨检数据 / 人员健康证 / 卫生消毒上报 / 今日预警 -->
     <el-row :gutter="12" class="kpi-row" style="margin: 20px 0">
       <el-col :xs="24" :sm="12" :md="12" :lg="6" :xl="6">
-        <el-card :class="['card','clickable','kpi-card','card-morning', morningOk ? 'ok' : 'warn']" @click="go('/morning-check')">
+        <el-card :class="['card','clickable','kpi-card','card-morning', morningOk ? 'ok' : 'warn']" @click="go('/daily-op/morning-check')">
           <template #header>
             <div class="kpi-header">
               <div class="kpi-title-wrap">
@@ -51,7 +55,7 @@
       </el-col>
       
       <el-col :xs="24" :sm="12" :md="12" :lg="6" :xl="6">
-        <el-card :class="['card','clickable','kpi-card','card-disinfection', disinfectionOk ? 'ok' : 'warn']" @click="go('/disinfection')">
+        <el-card :class="['card','clickable','kpi-card','card-disinfection', disinfectionOk ? 'ok' : 'warn']" @click="go('/daily-op/disinfection')">
           <template #header>
             <div class="kpi-header">
               <div class="kpi-title-wrap">
@@ -147,7 +151,7 @@
     <!-- 下方三项：农残检测 / 设备安全检测 / 废弃物管理 数据卡片（位于 AI 与设备状态模块下方） -->
     <el-row :gutter="12" style="margin-top: 12px">
       <el-col :xs="24" :sm="12" :md="8" :lg="8" :xl="8">
-        <el-card :class="['card','clickable','kpi-card','card-bottom','card-pesticide']" @click="go('/pesticide-tests')">
+        <el-card :class="['kpi-card','card-bottom']"  @click="go('/daily-op/pesticide-tests')">
           <template #header>
             <div class="kpi-header">
               <div class="kpi-title-wrap">
@@ -162,7 +166,7 @@
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12" :md="8" :lg="8" :xl="8">
-        <el-card :class="['card','clickable','kpi-card','card-bottom','card-device']" @click="go('/device-safety')">
+        <el-card :class="['kpi-card','card-bottom']"  @click="go('/daily-op/device-safety')">
           <template #header>
             <div class="kpi-header">
               <div class="kpi-title-wrap">
@@ -178,7 +182,7 @@
         </el-card>
       </el-col>
       <el-col :xs="24" :sm="12" :md="8" :lg="8" :xl="8">
-        <el-card :class="['card','clickable','kpi-card','card-bottom','card-waste']" @click="go('/waste')">
+        <el-card :class="['kpi-card','card-bottom']" @click="go('/daily-op/waste')">
           <template #header>
             <div class="kpi-header">
               <div class="kpi-title-wrap">
@@ -572,10 +576,18 @@ function exportAiBar() {
   --kpi-primary: #2979ff;
 }
 .topbar { border: none; }
+.topbar :deep(.el-card__body) { padding: 8px 12px; }
 .topbar-row { display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .tb-item { color:#606266; }
 .tb-item .strong { color:#303133; font-weight:600; }
 .tb-item.clickable { cursor: pointer; }
+/* Highlighted warning total */
+.warning-total { display:flex; align-items:center; gap:12px; }
+.warning-total .label { color:#303133; font-weight:600; letter-spacing: .2px; }
+.warning-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 12px; border-radius: 12px; background: linear-gradient(90deg,#ff4d4f,#ff7a7a); color:#fff; box-shadow: 0 6px 14px rgba(255,77,79,.25); }
+.warning-badge .warn-icon { color:#fff; }
+.warning-badge .num { font-size: 22px; font-weight: 800; line-height: 1; }
+.warning-badge.zero { background: linear-gradient(90deg,#67C23A,#8cd87b); box-shadow: 0 6px 14px rgba(103,194,58,.25); }
 .card .core-line, .kpi-card .kpi-line { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; color: var(--kpi-text); font-size:14px }
 .kpi-card { 
   background: var(--kpi-bg);
@@ -642,23 +654,14 @@ function exportAiBar() {
 .ok { color: #67C23A; }
 .warn { color: #F56C6C; }
 
-/* Bottom summary cards theme */
-.kpi-card.card-bottom { min-height: 128px; }
-.kpi-card.card-pesticide {
-  --accent: #34c759;
-  background: linear-gradient(180deg, #eafff2, #f7fffb);
-  border-color: #c8f5e3;
-}
-.kpi-card.card-device {
-  --accent: #2db7f5;
-  background: linear-gradient(180deg, #eaf6ff, #f7fbff);
-  border-color: #cfe8ff;
-}
-.kpi-card.card-waste {
-  --accent: #67c23a;
-  background: linear-gradient(180deg, #f0ffe8, #fbfff7);
-  border-color: #d9f5c8;
-}
+/* Bottom summary cards unified style (equal height, no extra bg) */
+.kpi-row-bottom { align-items: stretch; }
+.kpi-row-bottom :deep(.el-col) { display:flex; }
+.kpi-row-bottom :deep(.el-card.kpi-card) { flex:1; display:flex; flex-direction: column; height: 100%; }
+.kpi-row-bottom :deep(.el-card.kpi-card .el-card__body) { display:flex; flex-direction: column; justify-content: space-between; min-height: 120px; }
+.kpi-row-bottom :deep(.el-card__header) { padding: 8px 12px; }
+.kpi-row-bottom :deep(.el-card__body) { padding: 10px 12px; }
+.kpi-card.card-bottom { background:#fff; border-color: var(--kpi-border); }
 
 .ai-bar:deep(canvas) { border-radius: 6px; }
 

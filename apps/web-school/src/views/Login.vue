@@ -3,7 +3,7 @@
     <div class="brand">
       <div class="logo">🍽️</div>
       <div class="title">智慧食安</div>
-      <div class="subtitle">深色科技风 · 智慧食安驾驶舱同款风格</div>
+      <div class="subtitle">食品安全智能监管云平台</div>
     </div>
     <el-card :class="['login-card', 'glass', isLightCard ? 'light' : 'dark']" shadow="always">
       <template #header>
@@ -73,7 +73,7 @@
           <el-button type="primary" class="submit-btn grad" :loading="loading" :disabled="!form.username || !form.password" @click="onSubmit">登录</el-button>
         </el-form-item>
       </el-form>
-      <div class="hint">请使用分配的学校端账号登录。如忘记密码，请联系管理员或通过预留手机号找回。</div>
+      <div class="hint">请使用分配的账号登录。如忘记密码，请联系管理员找回。</div>
     </el-card>
   </div>
 </template>
@@ -169,17 +169,22 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
 
 <style scoped>
 .login-wrap {
-  --bg1: #0b0f14;
-  --bg2: #0f1620;
-  --glow1: rgba(64, 158, 255, 0.18);
-  --glow2: rgba(54, 207, 201, 0.16);
+  --bg1: #070a0f;
+  --bg2: #0a1220;
+  --glow1: rgba(0, 229, 255, 0.18);
+  --glow2: rgba(122, 92, 255, 0.16);
   --text: #e9eef5;
   --muted: #9aa4b2;
-  min-height: 100vh;
+  height: 100vh;
+  box-sizing: border-box;
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1.2fr 0.8fr;
   align-items: center;
-  padding: 24px;
+  justify-content: center;
+  gap: clamp(12px, 2.2vw, 28px);
+  padding: clamp(16px, 4vw, 40px);
+  width: 100%;
+  margin: 0;
   color: var(--text);
   background:
     radial-gradient(1200px 800px at 8% 10%, var(--glow1), transparent 60%),
@@ -192,14 +197,24 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
   content: '';
   position: absolute;
   inset: -200px;
-  background: radial-gradient(closest-side, rgba(0, 200, 255, 0.08), transparent 60%);
-  filter: blur(60px);
-  transform: translate3d(-20%, -30%, 0);
+  background: conic-gradient(from 0deg at 50% 50%, rgba(0, 229, 255, 0.08), rgba(122, 92, 255, 0.08), rgba(0, 229, 255, 0.08));
+  background-size: 200% 200%;
+  filter: blur(64px);
+  animation: aurora 16s ease-in-out infinite;
   pointer-events: none;
 }
-.brand {
-  padding-left: 8vw;
+.brand { align-self: stretch; padding: clamp(16px, 2.2vw, 28px); display:flex; flex-direction: column; align-items:flex-start; justify-content:center; gap: 12px; border-radius: 16px; backdrop-filter: blur(6px);
+  
 }
+.glass.light .brand { background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.55)); border-color: rgba(0,0,0,0.06); box-shadow: 0 16px 48px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.6); }
+.brand .logo { font-size: clamp(56px, 5vw, 80px); line-height: 1; filter: drop-shadow(0 10px 28px rgba(0,229,255,.28)); }
+.brand .title { font-size: clamp(28px, 2.8vw, 44px); font-weight: 800; letter-spacing: .5px; }
+.brand .title { position: relative; }
+.brand .title::after { content:''; position:absolute; left:0; bottom:-6px; width: 64px; height: 3px; border-radius: 99px; background: linear-gradient(90deg,#00e5ff,#7a5cff); box-shadow: 0 4px 12px rgba(0,229,255,.25); }
+.brand .subtitle { color: var(--muted); font-size: clamp(13px, 1.2vw, 15px); }
+.features { list-style: none; padding: 8px 0 0; margin: 0; display:flex; flex-direction: column; gap: 8px; color: var(--text); opacity: .9; }
+.features li { display:flex; align-items:center; gap: 10px; font-size: 14px; }
+.features .dot { width: 8px; height: 8px; border-radius: 50%; background: linear-gradient(90deg,#00e5ff,#7a5cff); box-shadow: 0 0 8px rgba(0,229,255,.5), 0 0 0 3px rgba(0,229,255,0.12); display:inline-block; animation: pulse 2.6s ease-in-out infinite; }
 .logo {
   font-size: 56px;
   line-height: 1;
@@ -214,7 +229,7 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
   color: var(--muted);
   margin-top: 6px;
 }
-.login-card { width: clamp(420px, 38vw, 560px); margin: 0 auto; }
+.login-card { width: clamp(420px, 32vw, 560px); margin: 0; border-radius: 14px; overflow: hidden; align-self: center; }
 .glass {
   background: rgba(20, 24, 30, 0.6);
   backdrop-filter: saturate(140%) blur(14px);
@@ -233,13 +248,14 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
   inset: -1px;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(120deg, rgba(64,158,255,0.5), rgba(54,207,201,0.4));
+  background: linear-gradient(120deg, rgba(0,229,255,0.6), rgba(122,92,255,0.5));
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   padding: 1px;
-  opacity: .6;
+  opacity: .5;
+  animation: borderFlow 8s linear infinite;
 }
 .glass.light::after { opacity: .15; }
 .dark :deep(.el-card__header) { background: transparent; border-bottom-color: rgba(255,255,255,0.08); }
@@ -251,7 +267,7 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
   align-items: center;
   justify-content: space-between;
 }
-.card-title { font-weight: 700; font-size: 18px; letter-spacing: .5px; }
+.card-title { font-weight: 700; font-size: 22px; letter-spacing: .5px; }
 .theme-toggle { display: flex; align-items: center; gap: 6px; }
 .card-subtitle {
   color: var(--muted);
@@ -260,9 +276,9 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
 }
 .submit-btn { width: 100%; }
 .grad {
-  background-image: linear-gradient(90deg, #409EFF, #36cfc9);
+  background-image: linear-gradient(90deg, #00e5ff, #7a5cff);
   border: none;
-  box-shadow: 0 8px 20px rgba(64,158,255,0.3), 0 0 0 1px rgba(64,158,255,0.2) inset;
+  box-shadow: 0 8px 22px rgba(0,229,255,0.28), 0 0 0 1px rgba(122,92,255,0.25) inset;
 }
 .grad:hover { filter: brightness(1.05); }
 .hint { color: var(--muted); font-size: 12px; text-align: center; }
@@ -328,52 +344,52 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
   pointer-events: none;
 }
 
+/* Tech animations */
+@keyframes aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes borderFlow { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
+@keyframes pulse { 0%,100% { transform: scale(1); opacity: .95; } 50% { transform: scale(1.15); opacity: 1; } }
+
 @media (max-width: 920px) {
   .login-wrap {
     grid-template-columns: 1fr;
-    padding: 16px;
+    padding: 12px;
+    width: 100%;
   }
   .brand { display: none; }
-  .login-card { width: 92vw; max-width: 560px; }
+  .login-card { width: 92vw; max-width: 520px; margin: 0 auto; }
 }
 
-@media (min-width: 1280px) {
-  .login-card { width: 560px; }
-}
+@media (min-width: 1280px) { .login-card { width: 520px; } }
 
 /* Tablet/Laptop: 921–1279px — 两栏等分，品牌区略收紧 */
 @media (min-width: 921px) and (max-width: 1279px) {
-  .login-wrap { grid-template-columns: 1fr 1fr; padding: 20px; }
-  .brand { padding-left: 6vw; }
-  .logo { font-size: 48px; }
-  .title { font-size: 28px; }
-  .subtitle { font-size: 12px; }
+  .login-wrap { grid-template-columns: 1.15fr 0.85fr; padding: 18px; gap: 20px; width: 100%; }
+  .brand .logo { font-size: 60px; }
+  .brand .title { font-size: 32px; }
+  .brand .subtitle { font-size: 12px; }
 }
 
 /* Desktop: 1280–1439px — 稍加扩展，品牌区适中留白 */
 @media (min-width: 1280px) and (max-width: 1439px) {
-  .login-wrap { grid-template-columns: 1.1fr 1fr; padding: 24px; }
-  .brand { padding-left: 10vw; }
-  .logo { font-size: 64px; }
-  .title { font-size: 36px; }
-  .subtitle { font-size: 13px; }
+  .login-wrap { grid-template-columns: 1.2fr 0.8fr; padding: 22px; gap: 22px; width: 100%; }
+  .brand .logo { font-size: 72px; }
+  .brand .title { font-size: 36px; }
+  .brand .subtitle { font-size: 13px; }
 }
 
 /* Large Desktop: 1440–1919px — 与驾驶舱风格对齐，增强品牌视觉 */
 @media (min-width: 1440px) and (max-width: 1919px) {
-  .login-wrap { grid-template-columns: 1.2fr 1fr; padding: 28px; }
-  .brand { padding-left: 12vw; }
-  .logo { font-size: 72px; }
-  .title { font-size: 40px; }
-  .subtitle { font-size: 14px; }
+  .login-wrap { grid-template-columns: 1.25fr 0.75fr; padding: 24px; gap: 24px; width: 100%; }
+  .brand .logo { font-size: 76px; }
+  .brand .title { font-size: 40px; }
+  .brand .subtitle { font-size: 14px; }
 }
 
 /* Ultra-wide: ≥1920px — 增加留白与品牌尺寸，卡片保持 560px 聚焦 */
 @media (min-width: 1920px) {
-  .login-wrap { grid-template-columns: 1.4fr 1fr; padding: 36px; }
-  .brand { padding-left: 14vw; }
-  .logo { font-size: 80px; }
-  .title { font-size: 44px; }
-  .subtitle { font-size: 15px; }
+  .login-wrap { grid-template-columns: 1.35fr 0.65fr; padding: 28px; gap: 28px; width: 100%; }
+  .brand .logo { font-size: 80px; }
+  .brand .title { font-size: 44px; }
+  .brand .subtitle { font-size: 15px; }
 }
 </style>

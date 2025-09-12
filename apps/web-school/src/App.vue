@@ -9,7 +9,7 @@
     <el-header class="app-header" style="display: flex; align-items: center; justify-content: space-between">
       <div>智慧食安<span v-if="schoolName"> ｜ {{ schoolName }}</span></div>
       <div style="display:flex; align-items:center; gap:12px">
-        <el-button v-if="has('overview.*')" link type="primary" @click="go('/overview')">首页</el-button>
+        <el-button v-if="has('overview.view')" link type="primary" @click="go('/overview')">首页</el-button>
         <!-- <el-button v-if="has('overview.*')" link @click="go('/reports')">每日报表</el-button> -->
         <el-divider direction="vertical" />
         <el-dropdown>
@@ -31,53 +31,54 @@
           <!-- 预警概览升为一级模块，置于首页下方展示 -->
           <el-menu-item v-if="has('overview.*')" index="/overview/alerts">预警概览</el-menu-item>
 
-          <el-sub-menu v-if="has('bright.*')" index="bright">
+          <el-sub-menu v-if="hasAny(['bright.live','bright.playback','bright.snapshots','bright.ai-events'])" index="bright">
             <template #title>互联网+明厨亮灶</template>
-            <el-menu-item index="/bright-kitchen/live">实时视频</el-menu-item>
-            <el-menu-item index="/ai/events">AI 违规抓拍明细</el-menu-item>
-            <el-menu-item index="/bright-kitchen/playback">视频回放</el-menu-item>
-            <el-menu-item index="/bright-kitchen/snapshots">快照留存</el-menu-item>
+            <el-menu-item v-if="has('bright.live')" index="/bright-kitchen/live">实时视频</el-menu-item>
+            <el-menu-item v-if="has('bright.ai-events')" index="/ai/events">AI 违规抓拍明细</el-menu-item>
+            <el-menu-item v-if="has('bright.playback')" index="/bright-kitchen/playback">视频回放</el-menu-item>
+            <el-menu-item v-if="has('bright.snapshots')" index="/bright-kitchen/snapshots">快照留存</el-menu-item>
           </el-sub-menu>
-          <el-sub-menu v-if="has('daily.*')" index="daily">
+          <el-sub-menu v-if="hasAny(['daily.morning','daily.sampling','daily.disinfection','daily.environment','daily.pesticide','daily.waste','daily.device-safety'])" index="daily">
             <template #title>日常运营管理</template>
-            <el-menu-item index="/daily-op/morning-check">晨检管理</el-menu-item>
-            <el-menu-item index="/daily-op/sampling">留样管理</el-menu-item>
-            <el-menu-item index="/daily-op/disinfection">消毒管理</el-menu-item>
-            <el-menu-item index="/daily-op/environment">环境监测管理</el-menu-item>
-            <el-menu-item index="/daily-op/pesticide-tests">农残快检管理</el-menu-item>
-            <el-menu-item index="/daily-op/waste">废弃物管理</el-menu-item>
-            <el-menu-item index="/daily-op/device-safety">设备安全管理</el-menu-item>
-    
+            <el-menu-item v-if="has('daily.morning')" index="/daily-op/morning-check">晨检管理</el-menu-item>
+            <el-menu-item v-if="has('daily.sampling')" index="/daily-op/sampling">留样管理</el-menu-item>
+            <el-menu-item v-if="has('daily.disinfection')" index="/daily-op/disinfection">消毒管理</el-menu-item>
+            <el-menu-item v-if="has('daily.environment')" index="/daily-op/environment">环境监测管理</el-menu-item>
+            <el-menu-item v-if="has('daily.pesticide')" index="/daily-op/pesticide-tests">农残快检管理</el-menu-item>
+            <el-menu-item v-if="has('daily.waste')" index="/daily-op/waste">废弃物管理</el-menu-item>
+            <el-menu-item v-if="has('daily.device-safety')" index="/daily-op/device-safety">设备安全管理</el-menu-item>
+          
           </el-sub-menu>
-          <el-sub-menu v-if="has('inventory.*')" index="inventory">
+          <el-sub-menu v-if="hasAny(['inventory.items','inventory.inbound','inventory.outbound','inventory.stock','inventory.additives'])" index="inventory">
             <template #title>出入库管理</template>
-            <el-menu-item index="/inventory/items">商品管理</el-menu-item>
-            <el-menu-item index="/inventory/inbound">入库登记</el-menu-item>
-            <el-menu-item index="/inventory/outbound">出库登记</el-menu-item>
-            <el-menu-item index="/inventory/stock">库存记录</el-menu-item>
+            <el-menu-item v-if="has('inventory.items')" index="/inventory/items">商品管理</el-menu-item>
+            <el-menu-item v-if="has('inventory.inbound')" index="/inventory/inbound">入库登记</el-menu-item>
+            <el-menu-item v-if="has('inventory.outbound')" index="/inventory/outbound">出库登记</el-menu-item>
+            <el-menu-item v-if="has('inventory.stock')" index="/inventory/stock">库存记录</el-menu-item>
+            <!-- <el-menu-item v-if="has('inventory.additives')" index="/inventory/additives">食品添加剂</el-menu-item> -->
             
             <!-- 仓库信息管理已下线 -->
           </el-sub-menu>
-          <el-sub-menu v-if="has('hr.*') || has('inventory.*')" index="hr">
+          <el-sub-menu v-if="hasAny(['hr.staff','hr.canteen-licenses','hr.suppliers'])" index="hr">
             <template #title>资质证件管理</template>
-            <el-menu-item v-if="has('hr.*')" index="/hr/staff">人员资质</el-menu-item>
-            <el-menu-item v-if="has('hr.*')" index="/hr/canteen-licenses">食堂资质</el-menu-item>
-            <el-menu-item index="/hr/suppliers">供应商资质</el-menu-item>
+            <el-menu-item v-if="has('hr.staff')" index="/hr/staff">人员资质</el-menu-item>
+            <el-menu-item v-if="has('hr.canteen-licenses')" index="/hr/canteen-licenses">食堂资质</el-menu-item>
+            <el-menu-item v-if="has('hr.suppliers')" index="/hr/suppliers">供应商资质</el-menu-item>
           </el-sub-menu>
           
           <!-- 公示与反馈模块已下线：相关入口已移除 -->
           
-          <el-sub-menu v-if="has('system.*') || has('users.manage')" index="system">
+          <el-sub-menu v-if="hasAny(['system.canteen','users.manage','system.app','system.devices','system.trustivs'])" index="system">
             <template #title>系统配置</template>
-            <el-menu-item index="/system/canteen">食堂信息维护</el-menu-item>
+            <el-menu-item v-if="has('system.canteen')" index="/system/canteen">食堂信息维护</el-menu-item>
             <el-menu-item v-if="has('users.manage')" index="/system/users">用户管理</el-menu-item>
             <el-menu-item v-if="has('users.manage')" index="/system/roles">角色管理</el-menu-item>
             <!-- <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item> -->
             <!-- <el-menu-item index="/public-config">公示内容配置</el-menu-item> -->
             <!-- <el-menu-item index="/system/announcements">公告公文管理</el-menu-item> -->
-            <el-menu-item index="/system/app-download">移动端扫码</el-menu-item>
-            <el-menu-item index="/devices">智能终端设备管理</el-menu-item>
-            <el-menu-item index="/system/trustivs-test">TrustIVS 测试</el-menu-item>
+            <el-menu-item v-if="has('system.app')" index="/system/app-download">移动端扫码</el-menu-item>
+            <el-menu-item v-if="has('system.devices')" index="/devices">智能终端设备管理</el-menu-item>
+            <el-menu-item v-if="has('system.trustivs')" index="/system/trustivs-test">TrustIVS 测试</el-menu-item>
           
           </el-sub-menu>
         </el-menu>
@@ -187,6 +188,7 @@ const openeds = computed(() => {
 const go = (p: string) => router.push(p);
 const auth = useAuthStore();
 const has = (p: string) => auth.hasPerm(p);
+const hasAny = (arr: string[]) => arr.some((k) => has(k));
 
 // Menu ref (kept for future programmatic control if needed)
 const menuRef = ref<any>(null);

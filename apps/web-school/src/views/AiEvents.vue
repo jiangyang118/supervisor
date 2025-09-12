@@ -1,121 +1,99 @@
 <template>
-  <el-card class="main-card">
+  <el-card>
     <template #header>
       <div style="display: flex; align-items: center; justify-content: space-between">
-        <span style="font-size: 18px; font-weight: 600">智能检查/AI 预警 - 违规抓拍明细</span>
-        <div>
-          <el-button type="primary" size="default" style="transition: all 0.3s" @click="onExportCsv"
-            >导出</el-button
+        <span style="font-weight: 500">AI抓拍统计</span>
+        <el-radio-group
+          v-model="statisticsDimension"
+          style="border-radius: 4px; overflow: hidden; border: 1px solid #dcdfe6"
+          @change="onDimensionChange"
+        >
+          <el-radio-button label="day" style="border-radius: 0; transition: all 0.3s"
+            >日</el-radio-button
           >
-        </div>
+          <el-radio-button label="week" style="border-radius: 0; transition: all 0.3s"
+            >周</el-radio-button
+          >
+          <el-radio-button label="month" style="border-radius: 0; transition: all 0.3s"
+            >月</el-radio-button
+          >
+        </el-radio-group>
       </div>
     </template>
-
-    <!-- AI抓拍统计模块 -->
-    <el-card
-      style="
-        margin-bottom: 16px;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s;
-      "
-    >
-      <template #header>
-        <div style="display: flex; align-items: center; justify-content: space-between">
-          <span style="font-weight: 500">AI抓拍统计</span>
-          <el-radio-group
-            v-model="statisticsDimension"
-            
-            style="border-radius: 4px; overflow: hidden; border: 1px solid #dcdfe6"
-            @change="onDimensionChange"
-          >
-            <el-radio-button label="day" style="border-radius: 0; transition: all 0.3s"
-              >日</el-radio-button
-            >
-            <el-radio-button label="week" style="border-radius: 0; transition: all 0.3s"
-              >周</el-radio-button
-            >
-            <el-radio-button label="month" style="border-radius: 0; transition: all 0.3s"
-              >月</el-radio-button
-            >
-          </el-radio-group>
-        </div>
-      </template>
-      <div style="display: flex; justify-content: space-around; padding: 16px 0">
-        <div
-          style="
-            text-align: center;
-            padding: 16px;
-            background: #f0f9ff;
-            border-radius: 8px;
-            flex: 1;
-            margin: 0 8px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 1px solid #e6f7ff;
-          "
-          @mouseenter="
-            style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-            style.transform = 'translateY(-2px)';
-          "
-          @mouseleave="
-            style.boxShadow = 'none';
-            style.transform = 'translateY(0)';
-          "
-        >
-          <div style="font-size: 28px; font-weight: bold; color: #1890ff">{{ totalEvents }}</div>
-          <div style="color: #666; margin-top: 4px">总抓拍照数量</div>
-        </div>
-        <div
-          style="
-            text-align: center;
-            padding: 16px;
-            background: #fff1f0;
-            border-radius: 8px;
-            flex: 1;
-            margin: 0 8px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 1px solid #fff1f0;
-          "
-          @mouseenter="
-            style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-            style.transform = 'translateY(-2px)';
-          "
-          @mouseleave="
-            style.boxShadow = 'none';
-            style.transform = 'translateY(0)';
-          "
-        >
-          <div style="font-size: 28px; font-weight: bold; color: #f56c6c">{{ openEvents }}</div>
-          <div style="color: #666; margin-top: 4px">未处理数量</div>
-        </div>
-        <div
-          style="
-            text-align: center;
-            padding: 16px;
-            background: #f0f9f0;
-            border-radius: 8px;
-            flex: 1;
-            margin: 0 8px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 1px solid #f0f9f0;
-          "
-          @mouseenter="
-            style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-            style.transform = 'translateY(-2px)';
-          "
-          @mouseleave="
-            style.boxShadow = 'none';
-            style.transform = 'translateY(0)';
-          "
-        >
-          <div style="font-size: 28px; font-weight: bold; color: #67c23a">{{ closedEvents }}</div>
-          <div style="color: #666; margin-top: 4px">已处理数量</div>
-        </div>
+    <div style="display: flex; justify-content: space-around; padding: 16px 0">
+      <div
+        style="
+          text-align: center;
+          padding: 16px;
+          background: #f0f9ff;
+          border-radius: 8px;
+          flex: 1;
+          margin: 0 8px;
+          transition: all 0.3s ease;
+          cursor: pointer;
+          border: 1px solid #e6f7ff;
+        "
+        @mouseenter="
+          style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+          style.transform = 'translateY(-2px)';
+        "
+        @mouseleave="
+          style.boxShadow = 'none';
+          style.transform = 'translateY(0)';
+        "
+      >
+        <div style="font-size: 28px; font-weight: bold; color: #1890ff">{{ totalEvents }}</div>
+        <div style="color: #666; margin-top: 4px">总抓拍照数量</div>
       </div>
-    </el-card>
+      <div
+        style="
+          text-align: center;
+          padding: 16px;
+          background: #fff1f0;
+          border-radius: 8px;
+          flex: 1;
+          margin: 0 8px;
+          transition: all 0.3s ease;
+          cursor: pointer;
+          border: 1px solid #fff1f0;
+        "
+        @mouseenter="
+          style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+          style.transform = 'translateY(-2px)';
+        "
+        @mouseleave="
+          style.boxShadow = 'none';
+          style.transform = 'translateY(0)';
+        "
+      >
+        <div style="font-size: 28px; font-weight: bold; color: #f56c6c">{{ openEvents }}</div>
+        <div style="color: #666; margin-top: 4px">未处理数量</div>
+      </div>
+      <div
+        style="
+          text-align: center;
+          padding: 16px;
+          background: #f0f9f0;
+          border-radius: 8px;
+          flex: 1;
+          margin: 0 8px;
+          transition: all 0.3s ease;
+          cursor: pointer;
+          border: 1px solid #f0f9f0;
+        "
+        @mouseenter="
+          style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+          style.transform = 'translateY(-2px)';
+        "
+        @mouseleave="
+          style.boxShadow = 'none';
+          style.transform = 'translateY(0)';
+        "
+      >
+        <div style="font-size: 28px; font-weight: bold; color: #67c23a">{{ closedEvents }}</div>
+        <div style="color: #666; margin-top: 4px">已处理数量</div>
+      </div>
+    </div>
 
     <el-form
       :inline="true"
@@ -231,17 +209,12 @@
             style="width: 180px; margin-right: 8px; transition: all 0.3s"
           />
           <el-button
-            
             type="primary"
             style="margin-right: 4px; transition: all 0.3s"
             @click="handle(row)"
             >处置</el-button
           >
-          <el-button
-            v-if="row.status === 'OPEN'"
-            
-            style="transition: all 0.3s"
-            @click="ack(row)"
+          <el-button v-if="row.status === 'OPEN'" style="transition: all 0.3s" @click="ack(row)"
             >确认</el-button
           >
         </template>
@@ -309,7 +282,13 @@ const onDimensionChange = () => {
   load();
   // 显示切换成功的提示
   ElMessage({
-    message: `已切换至${statisticsDimension.value === 'day' ? '日' : statisticsDimension.value === 'week' ? '周' : '月'}维度`,
+    message: `已切换至${
+      statisticsDimension.value === 'day'
+        ? '日'
+        : statisticsDimension.value === 'week'
+        ? '周'
+        : '月'
+    }维度`,
     type: 'success',
   });
 };
@@ -413,7 +392,7 @@ async function init() {
     }
     await load();
   } catch (error) {
-    ElMessage({ message: '初始化失败，请刷新页面重试', type: 'error' });
+    // ElMessage({ message: '初始化失败，请刷新页面重试', type: 'error' });
     console.error('初始化失败:', error);
   }
 }

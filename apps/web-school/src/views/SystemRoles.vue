@@ -41,7 +41,7 @@ import { api } from '../services/api';
 import { ElMessage } from 'element-plus';
 import RoleDialog from '../components/RoleDialog.vue';
 import { getCurrentSchoolId } from '../utils/school';
-import { mapMenuIdsToPermsFromTree } from '../utils/menuPerms';
+import { mapMenuIdsToPerms } from '../utils/menuPerms';
 
 const roles = ref<Array<{ id: number; schoolId: number; name: string; remark?: string; createdAt: string; updatedAt: string }>>([]);
 const showDialog = ref(false);
@@ -69,18 +69,16 @@ async function onSubmitDialog(v: { name: string; remark?: string; menuIds: strin
   try {
     if (editing.value?.id) {
       await api.sysRoleUpdate(editing.value.id, { name: v.name, remark: v.remark || '' });
-      // Update permissions mapped from menu selections using backend permission list
-      const tree = await api.sysPermissions();
-      const perms = mapMenuIdsToPermsFromTree(v.menuIds || [], tree as any);
+      // Build page-level permissions from selected menus
+      const perms = mapMenuIdsToPerms(v.menuIds || []);
       await api.sysRoleSetPermissions(v.name, perms);
       ElMessage.success('角色已更新');
     } else {
       const sid = getCurrentSchoolId();
       const schoolId = sid ? Number(sid) : undefined;
       await api.sysRoleCreate(v.name, v.remark || '', schoolId);
-      // Set permissions for newly created role
-      const tree = await api.sysPermissions();
-      const perms = mapMenuIdsToPermsFromTree(v.menuIds || [], tree as any);
+      // Set permissions for newly created role (page-level)
+      const perms = mapMenuIdsToPerms(v.menuIds || []);
       await api.sysRoleSetPermissions(v.name, perms);
       ElMessage.success('角色已创建');
     }

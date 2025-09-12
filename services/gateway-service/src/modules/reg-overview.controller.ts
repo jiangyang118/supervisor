@@ -10,6 +10,7 @@ import { SchoolsRepository } from './repositories/schools.repository';
 import { JwtGuard } from './jwt.guard';
 import { PermissionGuard } from './permission.guard';
 import { Perm } from './perm.decorator';
+import { Public } from './public.decorator';
 
 @Controller('reg')
 @UseGuards(JwtGuard, PermissionGuard)
@@ -96,7 +97,7 @@ export class RegOverviewController {
   }
 
   @Get('schools')
-  @Perm('school:R')
+  @Public()
   async schools() {
     try {
       const rows = await this.schoolsRepo.listAll();
@@ -165,7 +166,7 @@ export class RegOverviewController {
   }
 
   @Get('schools/stats')
-  @Perm('school:R')
+  @Public()
   async schoolStats() {
     const base = await this.localSchools();
     return base.map((s) => {

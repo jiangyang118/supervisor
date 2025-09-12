@@ -12,7 +12,7 @@
     <el-form :inline="true" label-width="84px" style="margin-bottom:12px">
 
       <el-form-item label="食堂">
-        <el-select v-model="canteenId" placeholder="全部食堂" clearable filterable style="width: 120px">
+        <el-select v-model="canteenId" placeholder="全部" clearable filterable style="width: 120px">
           <el-option v-for="c in canteens" :key="String(c.id)" :label="c.name" :value="Number(c.id)" />
         </el-select>
       </el-form-item>
@@ -49,13 +49,16 @@
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="8" style="margin-bottom:8px">
-      <el-col v-for="s in summary" :key="s.name" :span="6">
-        <el-statistic :title="s.name" :value="s.count" />
+    <el-row :gutter="8" class="summary-tiles">
+      <el-col v-for="(s, idx) in summary" :key="s.name" :span="6">
+        <div class="stat-tile" :class="tileClass(idx)">
+          <div class="num">{{ s.count }}</div>
+          <div class="label">{{ s.name }}</div>
+        </div>
       </el-col>
     </el-row>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0">
+    <div style="display:flex;justify-content:flex-end;gap:20px;align-items:center;margin:8px 0">
       <div>
         <el-button type="success" :disabled="!selectedIds.length" @click="batchMark">批量标记已处理</el-button>
       </div>
@@ -147,6 +150,12 @@ const page = ref(1);
 const pageSize = ref(20);
 const selectedIds = ref<string[]>([]);
 const pagedRows = computed(() => warnRows.value.slice((page.value - 1) * pageSize.value, (page.value - 1) * pageSize.value + pageSize.value));
+
+// Summary tile class mapping，模仿 AI 抓拍统计样式
+function tileClass(idx: number) {
+  const map = ['primary', 'danger', 'success'];
+  return map[idx % map.length];
+}
 
 function fmt(iso?: string) {
   try {
@@ -313,3 +322,31 @@ watch(schoolId, (v) => {
 
 onBeforeUnmount(() => { if (timer) clearInterval(timer); });
 </script>
+
+<style scoped>
+.summary-tiles { margin-bottom: 8px;  }
+.stat-tile {
+  text-align: center;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+  background: #fff;
+  transition: all .25s ease;
+  cursor: default;
+}
+.stat-tile .num { font-size: 28px; font-weight: 800; }
+.stat-tile .label { color: #666; margin-top: 4px; }
+.stat-tile:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
+
+/* Variants inspired by AI抓拍统计 */
+.stat-tile.primary { background: #f0f9ff; border-color: #e6f7ff; }
+.stat-tile.primary .num { color: #1890ff; }
+.stat-tile.danger { background: #fff1f0; border-color: #fff1f0; }
+.stat-tile.danger .num { color: #f56c6c; }
+.stat-tile.success { background: #f0f9f0; border-color: #f0f9f0; }
+.stat-tile.success .num { color: #67c23a; }
+
+@media (max-width: 992px) {
+  .stat-tile .num { font-size: 24px; }
+}
+</style>

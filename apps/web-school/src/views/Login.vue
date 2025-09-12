@@ -1,25 +1,13 @@
 <template>
   <div class="login-wrap">
     <div class="brand">
-      <div class="logo">🍽️</div>
-      <div class="title">智慧食安</div>
-      <div class="subtitle">食品安全智能监管云平台</div>
+      
     </div>
     <el-card :class="['login-card', 'glass', isLightCard ? 'light' : 'dark']" shadow="always">
       <template #header>
         <div class="card-header">
-          <div class="card-title">登录</div>
-          <div class="theme-toggle">
-            <el-switch
-              v-model="isLightCard"
-              
-              inline-prompt
-              :active-icon="Sunny"
-              :inactive-icon="Moon"
-              active-text="浅色"
-              inactive-text="深色"
-            />
-          </div>
+            <img class="title-ill" src="../assets/img/cpt.png" alt="" />
+            <div>智慧食安</div>    
         </div>
       </template>
       <el-form
@@ -27,9 +15,9 @@
         :model="form"
         :rules="rules"
         label-width="0"
-       
         autocomplete="on"
         @keyup.enter.native="onSubmit"
+        style="padding:10px 0 20px"
       >
         <el-alert v-if="errorMsg" :title="errorMsg" type="error" show-icon class="err-banner" />
         <el-form-item prop="username">
@@ -186,24 +174,18 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
   width: 100%;
   margin: 0;
   color: var(--text);
-  background:
-    radial-gradient(1200px 800px at 8% 10%, var(--glow1), transparent 60%),
-    radial-gradient(1200px 800px at 92% 20%, var(--glow2), transparent 60%),
-    linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 100%);
+  /* Image background + dark overlay */
+  background-image:
+  
+    url('../assets/img/login.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
   position: relative;
   overflow: hidden;
 }
-.login-wrap::before {
-  content: '';
-  position: absolute;
-  inset: -200px;
-  background: conic-gradient(from 0deg at 50% 50%, rgba(0, 229, 255, 0.08), rgba(122, 92, 255, 0.08), rgba(0, 229, 255, 0.08));
-  background-size: 200% 200%;
-  filter: blur(64px);
-  animation: aurora 16s ease-in-out infinite;
-  pointer-events: none;
-}
-.brand { align-self: stretch; padding: clamp(16px, 2.2vw, 28px); display:flex; flex-direction: column; align-items:flex-start; justify-content:center; gap: 12px; border-radius: 16px; backdrop-filter: blur(6px);
+.login-wrap::before { content: none; }
+.brand { align-self: stretch; padding: clamp(16px, 2.2vw, 28px); display:flex; flex-direction: column; align-items:flex-start; justify-content:center; gap: 12px; border-radius: 16px; 
   
 }
 .glass.light .brand { background: linear-gradient(180deg, rgba(255,255,255,0.75), rgba(255,255,255,0.55)); border-color: rgba(0,0,0,0.06); box-shadow: 0 16px 48px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.6); }
@@ -232,7 +214,6 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
 .login-card { width: clamp(420px, 32vw, 560px); margin: 0; border-radius: 14px; overflow: hidden; align-self: center; }
 .glass {
   background: rgba(20, 24, 30, 0.6);
-  backdrop-filter: saturate(140%) blur(14px);
   border: 1px solid rgba(255,255,255,0.08);
   box-shadow: 0 1px 0 rgba(255,255,255,0.06) inset, 0 20px 60px rgba(0,0,0,0.55);
 }
@@ -262,12 +243,12 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
 .dark :deep(.el-card__body) { color: var(--text); }
 .light :deep(.el-card__header) { background: transparent; border-bottom-color: rgba(0,0,0,0.06); }
 .light :deep(.el-card__body) { color: #303133; }
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
+.card-header { display: flex; align-items: center; justify-content: center; flex-direction: column; font-size:40px ;font-weight:bold;gap:15px;padding-top:10px }
+.card-title-wrap { display:flex; align-items:center; gap: 10px; }
 .card-title { font-weight: 700; font-size: 22px; letter-spacing: .5px; }
+.title-ill { height: 20px; object-fit: contain; display:block; filter: drop-shadow(0 4px 8px rgba(0,0,0,.18)); border-radius: 8px; }
+.dark .title-ill { filter: drop-shadow(0 4px 10px rgba(0,0,0,.35)); }
+.light .title-ill { filter: drop-shadow(0 4px 8px rgba(0,0,0,.08)); }
 .theme-toggle { display: flex; align-items: center; gap: 6px; }
 .card-subtitle {
   color: var(--muted);
@@ -322,27 +303,7 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
 .options { display: flex; justify-content: space-between; width: 100%; color: var(--muted); }
 
 /* Tech grid lines overlay */
-.login-wrap::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(255,255,255,0.03),
-      rgba(255,255,255,0.03) 1px,
-      transparent 1px,
-      transparent 40px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      rgba(255,255,255,0.03),
-      rgba(255,255,255,0.03) 1px,
-      transparent 1px,
-      transparent 40px
-    );
-  pointer-events: none;
-}
+.login-wrap::after { content: none; }
 
 /* Tech animations */
 @keyframes aurora { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -357,6 +318,7 @@ watch(isLightCard, (v) => localStorage.setItem('LOGIN_CARD_THEME', v ? 'light' :
   }
   .brand { display: none; }
   .login-card { width: 92vw; max-width: 520px; margin: 0 auto; }
+  .title-ill { width: 32px; height: 32px; }
 }
 
 @media (min-width: 1280px) { .login-card { width: 520px; } }

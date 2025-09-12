@@ -1,6 +1,6 @@
 <template>
   <el-card>
-    <template #header>明厨亮灶 - 回放</template>
+    <template #header>视频回放</template>
     <el-form :inline="true" :model="query">
       <el-form-item label="通道">
         <el-select v-model="query.cameraId" filterable clearable style="min-width: 220px">
@@ -9,6 +9,11 @@
       </el-form-item>
       <el-form-item label="时间"
         ><el-date-picker v-model="query.range" type="datetimerange"
+          placeholder="选择时间"
+          unlink-panels
+          start-placeholder="开始时间"
+          end-placeholder="结束时间"
+          range-separator="至"
       /></el-form-item>
       <el-form-item><el-button type="primary" @click="search">查询</el-button></el-form-item>
     </el-form>

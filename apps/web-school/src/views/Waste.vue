@@ -16,7 +16,7 @@
               v-model="filters.canteenId"
               clearable
               filterable
-              placeholder="全部食堂"
+              placeholder="全部"
               style="min-width: 200px"
             >
               <el-option v-for="c in canteens" :key="c.id" :label="c.name" :value="c.id" />

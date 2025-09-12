@@ -5,16 +5,28 @@
   </div>
 
   <!-- Default application shell -->
-  <el-container v-else style="height: 100vh">
-    <el-header class="app-header" style="display: flex; align-items: center; justify-content: space-between">
-      <div>智慧食安<span v-if="schoolName"> ｜ {{ schoolName }}</span></div>
-      <div style="display:flex; align-items:center; gap:12px">
-        <el-button v-if="has('overview.view')" link type="primary" @click="go('/overview')">首页</el-button>
-        <!-- <el-button v-if="has('overview.*')" link @click="go('/reports')">每日报表</el-button> -->
+  <el-container v-else class="app-shell">
+    <el-header class="app-header">
+      <div class="header-left">
+        <el-button text class="collapse-btn" @click="collapsed = !collapsed">
+          <el-icon><component :is="collapsed ? Expand : Fold" /></el-icon>
+        </el-button>
+        <div class="app-logo" @click="go('/overview')">
+          <el-icon class="logo-icon"><House /></el-icon>
+          <span class="logo-text">智慧食安</span>
+          <span class="school" v-if="schoolName">｜ {{ schoolName }}</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <el-button v-if="has('overview.view')" link type="primary" @click="go('/overview')">
+          <el-icon><House /></el-icon>
+          首页
+        </el-button>
         <el-divider direction="vertical" />
         <el-dropdown>
-          <span class="el-dropdown-link" style="cursor:pointer">
-            {{ displayName }}<i class="el-icon-arrow-down el-icon--right" />
+          <span class="user-entry">
+            <el-icon><User /></el-icon>
+            <span class="name">{{ displayName }}</span>
           </span>
           <template #dropdown>
             <el-dropdown-menu>
@@ -25,60 +37,90 @@
       </div>
     </el-header>
     <el-container>
-      <el-aside width="240px" class="app-aside">
-        <el-menu ref="menuRef" :key="openeds.join(',')" :default-active="active" :default-openeds="openeds" router unique-opened>
-          <el-menu-item v-if="has('overview.*')" index="/overview">首页</el-menu-item>
+      <el-aside :width="collapsed ? '64px' : '240px'" class="app-aside">
+        <el-menu
+          ref="menuRef"
+          :key="openeds.join(',') + String(collapsed)"
+          :default-active="active"
+          :default-openeds="openeds"
+          :collapse="collapsed"
+          :collapse-transition="false"
+          router
+          unique-opened
+        >
+          <el-menu-item v-if="has('overview.*')" index="/overview">
+            <el-icon><House /></el-icon>
+            <span>首页</span>
+          </el-menu-item>
           <!-- 预警概览升为一级模块，置于首页下方展示 -->
-          <el-menu-item v-if="has('overview.*')" index="/overview/alerts">预警概览</el-menu-item>
+          <el-menu-item v-if="has('overview.*')" index="/overview/alerts">
+            <el-icon><Warning /></el-icon>
+            <span>预警概览</span>
+          </el-menu-item>
 
           <el-sub-menu v-if="hasAny(['bright.live','bright.playback','bright.snapshots','bright.ai-events'])" index="bright">
-            <template #title>互联网+明厨亮灶</template>
-            <el-menu-item v-if="has('bright.live')" index="/bright-kitchen/live">实时视频</el-menu-item>
-            <el-menu-item v-if="has('bright.ai-events')" index="/ai/events">AI 违规抓拍明细</el-menu-item>
-            <el-menu-item v-if="has('bright.playback')" index="/bright-kitchen/playback">视频回放</el-menu-item>
-            <el-menu-item v-if="has('bright.snapshots')" index="/bright-kitchen/snapshots">快照留存</el-menu-item>
+            <template #title>
+              <el-icon><VideoCamera /></el-icon>
+              <span>互联网+明厨亮灶</span>
+            </template>
+            <el-menu-item v-if="has('bright.live')" index="/bright-kitchen/live"><el-icon><VideoCamera /></el-icon><span>实时视频</span></el-menu-item>
+            <el-menu-item v-if="has('bright.ai-events')" index="/ai/events"><el-icon><Camera /></el-icon><span>AI 违规抓拍明细</span></el-menu-item>
+            <el-menu-item v-if="has('bright.playback')" index="/bright-kitchen/playback"><el-icon><VideoPlay /></el-icon><span>视频回放</span></el-menu-item>
+            <el-menu-item v-if="has('bright.snapshots')" index="/bright-kitchen/snapshots"><el-icon><Picture /></el-icon><span>快照留存</span></el-menu-item>
           </el-sub-menu>
           <el-sub-menu v-if="hasAny(['daily.morning','daily.sampling','daily.disinfection','daily.environment','daily.pesticide','daily.waste','daily.device-safety'])" index="daily">
-            <template #title>日常运营管理</template>
-            <el-menu-item v-if="has('daily.morning')" index="/daily-op/morning-check">晨检管理</el-menu-item>
-            <el-menu-item v-if="has('daily.sampling')" index="/daily-op/sampling">留样管理</el-menu-item>
-            <el-menu-item v-if="has('daily.disinfection')" index="/daily-op/disinfection">消毒管理</el-menu-item>
-            <el-menu-item v-if="has('daily.environment')" index="/daily-op/environment">环境监测管理</el-menu-item>
-            <el-menu-item v-if="has('daily.pesticide')" index="/daily-op/pesticide-tests">农残快检管理</el-menu-item>
-            <el-menu-item v-if="has('daily.waste')" index="/daily-op/waste">废弃物管理</el-menu-item>
-            <el-menu-item v-if="has('daily.device-safety')" index="/daily-op/device-safety">设备安全管理</el-menu-item>
+            <template #title>
+              <el-icon><List /></el-icon>
+              <span>日常运营管理</span>
+            </template>
+            <el-menu-item v-if="has('daily.morning')" index="/daily-op/morning-check"><el-icon><Sunny /></el-icon><span>晨检管理</span></el-menu-item>
+            <el-menu-item v-if="has('daily.sampling')" index="/daily-op/sampling"><el-icon><TakeawayBox /></el-icon><span>留样管理</span></el-menu-item>
+            <el-menu-item v-if="has('daily.disinfection')" index="/daily-op/disinfection"><el-icon><Brush /></el-icon><span>消毒管理</span></el-menu-item>
+            <el-menu-item v-if="has('daily.environment')" index="/daily-op/environment"><el-icon><Histogram /></el-icon><span>环境监测管理</span></el-menu-item>
+            <el-menu-item v-if="has('daily.pesticide')" index="/daily-op/pesticide-tests"><el-icon><DataAnalysis /></el-icon><span>农残快检管理</span></el-menu-item>
+            <el-menu-item v-if="has('daily.waste')" index="/daily-op/waste"><el-icon><Delete /></el-icon><span>废弃物管理</span></el-menu-item>
+            <el-menu-item v-if="has('daily.device-safety')" index="/daily-op/device-safety"><el-icon><Monitor /></el-icon><span>设备安全管理</span></el-menu-item>
           
           </el-sub-menu>
           <el-sub-menu v-if="hasAny(['inventory.items','inventory.inbound','inventory.outbound','inventory.stock','inventory.additives'])" index="inventory">
-            <template #title>出入库管理</template>
-            <el-menu-item v-if="has('inventory.items')" index="/inventory/items">商品管理</el-menu-item>
-            <el-menu-item v-if="has('inventory.inbound')" index="/inventory/inbound">入库登记</el-menu-item>
-            <el-menu-item v-if="has('inventory.outbound')" index="/inventory/outbound">出库登记</el-menu-item>
-            <el-menu-item v-if="has('inventory.stock')" index="/inventory/stock">库存记录</el-menu-item>
+            <template #title>
+              <el-icon><Box /></el-icon>
+              <span>出入库管理</span>
+            </template>
+            <el-menu-item v-if="has('inventory.items')" index="/inventory/items"><el-icon><Goods /></el-icon><span>商品管理</span></el-menu-item>
+            <el-menu-item v-if="has('inventory.inbound')" index="/inventory/inbound"><el-icon><Download /></el-icon><span>入库登记</span></el-menu-item>
+            <el-menu-item v-if="has('inventory.outbound')" index="/inventory/outbound"><el-icon><Upload /></el-icon><span>出库登记</span></el-menu-item>
+            <el-menu-item v-if="has('inventory.stock')" index="/inventory/stock"><el-icon><Tickets /></el-icon><span>库存记录</span></el-menu-item>
             <!-- <el-menu-item v-if="has('inventory.additives')" index="/inventory/additives">食品添加剂</el-menu-item> -->
             
             <!-- 仓库信息管理已下线 -->
           </el-sub-menu>
           <el-sub-menu v-if="hasAny(['hr.staff','hr.canteen-licenses','hr.suppliers'])" index="hr">
-            <template #title>资质证件管理</template>
-            <el-menu-item v-if="has('hr.staff')" index="/hr/staff">人员资质</el-menu-item>
-            <el-menu-item v-if="has('hr.canteen-licenses')" index="/hr/canteen-licenses">食堂资质</el-menu-item>
-            <el-menu-item v-if="has('hr.suppliers')" index="/hr/suppliers">供应商资质</el-menu-item>
+            <template #title>
+              <el-icon><Collection /></el-icon>
+              <span>资质证件管理</span>
+            </template>
+            <el-menu-item v-if="has('hr.staff')" index="/hr/staff"><el-icon><User /></el-icon><span>人员资质</span></el-menu-item>
+            <el-menu-item v-if="has('hr.canteen-licenses')" index="/hr/canteen-licenses"><el-icon><OfficeBuilding /></el-icon><span>食堂资质</span></el-menu-item>
+            <el-menu-item v-if="has('hr.suppliers')" index="/hr/suppliers"><el-icon><Shop /></el-icon><span>供应商资质</span></el-menu-item>
           </el-sub-menu>
           
           <!-- 公示与反馈模块已下线：相关入口已移除 -->
           
           <el-sub-menu v-if="hasAny(['system.canteen','users.manage','system.app','system.devices','system.trustivs'])" index="system">
-            <template #title>系统配置</template>
-            <el-menu-item v-if="has('system.canteen')" index="/system/canteen">食堂信息维护</el-menu-item>
-            <el-menu-item v-if="has('users.manage')" index="/system/users">用户管理</el-menu-item>
-            <el-menu-item v-if="has('users.manage')" index="/system/roles">角色管理</el-menu-item>
+            <template #title>
+              <el-icon><Setting /></el-icon>
+              <span>系统配置</span>
+            </template>
+            <el-menu-item v-if="has('system.canteen')" index="/system/canteen"><el-icon><OfficeBuilding /></el-icon><span>食堂信息维护</span></el-menu-item>
+            <el-menu-item v-if="has('users.manage')" index="/system/users"><el-icon><UserFilled /></el-icon><span>用户管理</span></el-menu-item>
+            <el-menu-item v-if="has('users.manage')" index="/system/roles"><el-icon><Avatar /></el-icon><span>角色管理</span></el-menu-item>
             <!-- <el-menu-item index="/system/linkage">关联监管端审核</el-menu-item> -->
             <!-- <el-menu-item index="/public-config">公示内容配置</el-menu-item> -->
             <!-- <el-menu-item index="/system/announcements">公告公文管理</el-menu-item> -->
-            <el-menu-item v-if="has('system.app')" index="/system/app-download">移动端扫码</el-menu-item>
-            <el-menu-item v-if="has('system.devices')" index="/devices">智能终端设备管理</el-menu-item>
-            <el-menu-item v-if="has('system.trustivs')" index="/system/trustivs-test">TrustIVS 测试</el-menu-item>
+            <el-menu-item v-if="has('system.app')" index="/system/app-download"><el-icon><Cellphone /></el-icon><span>移动端扫码</span></el-menu-item>
+            <el-menu-item v-if="has('system.devices')" index="/devices"><el-icon><Monitor /></el-icon><span>智能终端设备管理</span></el-menu-item>
+            <el-menu-item v-if="has('system.trustivs')" index="/system/trustivs-test"><el-icon><Link /></el-icon><span>TrustIVS 测试</span></el-menu-item>
           
           </el-sub-menu>
         </el-menu>
@@ -122,9 +164,11 @@ import PageHeader from './components/PageHeader.vue';
 import { useAuthStore } from './stores/auth';
 import { api } from './services/api';
 import { getCurrentSchoolId } from './utils/school';
+import { House, Warning, VideoCamera, List, Box, Collection, Setting, Sunny, TakeawayBox, Brush, Histogram, DataAnalysis, Delete, Monitor, Camera, VideoPlay, Picture, Goods, Download, Upload, Tickets, User, OfficeBuilding, Shop, UserFilled, Avatar, Cellphone, Link, Fold, Expand } from '@element-plus/icons-vue';
 const route = useRoute();
 const router = useRouter();
 const isAuthPage = computed(() => route.path === '/login');
+const collapsed = ref(false);
 // Map secondary/detail routes to their primary menu item for highlighting
 function mapPrimaryMenu(path: string): string {
   const primary: Record<string, string> = {
@@ -260,4 +304,48 @@ body {
 }
 .auth-only { min-height: 100vh; }
 .integration-banner { margin-bottom: 8px; }
+
+/* Shell layout */
+.app-shell { height: 100vh; }
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: 0 12px;
+  background: #fff;
+  border-bottom: 1px solid var(--el-border-color);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+.header-left { display: flex; align-items: center; gap: 8px; }
+.collapse-btn { padding: 4px; }
+.collapse-btn .el-icon { color: #606266; }
+.app-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; cursor: pointer; }
+.app-logo .logo-icon { color: var(--el-color-primary); }
+.app-logo .logo-text { letter-spacing: .3px; }
+.app-logo .school { color: #909399; font-weight: 500; }
+.header-right { display: flex; align-items: center; gap: 8px; }
+.header-right .user-entry { display:flex; align-items:center; gap:6px; cursor:pointer; color:#303133 }
+
+.app-aside { border-right: 1px solid var(--el-border-color); background: #fff; }
+.app-aside :deep(.el-menu) {
+  border-right: none;
+  --el-menu-item-height: 42px;
+}
+.app-aside :deep(.el-menu .el-menu-item),
+.app-aside :deep(.el-sub-menu__title) {
+  padding-left: 12px !important;
+}
+.app-aside :deep(.el-menu .el-menu-item .el-icon),
+.app-aside :deep(.el-sub-menu__title .el-icon) { margin-right: 8px; }
+.app-aside :deep(.el-menu-item.is-active) {
+  background: rgba(64,158,255,0.08);
+  position: relative;
+}
+.app-aside :deep(.el-menu-item.is-active::before) {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--el-color-primary);
+}
 </style>

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import fetch from 'node-fetch';
 import crypto from 'crypto';
 import { logInfo, logError } from '../../common/file-logger';
+import { getTraceId } from '../../common/trace';
 
 type ReqInit = {
   method: string;
@@ -21,10 +22,18 @@ export class TrustivsConfigService {
 
   constructor() {
     console.log('999',process.env.ylt_baseurl )
-    this.baseURL = process.env.ylt_baseurl || process.env.TRUSTIVS_BASE || 'http://127.0.0.1:9086';
+    this.baseURL = process.env.ylt_baseurl || 'http://127.0.0.1:9086';
     // Warm up token in background and schedule refresh to avoid per-request fetching
     this.ensureToken().catch(() => {});
     this.scheduleTokenRefresh();
+  }
+
+  private maskHeaders(h: Record<string, any> | undefined) {
+    const o: Record<string, any> = {};
+    for (const [k, v] of Object.entries(h || {})) o[k] = v;
+    if (o['token']) o['token'] = '***';
+    if (o['authorization']) o['authorization'] = '***';
+    return o;
   }
 
   private scheduleTokenRefresh() {
@@ -43,9 +52,10 @@ export class TrustivsConfigService {
   private async rawFetch(method: string, path: string, body?: any) {
     const url = this.baseURL.replace(/\/$/, '') + (path.startsWith('/') ? path : '/' + path);
     const headers: Record<string, string> = { 'Content-Type': 'application/json', time: String(Date.now()), uuid: process.env.ylt_uuid || 'cpt' };
+    const traceId = getTraceId() || Math.random().toString(36).slice(2, 12);
     const started = Date.now();
     this.logger.log(`REQUEST ${method.toUpperCase()} ${url} (raw)`);
-    logInfo('trustivs.request', { method: method.toUpperCase(), url, headers, body });
+    logInfo('trustivs.request', { traceId, method: method.toUpperCase(), url, headers: this.maskHeaders(headers), body });
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), this.timeoutMs);
     try {
@@ -54,7 +64,18 @@ export class TrustivsConfigService {
       const tookMs = Date.now() - started;
       const resHeaders = (() => { try { return Object.fromEntries((res.headers as any).entries()); } catch { return {}; } })();
       this.logger.log(`RESPONSE ${method.toUpperCase()} ${url} ${res.status} ${tookMs}ms (raw)`);
-      logInfo('trustivs.response', { url, status: res.status, tookMs, headers: resHeaders, body: text });
+      logInfo('trustivs.response', { traceId, url, status: res.status, tookMs, headers: resHeaders, body: text, attempt: 1 });
+      if (res.status >= 500) {
+        logError('trustivs.chain', {
+          traceId,
+          url,
+          method: method.toUpperCase(),
+          tookMs,
+          attempt: 1,
+          request: { headers: this.maskHeaders(headers), body },
+          response: { status: res.status, headers: resHeaders, body: text },
+        });
+      }
       let json: any = undefined;
       try { json = JSON.parse(text); } catch {}
       return { status: res.status, text, json };
@@ -66,11 +87,11 @@ export class TrustivsConfigService {
     if (!force && TrustivsConfigService.tokenCache && TrustivsConfigService.tokenCache.expiresAt > now) {
       return TrustivsConfigService.tokenCache.token;
     }
-    const acc = process.env.ylt_account || process.env.TRUSTIVS_ACCOUNT || 'CPT';
-    const pwdMd5Env = process.env.ylt_password_md5 || process.env.TRUSTIVS_PASSWORD_MD5 || '';
+    const acc = process.env.ylt_account || 'CPT';
+    const pwdMd5Env = process.env.ylt_password_md5 || '';
     let fpwd = pwdMd5Env;
     if (!fpwd) {
-      const raw = process.env.ylt_password || process.env.TRUSTIVS_PASSWORD || '123456';
+      const raw = process.env.ylt_password || '123456';
       fpwd = crypto.createHash('md5').update(raw).digest('hex');
     }
     try {
@@ -108,8 +129,9 @@ export class TrustivsConfigService {
     const url = this.baseURL.replace(/\/$/, '') + (init.path.startsWith('/') ? init.path : '/' + init.path) + this.qs(init.query);
     let headers = await this.buildHeaders(init.headers);
     const started = Date.now();
+    const traceId = getTraceId() || Math.random().toString(36).slice(2, 12);
     this.logger.log(`REQUEST ${init.method.toUpperCase()} ${url}`);
-    logInfo('trustivs.request', { method: init.method.toUpperCase(), url, headers, body: init.body });
+    logInfo('trustivs.request', { traceId, method: init.method.toUpperCase(), url, headers: this.maskHeaders(headers), body: init.body });
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), this.timeoutMs);
     try {
@@ -128,7 +150,18 @@ export class TrustivsConfigService {
       let tookMs = Date.now() - started;
       this.logger.log(`RESPONSE ${init.method.toUpperCase()} ${url} ${res.status} ${tookMs}ms`);
       let resHeaders = (() => { try { return Object.fromEntries((res.headers as any).entries()); } catch { return {}; } })();
-      logInfo('trustivs.response', { url, status: res.status, tookMs, headers: resHeaders, body: text });
+      logInfo('trustivs.response', { traceId, url, status: res.status, tookMs, headers: resHeaders, body: text, attempt: 1 });
+      if (res.status >= 500) {
+        logError('trustivs.chain', {
+          traceId,
+          url,
+          method: init.method.toUpperCase(),
+          tookMs,
+          attempt: 1,
+          request: { headers: this.maskHeaders(headers), body: init.body },
+          response: { status: res.status, headers: resHeaders, body: text },
+        });
+      }
       let json: any = undefined;
       try { json = JSON.parse(text); } catch {}
 
@@ -144,7 +177,19 @@ export class TrustivsConfigService {
           tookMs = Date.now() - started2;
           resHeaders = (() => { try { return Object.fromEntries((res.headers as any).entries()); } catch { return {}; } })();
           this.logger.log(`RESPONSE(retry) ${init.method.toUpperCase()} ${url} ${res.status} ${tookMs}ms`);
-          logInfo('trustivs.response', { url, status: res.status, tookMs, headers: resHeaders, body: text });
+          logInfo('trustivs.response', { traceId, url, status: res.status, tookMs, headers: resHeaders, body: text, attempt: 2, retry: true });
+          if (res.status >= 500) {
+            logError('trustivs.chain', {
+              traceId,
+              url,
+              method: init.method.toUpperCase(),
+              tookMs,
+              attempt: 2,
+              request: { headers: this.maskHeaders(headers), body: init.body },
+              response: { status: res.status, headers: resHeaders, body: text },
+              retry: true,
+            });
+          }
           try { json = JSON.parse(text); } catch { json = undefined; }
         }
       }

@@ -1,11 +1,24 @@
--- Ensure device_safety_checks.image_url can store large data URLs
--- Change image_url from varchar(512) to TEXT if needed
 
-set @has_table := (
-  select count(*) from information_schema.tables
-   where table_schema = database() and table_name = 'device_safety_checks'
+-- Follow the same SELECT IF + PREPARE pattern as 060_*.sql for compatibility
+SET @has_col := (
+  SELECT COUNT(1) FROM information_schema.columns
+   WHERE table_schema = DATABASE()
+     AND table_name = 'device_safety_checks'
+     AND column_name = 'image_url'
 );
 
-set @sql := if(@has_table = 1, 'alter table device_safety_checks modify column image_url text null', 'select 1');
-prepare stmt from @sql; execute stmt; deallocate prepare stmt;
+-- Only modify when column exists and is not already TEXT
+SET @is_text := (
+  SELECT COUNT(1) FROM information_schema.columns
+   WHERE table_schema = DATABASE()
+     AND table_name = 'device_safety_checks'
+     AND column_name = 'image_url'
+     AND data_type = 'text'
+);
 
+SET @stmt := (
+  SELECT IF(@has_col = 1 AND @is_text = 0,
+    'ALTER TABLE device_safety_checks MODIFY COLUMN image_url TEXT NULL',
+    'SELECT 1')
+);
+PREPARE s1 FROM @stmt; EXECUTE s1; DEALLOCATE PREPARE s1;

@@ -1,6 +1,7 @@
 import fetch from 'node-fetch';
 import { StdResponse } from './std-response';
 import { logInfo, logWarn, logError } from '../../common/file-logger';
+import { getTraceId } from '../../common/trace';
 import crypto from 'crypto';
 
 export class TrustivsUpstreamService {
@@ -8,7 +9,7 @@ export class TrustivsUpstreamService {
   private static tokenCache?: { token: string; expiresAt?: number };
 
   constructor() {
-    this.base = process.env.TRUSTIVS_BASE || 'http://127.0.0.1:9086';
+    this.base = process.env.ylt_baseurl || 'http://127.0.0.1:9086';
   }
 
   private now() { return Date.now(); }
@@ -22,11 +23,11 @@ export class TrustivsUpstreamService {
     const envToken = this.getEnvToken();
     if (!force && envToken) return envToken;
     // Build from ylt_* or TRUSTIVS_* env
-    const acc = process.env.ylt_account || process.env.TRUSTIVS_ACCOUNT || 'CPT';
-    const pwdMd5Env = process.env.ylt_password_md5 || process.env.TRUSTIVS_PASSWORD_MD5 || '';
+    const acc = process.env.ylt_account || 'CPT';
+    const pwdMd5Env = process.env.ylt_password_md5 || '';
     let fpwd = pwdMd5Env;
     if (!fpwd) {
-      const raw = process.env.ylt_password || process.env.TRUSTIVS_PASSWORD || '123456';
+      const raw = process.env.ylt_password || '123456';
       fpwd = crypto.createHash('md5').update(raw).digest('hex');
     }
     const body = { fnumber: acc, fpwd };
@@ -49,6 +50,14 @@ export class TrustivsUpstreamService {
     return hdr;
   }
 
+  private maskHeaders(h: Record<string, any> | undefined) {
+    const o: Record<string, any> = {};
+    for (const [k, v] of Object.entries(h || {})) o[k] = v;
+    if (o['token']) o['token'] = '***';
+    if (o['authorization']) o['authorization'] = '***';
+    return o;
+  }
+
   async request<T = any>(method: string, path: string, opts: { query?: any; body?: any; headers?: Record<string, any> }, autoAuth = true): Promise<StdResponse<T>> {
     const qs = opts?.query
       ?
@@ -67,15 +76,27 @@ export class TrustivsUpstreamService {
     if (opts?.body && method.toUpperCase() !== 'GET') { hdr['Content-Type'] = hdr['Content-Type'] || 'application/json'; body = JSON.stringify(opts.body); }
 
     const started = Date.now();
+    const traceId = getTraceId() || Math.random().toString(36).slice(2, 12);
     // Log full request
-    logInfo('trustivs.request', { method: method.toUpperCase(), url, headers: hdr, body: body ? JSON.parse(body) : undefined });
+    logInfo('trustivs.request', { traceId, method: method.toUpperCase(), url, headers: this.maskHeaders(hdr), body: body ? JSON.parse(body) : undefined });
     try {
       const res = await fetch(url, { method: method.toUpperCase(), headers: hdr as any, body });
       const text = await res.text();
       const tookMs = Date.now() - started;
       const resHeaders = (() => { try { return Object.fromEntries((res.headers as any).entries()); } catch { return {}; } })();
       // Log full response
-      logInfo('trustivs.response', { url, status: res.status, tookMs, headers: resHeaders, body: text });
+      logInfo('trustivs.response', { traceId, url, status: res.status, tookMs, headers: resHeaders, body: text, attempt: 1 });
+      if (res.status >= 500) {
+        logError('trustivs.chain', {
+          traceId,
+          url,
+          method: method.toUpperCase(),
+          tookMs,
+          attempt: 1,
+          request: { headers: this.maskHeaders(hdr), body: body ? JSON.parse(body) : undefined },
+          response: { status: res.status, headers: resHeaders, body: text },
+        });
+      }
       try {
         const json = JSON.parse(text);
         // Handle token expired code ('405') by refreshing token and retrying once
@@ -88,7 +109,21 @@ export class TrustivsUpstreamService {
             if (newToken) hdr2['token'] = newToken;
             const res2 = await fetch(url, { method: method.toUpperCase(), headers: hdr2 as any, body });
             const text2 = await res2.text();
-            logInfo('trustivs.response', { url, status: res2.status, tookMs: Date.now() - started, headers: (()=>{ try { return Object.fromEntries((res2.headers as any).entries()); } catch { return {}; } })(), body: text2, retry: true });
+            const took2 = Date.now() - started;
+            const resHeaders2 = (()=>{ try { return Object.fromEntries((res2.headers as any).entries()); } catch { return {}; } })();
+            logInfo('trustivs.response', { traceId, url, status: res2.status, tookMs: took2, headers: resHeaders2, body: text2, attempt: 2, retry: true });
+            if (res2.status >= 500) {
+              logError('trustivs.chain', {
+                traceId,
+                url,
+                method: method.toUpperCase(),
+                tookMs: took2,
+                attempt: 2,
+                request: { headers: this.maskHeaders(hdr), body: body ? JSON.parse(body) : undefined },
+                response: { status: res2.status, headers: resHeaders2, body: text2 },
+                retry: true,
+              });
+            }
             try { return JSON.parse(text2); } catch { return { code: res2.ok ? '1':'0', message: text2 } as any; }
           } catch (e) {
             // fall through to original json

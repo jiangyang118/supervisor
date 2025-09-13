@@ -27,5 +27,5 @@ COPY --from=builder /app/dist ./dist
 COPY services/gateway-service/scripts ./scripts
 COPY services/gateway-service/migrations ./migrations
 
-# run migrations before starting the app
-CMD ["sh", "-c", "node scripts/run-migrations.js && node dist/services/gateway-service/src/main.js"]
+# wait for database, run migrations, then start the app
+CMD ["sh", "-c", "node scripts/wait-for-db.js && node scripts/run-migrations.js && node dist/services/gateway-service/src/main.js"]

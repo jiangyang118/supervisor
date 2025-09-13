@@ -1,11 +1,56 @@
-import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, OnModuleInit } from '@nestjs/common';
 import { DbService } from '../db.service';
 
 export type WasteCategory = number;
 
 @Injectable()
-export class WasteRepository {
+export class WasteRepository implements OnModuleInit {
   constructor(private readonly db: DbService) {}
+
+  async onModuleInit() {
+    await this.ensureSchema();
+  }
+
+  private async ensureSchema() {
+    try {
+      await this.db.query(
+        `create table if not exists waste_categories (
+           id int not null primary key auto_increment,
+           name varchar(255) not null,
+           enabled tinyint not null default 1,
+           created_at datetime not null default current_timestamp,
+           unique key uk_waste_categories_name(name)
+         )`,
+      );
+    } catch {}
+    try {
+      await this.db.query(
+        `create table if not exists waste_records (
+           id int not null primary key auto_increment,
+           school_id int not null,
+           canteen_id int null,
+           date date not null,
+           category varchar(255) not null,
+           amount decimal(18,3) not null default 0,
+           buyer varchar(255) not null,
+           person varchar(255) not null,
+           created_at datetime not null default current_timestamp,
+           key idx_waste_records_school_date (school_id, date),
+           key idx_waste_canteen (canteen_id),
+           key idx_waste_records_created_at (created_at)
+         )`,
+      );
+      // Align legacy table: add missing columns if needed
+      const { rows } = await this.db.query<any>(
+        'select column_name as name from information_schema.columns where table_schema = database() and table_name = ?',
+        ['waste_records'],
+      );
+      const cols = new Set((rows || []).map((r: any) => String(r.name || r.COLUMN_NAME || '').toLowerCase()));
+      if (!cols.has('canteen_id')) {
+        try { await this.db.query('alter table waste_records add column canteen_id int null after school_id'); } catch {}
+      }
+    } catch {}
+  }
 
   // Categories
   async listCategories(enabledOnly = true) {
@@ -51,8 +96,20 @@ export class WasteRepository {
     if (filters.start) { where.push('r.`date` >= ?'); params.push(filters.start); }
     if (filters.end) { where.push('r.`date` <= ?'); params.push(filters.end); }
     const sql = `select count(1) as c from waste_records r ${where.length ? 'where ' + where.join(' and ') : ''}`;
-    const { rows } = await this.db.query<any>(sql, params);
-    return Number(rows[0]?.c || 0);
+    try {
+      const { rows } = await this.db.query<any>(sql, params);
+      return Number(rows[0]?.c || 0);
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/unknown column 'r\.canteen_id'|ER_BAD_FIELD_ERROR/i.test(msg)) {
+        // retry without canteen_id condition
+        const where2 = where.filter((w) => !/canteen_id/.test(w));
+        const params2 = params.filter((_v, i) => !/canteen_id/.test(where[i] || ''));
+        const { rows } = await this.db.query<any>(`select count(1) as c from waste_records r ${where2.length ? 'where ' + where2.join(' and ') : ''}`, params2);
+        return Number(rows[0]?.c || 0);
+      }
+      throw e;
+    }
   }
 
   async listRecords(filters: { schoolId?: number; canteenId?: number; category?: number; start?: string; end?: string; page: number; pageSize: number; }) {
@@ -69,13 +126,29 @@ export class WasteRepository {
                  ${where.length ? 'where ' + where.join(' and ') : ''}
                  order by r.created_at desc limit ? offset ?`;
     params.push(filters.pageSize, (filters.page - 1) * filters.pageSize);
-    const { rows } = await this.db.query<any>(sql, params);
-    return (rows as any[]).map((r) => ({
-      ...r,
-      id: Number(r.id),
-      schoolId: Number(r.schoolId),
-      amount: Number(r.amount),
-    }));
+    try {
+      const { rows } = await this.db.query<any>(sql, params);
+      return (rows as any[]).map((r) => ({
+        ...r,
+        id: Number(r.id),
+        schoolId: Number(r.schoolId),
+        amount: Number(r.amount),
+      }));
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/unknown column 'r\.canteen_id'|unknown column 'c\.id'|ER_BAD_FIELD_ERROR/i.test(msg)) {
+        const where2 = where.filter((w) => !/canteen_id/.test(w));
+        const params2 = params.filter((_v, i) => !/canteen_id/.test(where[i] || ''));
+        const { rows } = await this.db.query<any>(
+          `select r.id, r.school_id as schoolId, r.date, r.category, r.amount, r.buyer, r.person, r.created_at as createdAt
+             from waste_records r ${where2.length ? 'where ' + where2.join(' and ') : ''}
+             order by r.created_at desc limit ? offset ?`,
+          params2,
+        );
+        return (rows as any[]).map((r) => ({ ...r, id: Number(r.id), schoolId: Number(r.schoolId), amount: Number(r.amount), canteenId: null, canteenName: null }));
+      }
+      throw e;
+    }
   }
 
   async insertRecord(rec: {
@@ -88,25 +161,52 @@ export class WasteRepository {
     person: string;
     createdAt: string;
   }): Promise<number> {
-    const res = await this.db.query(
-      `insert into waste_records(school_id, canteen_id, date, category, amount, buyer, person, created_at)
-       values(?,?,?,?,?,?,?,?)`,
-      [rec.schoolId, rec.canteenId || null, rec.date, rec.category, rec.amount, rec.buyer, rec.person, new Date(rec.createdAt)],
-    );
-    return res.insertId || 0;
+    try {
+      const res = await this.db.query(
+        `insert into waste_records(school_id, canteen_id, date, category, amount, buyer, person, created_at)
+         values(?,?,?,?,?,?,?,?)`,
+        [rec.schoolId, rec.canteenId || null, rec.date, rec.category, rec.amount, rec.buyer, rec.person, new Date(rec.createdAt)],
+      );
+      return res.insertId || 0;
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/unknown column 'canteen_id'|ER_BAD_FIELD_ERROR/i.test(msg)) {
+        const res = await this.db.query(
+          `insert into waste_records(school_id, date, category, amount, buyer, person, created_at)
+           values(?,?,?,?,?,?,?)`,
+          [rec.schoolId, rec.date, rec.category, rec.amount, rec.buyer, rec.person, new Date(rec.createdAt)],
+        );
+        return res.insertId || 0;
+      }
+      throw e;
+    }
   }
 
   async getRecordById(id: number) {
-    const { rows } = await this.db.query<any>(
-      `select r.id, r.school_id as schoolId, r.canteen_id as canteenId, r.date, r.category, r.amount, r.buyer, r.person, r.created_at as createdAt,
-              c.name as canteenName
-       from waste_records r left join canteens c on c.id = r.canteen_id where r.id = ? limit 1`,
-      [id],
-    );
-    const row = rows[0] || null;
-    return row
-      ? { ...row, id: Number(row.id), schoolId: Number(row.schoolId), amount: Number(row.amount) }
-      : null;
+    try {
+      const { rows } = await this.db.query<any>(
+        `select r.id, r.school_id as schoolId, r.canteen_id as canteenId, r.date, r.category, r.amount, r.buyer, r.person, r.created_at as createdAt,
+                c.name as canteenName
+         from waste_records r left join canteens c on c.id = r.canteen_id where r.id = ? limit 1`,
+        [id],
+      );
+      const row = rows[0] || null;
+      return row
+        ? { ...row, id: Number(row.id), schoolId: Number(row.schoolId), amount: Number(row.amount) }
+        : null;
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/unknown column 'r\.canteen_id'|unknown column 'c\.id'|ER_BAD_FIELD_ERROR/i.test(msg)) {
+        const { rows } = await this.db.query<any>(
+          `select r.id, r.school_id as schoolId, r.date, r.category, r.amount, r.buyer, r.person, r.created_at as createdAt
+             from waste_records r where r.id = ? limit 1`,
+          [id],
+        );
+        const row = rows[0] || null;
+        return row ? { ...row, id: Number(row.id), schoolId: Number(row.schoolId), amount: Number(row.amount), canteenId: null, canteenName: null } : null;
+      }
+      throw e;
+    }
   }
 
   async deleteRecord(id: number) {

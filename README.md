@@ -69,7 +69,7 @@
   - Linux 如无法解析 `host.docker.internal`，compose 已添加 `extra_hosts: host.docker.internal:host-gateway`；需 Docker 20.10+。
 - 数据库迁移：服务启动时自动执行（可用 `DB_AUTO_MIGRATE=0` 关闭）。亦可手动：
   - `make migrate`
-  - 或：`DATABASE_URL="mysql://user:pass@127.0.0.1:3306/foodsafe" pnpm -C services/gateway-service db:migrate`
+  - 或：`DATABASE_URL="mysql://wwwweb:Cpt2024%402025@101.201.249.22:3306/foodsafe" pnpm -C services/gateway-service db:migrate`
 - 查看日志：
   - `docker compose -f infra/docker-compose.yml logs -f gateway-service`
 

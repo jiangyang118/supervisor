@@ -34,6 +34,19 @@ export class CanteenLicensesRepository implements OnModuleInit {
            key idx_cq_expire (expire_at)
          )`
       );
+      // Align legacy schemas: add missing columns when table exists without them
+      const { rows } = await this.db.query<any>(
+        'select column_name as name from information_schema.columns where table_schema = database() and table_name = ?',
+        ['canteen_qualifications'],
+      );
+      const cols = new Set((rows || []).map((r: any) => String(r.name || r.COLUMN_NAME || '').toLowerCase()));
+      const add = async (sql: string) => { try { await this.db.query(sql); } catch {} };
+      if (!cols.has('qtype')) await add('alter table canteen_qualifications add column qtype varchar(64) not null default "营业执照"');
+      if (!cols.has('number')) await add('alter table canteen_qualifications add column number varchar(128) null');
+      if (!cols.has('authority')) await add('alter table canteen_qualifications add column authority varchar(255) null');
+      if (!cols.has('permit_items')) await add('alter table canteen_qualifications add column permit_items varchar(255) null');
+      if (!cols.has('expire_at')) await add('alter table canteen_qualifications add column expire_at datetime null');
+      if (!cols.has('image_url')) await add('alter table canteen_qualifications add column image_url varchar(1024) null');
     } catch {}
   }
 

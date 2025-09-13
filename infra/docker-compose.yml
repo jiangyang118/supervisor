@@ -57,7 +57,7 @@ services:
       # Either provide DATABASE_URL or MYSQL_* to the app
       # Use host database; override with HOST_DATABASE_URL if needed
       # Example: HOST_DATABASE_URL=mysql://user:pass@host.docker.internal:3306/foodsafe
-      DATABASE_URL: ${HOST_DATABASE_URL:-mysql://foodsafe:secret@host.docker.internal:3306/foodsafe_dev}
+      DATABASE_URL: ${HOST_DATABASE_URL:-mysql://wwwweb:Cpt2024%402025@101.201.249.22:3306/foodsafe}
     ports: ['3300:3000']
     # Allow container to resolve host.docker.internal on Linux (host-gateway)
     extra_hosts: ['host.docker.internal:host-gateway']
@@ -87,8 +87,8 @@ services:
     environment:
       PORT: 3000
       # Use host database in dev mode as well
-      DATABASE_URL: ${HOST_DATABASE_URL:-mysql://foodsafe:secret@host.docker.internal:3306/foodsafe_dev}
-    command: ["sh", "-lc", "node scripts/run-migrations.js && node --watch dist/services/gateway-service/src/main.js"]
+      DATABASE_URL: ${HOST_DATABASE_URL:-mysql://wwwweb:Cpt2024%402025@101.201.249.22:3306/foodsafe}
+    command: ["sh", "-lc", "node scripts/wait-for-db.js && node scripts/run-migrations.js && node --watch dist/services/gateway-service/src/main.js"]
     volumes:
       - ../services/gateway-service/migrations:/app/migrations:ro
       - ../services/gateway-service/dist:/app/dist

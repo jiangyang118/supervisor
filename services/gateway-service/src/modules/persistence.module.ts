@@ -20,6 +20,7 @@ import { CanteenLicensesRepository } from './repositories/canteen-licenses.repos
 import { SchoolUsersRepository } from './repositories/school-users.repository';
 import { PersonnelRepository } from './repositories/personnel.repository';
 import { DeviceSafetyRepository } from './repositories/device-safety.repository';
+import { TrustivsCamerasRepository } from './repositories/trustivs-cameras.repository';
 
 @Global()
 @Module({
@@ -45,6 +46,7 @@ import { DeviceSafetyRepository } from './repositories/device-safety.repository'
     SchoolUsersRepository,
     PersonnelRepository,
     DeviceSafetyRepository,
+    TrustivsCamerasRepository,
   ],
   exports: [
     DbService,
@@ -68,6 +70,7 @@ import { DeviceSafetyRepository } from './repositories/device-safety.repository'
     SchoolUsersRepository,
     PersonnelRepository,
     DeviceSafetyRepository,
+    TrustivsCamerasRepository,
   ],
 })
 export class PersistenceModule {}

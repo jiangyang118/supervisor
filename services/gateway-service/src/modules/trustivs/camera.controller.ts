@@ -17,12 +17,14 @@ export class CameraController {
   async getCameraByCompany(
     @Query('pageNum') pageNum?: string,
     @Query('pageSize') pageSize?: string,
+    @Query('schoolId') schoolId?: string,
+    @Query('canteenId') canteenId?: string,
     @Headers() _headers?: Record<string, string>,
   ) {
     // headers 已由拦截器注入 time/uuid/token 校验。内部调用时由 TrustivsConfigService 注入。
     const pn = Number(pageNum || '1') || 1;
     const ps = Number(pageSize || '10') || 10;
-    const resp = await this.svc.getCameraByCompany({ pageNum: pn, pageSize: ps });
+    const resp = await this.svc.getCameraByCompany({ pageNum: pn, pageSize: ps, schoolId, canteenId });
     return resp;
   }
 }

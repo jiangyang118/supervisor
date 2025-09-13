@@ -1,9 +1,99 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException, OnModuleInit } from '@nestjs/common';
 import { DbService } from '../modules/db.service';
 
 @Injectable()
-export class InventoryRepository {
+export class InventoryRepository implements OnModuleInit {
   constructor(private readonly db: DbService) {}
+
+  async onModuleInit() {
+    await this.ensureProductsSchema();
+    await this.ensureInboundSchema();
+    await this.ensureOutboundSchema();
+  }
+
+  private async ensureProductsSchema() {
+    // Create table if missing (modern schema)
+    try {
+      await this.db.query(
+        `create table if not exists inv_products (
+           id int primary key auto_increment,
+           school_id int not null,
+           name varchar(255) not null,
+           unit varchar(64) not null,
+           category varchar(64) null,
+           spec varchar(128) not null default '',
+           last_price decimal(18,2) null,
+           deleted tinyint not null default 0,
+           created_at datetime not null default current_timestamp,
+           key idx_inv_products_school (school_id),
+           key idx_inv_products_category (category)
+         )`,
+      );
+    } catch {}
+    // Align legacy columns
+    try {
+      const { rows } = await this.db.query<any>(
+        'select column_name as name from information_schema.columns where table_schema = database() and table_name = ?',
+        ['inv_products'],
+      );
+      const cols = new Set((rows || []).map((r: any) => String(r.name || r.COLUMN_NAME || '').toLowerCase()));
+      const add = async (sql: string) => { try { await this.db.query(sql); } catch {} };
+      if (!cols.has('category')) await add('alter table inv_products add column category varchar(64) null');
+      if (!cols.has('spec')) await add("alter table inv_products add column spec varchar(128) not null default ''");
+      if (!cols.has('last_price')) await add('alter table inv_products add column last_price decimal(18,2) null');
+      if (!cols.has('deleted')) await add('alter table inv_products add column deleted tinyint not null default 0');
+      // Unique constraint to avoid duplicates; include deleted for soft-delete logic
+      try { await this.db.query('alter table inv_products drop index uk_inv_products_uniq'); } catch {}
+      try { await this.db.query('alter table inv_products add unique key uk_inv_products_uniq (school_id, name, spec, deleted)'); } catch {}
+    } catch {}
+  }
+
+  private async ensureInboundSchema() {
+    // inv_inbound extended columns and inbound_attachments table for doc features
+    try {
+      // Base table should exist from initial migrations; add missing columns if needed
+      const { rows } = await this.db.query<any>(
+        'select column_name as name from information_schema.columns where table_schema = database() and table_name = ?',
+        ['inv_inbound'],
+      );
+      const cols = new Set((rows || []).map((r: any) => String(r.name || r.COLUMN_NAME || '').toLowerCase()));
+      const add = async (sql: string) => { try { await this.db.query(sql); } catch {} };
+      if (!cols.has('doc_no')) await add('alter table inv_inbound add column doc_no varchar(64) null after id');
+      if (!cols.has('canteen_id')) await add('alter table inv_inbound add column canteen_id int null after school_id');
+      if (!cols.has('unit_price')) await add('alter table inv_inbound add column unit_price decimal(18,2) null after qty');
+      if (!cols.has('prod_date')) await add('alter table inv_inbound add column prod_date date null after unit_price');
+      if (!cols.has('shelf_life_days')) await add('alter table inv_inbound add column shelf_life_days int null after prod_date');
+      if (!cols.has('created_by')) await add('alter table inv_inbound add column created_by varchar(255) null after source');
+      try { await this.db.query('create index idx_inv_in_doc on inv_inbound(doc_no)'); } catch {}
+      try { await this.db.query('create index idx_inv_in_at on inv_inbound(at)'); } catch {}
+    } catch {}
+    try {
+      await this.db.query(
+        `create table if not exists inbound_attachments (
+           id int primary key auto_increment,
+           doc_no varchar(64) not null,
+           type varchar(32) not null,
+           image_url varchar(255) not null,
+           created_at datetime not null default current_timestamp,
+           key idx_inb_att_doc (doc_no),
+           key idx_inb_att_type (type)
+         )`,
+      );
+    } catch {}
+  }
+
+  private async ensureOutboundSchema() {
+    try {
+      const { rows } = await this.db.query<any>(
+        'select column_name as name from information_schema.columns where table_schema = database() and table_name = ?',
+        ['inv_outbound'],
+      );
+      const cols = new Set((rows || []).map((r: any) => String(r.name || r.COLUMN_NAME || '').toLowerCase()));
+      const add = async (sql: string) => { try { await this.db.query(sql); } catch {} };
+      if (!cols.has('canteen_id')) await add('alter table inv_outbound add column canteen_id int null after school_id');
+      if (!cols.has('receiver')) await add('alter table inv_outbound add column receiver varchar(128) null after by_who');
+    } catch {}
+  }
 
   // Categories
   async insertCategory(schoolId: number, name: string) {
@@ -87,11 +177,24 @@ export class InventoryRepository {
   async listProducts(schoolId?: number | string) {
     const where = schoolId ? 'where school_id = ?' : '';
     const params = schoolId ? [schoolId] : [];
-    const { rows } = await this.db.query<any>(
-      `select id, school_id as schoolId, name, unit, category, spec, last_price as lastPrice from inv_products ${where} ${where ? 'and' : 'where'} deleted = 0 order by id desc`,
-      params,
-    );
-    return rows as Array<{ id: number; schoolId: number; name: string; unit: string; category?: string; spec?: string; lastPrice?: number }>;
+    try {
+      const { rows } = await this.db.query<any>(
+        `select id, school_id as schoolId, name, unit, category, spec, last_price as lastPrice from inv_products ${where} ${where ? 'and' : 'where'} deleted = 0 order by id desc`,
+        params,
+      );
+      return rows as Array<{ id: number; schoolId: number; name: string; unit: string; category?: string; spec?: string; lastPrice?: number }>;
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/unknown column 'category'|unknown column 'deleted'|no such column|ER_BAD_FIELD_ERROR/i.test(msg)) {
+        // Legacy fallback: select basic columns only
+        const { rows } = await this.db.query<any>(
+          `select id, school_id as schoolId, name, unit from inv_products ${where} order by id desc`,
+          params,
+        );
+        return (rows as any[]).map((r) => ({ ...r, category: null, spec: '', lastPrice: null }));
+      }
+      throw e;
+    }
   }
   async insertProductV2(row: { schoolId: number; name: string; unit: string; category?: string; spec?: string; lastPrice?: number }) {
     const res = await this.db.query(
@@ -119,16 +222,27 @@ export class InventoryRepository {
     schoolId: number; name: string; phone?: string; license?: string; address?: string; contact?: string; email?: string;
     enabled?: boolean; rating?: number; categories?: string[]; licenseExpireAt?: string; licenseImageUrl?: string; deleted?: boolean;
   }) {
-    const res = await this.db.query(
-      `insert into inv_suppliers(school_id, name, phone, license, address, contact, email, enabled, rating, categories, license_expire_at, license_image_url, deleted)
-       values(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      [
-        s.schoolId, s.name, s.phone || null, s.license || null, s.address || null, s.contact || null, s.email || null,
-        s.enabled ?? true, s.rating ?? null, JSON.stringify(s.categories || []), s.licenseExpireAt || null, s.licenseImageUrl || null,
-        s.deleted ? 1 : 0,
-      ],
-    );
-    return res.insertId || 0;
+    try {
+      const res = await this.db.query(
+        `insert into inv_suppliers(school_id, name, phone, license, address, contact, email, enabled, rating, categories, license_expire_at, license_image_url, deleted)
+         values(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+          s.schoolId, s.name, s.phone || null, s.license || null, s.address || null, s.contact || null, s.email || null,
+          s.enabled ?? true, s.rating ?? null, JSON.stringify(s.categories || []), s.licenseExpireAt || null, s.licenseImageUrl || null,
+          s.deleted ? 1 : 0,
+        ],
+      );
+      return res.insertId || 0;
+    } catch (e: any) {
+      const code = String(e?.code || e?.errno || '');
+      if (code === 'ER_DUP_ENTRY' || Number(code) === 1062) {
+        const msg: string = String(e?.message || 'duplicate');
+        if (/uk_inv_suppliers_phone/i.test(msg)) throw new ConflictException('手机号已存在');
+        if (/uk_inv_suppliers_license/i.test(msg)) throw new ConflictException('许可证号已存在');
+        throw new ConflictException('供应商信息已存在');
+      }
+      throw e;
+    }
   }
   async updateSupplier(id: string | number, patch: Partial<Record<string, any>>) {
     const fields: string[] = [];
@@ -147,7 +261,18 @@ export class InventoryRepository {
     }
     if (!fields.length) return;
     values.push(id);
-    await this.db.query(`update inv_suppliers set ${fields.join(', ')} where id = ?`, values);
+    try {
+      await this.db.query(`update inv_suppliers set ${fields.join(', ')} where id = ?`, values);
+    } catch (e: any) {
+      const code = String(e?.code || e?.errno || '');
+      if (code === 'ER_DUP_ENTRY' || Number(code) === 1062) {
+        const msg: string = String(e?.message || 'duplicate');
+        if (/uk_inv_suppliers_phone/i.test(msg)) throw new ConflictException('手机号已存在');
+        if (/uk_inv_suppliers_license/i.test(msg)) throw new ConflictException('许可证号已存在');
+        throw new ConflictException('供应商信息已存在');
+      }
+      throw e;
+    }
   }
   async getSupplierById(id: number | string) {
     const { rows } = await this.db.query<any>(
@@ -384,49 +509,99 @@ export class InventoryRepository {
   async listInboundDocs(schoolId?: number | string) {
     const where = schoolId ? 'where i.school_id = ?' : '';
     const params = schoolId ? [schoolId] : [];
-    const { rows } = await this.db.query<any>(
-      `select i.doc_no as docNo,
-              date(min(i.at)) as date,
-              min(i.canteen_id) as canteenId,
-              min(i.supplier_id) as supplierId,
-              count(distinct i.product_id) as kinds,
-              sum(i.qty) as totalQty,
-              coalesce(max(nullif(i.created_by, '')), min(i.created_by)) as operator,
-              group_concat(distinct p.name order by p.name separator '、') as productNames
-         from inv_inbound i
-         left join inv_products p on p.id = i.product_id
-         ${where}
-        group by i.doc_no
-        order by date desc, docNo desc`,
-      params,
-    );
-    return rows as Array<{ docNo: string; date: string; canteenId?: number; supplierId?: number; kinds: number; totalQty: number; operator?: string; productNames?: string }>;
+    try {
+      const { rows } = await this.db.query<any>(
+        `select i.doc_no as docNo,
+                date(min(i.at)) as date,
+                min(i.canteen_id) as canteenId,
+                min(i.supplier_id) as supplierId,
+                count(distinct i.product_id) as kinds,
+                sum(i.qty) as totalQty,
+                coalesce(max(nullif(i.created_by, '')), min(i.created_by)) as operator,
+                group_concat(distinct p.name order by p.name separator '、') as productNames
+           from inv_inbound i
+           left join inv_products p on p.id = i.product_id
+           ${where}
+          group by i.doc_no
+          order by date desc, docNo desc`,
+        params,
+      );
+      return rows as Array<{ docNo: string; date: string; canteenId?: number; supplierId?: number; kinds: number; totalQty: number; operator?: string; productNames?: string }>;
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/unknown column 'i\.doc_no'|no such column: i\.doc_no|ER_BAD_FIELD_ERROR/i.test(msg)) {
+        // Fallback for legacy schema: treat each inbound id as a separate doc
+        const { rows } = await this.db.query<any>(
+          `select cast(i.id as char) as docNo,
+                  date(i.at) as date,
+                  i.canteen_id as canteenId,
+                  i.supplier_id as supplierId,
+                  1 as kinds,
+                  i.qty as totalQty,
+                  coalesce(nullif(i.created_by, ''), '') as operator,
+                  p.name as productNames
+             from inv_inbound i
+             left join inv_products p on p.id = i.product_id
+             ${where}
+            order by date desc, docNo desc`,
+          params,
+        );
+        return rows as any;
+      }
+      throw e;
+    }
   }
 
   async getInboundDocDetail(docNo: string) {
-    const head = await this.db.query<any>(
-      `select i.doc_no as docNo,
-              date(min(i.at)) as date,
-              min(i.school_id) as schoolId,
-              min(i.canteen_id) as canteenId,
-              min(i.supplier_id) as supplierId,
-              coalesce(max(nullif(i.created_by, '')), min(i.created_by)) as operator
-         from inv_inbound i where i.doc_no = ?`,
-      [docNo],
-    );
-    const items = await this.db.query<any>(
-      `select i.product_id as productId, p.name as productName, p.unit as unit,
-              i.qty, i.unit_price as unitPrice, i.prod_date as prodDate, i.shelf_life_days as shelfLifeDays
-         from inv_inbound i left join inv_products p on p.id = i.product_id
-        where i.doc_no = ? order by i.id asc`,
-      [docNo],
-    );
-    const atts = await this.db.query<any>(
-      `select type, image_url as imageUrl, created_at as createdAt
-         from inbound_attachments where doc_no = ? order by id asc`,
-      [docNo],
-    );
-    return { head: head.rows?.[0] || null, items: items.rows || [], attachments: atts.rows || [] };
+    try {
+      const head = await this.db.query<any>(
+        `select i.doc_no as docNo,
+                date(min(i.at)) as date,
+                min(i.school_id) as schoolId,
+                min(i.canteen_id) as canteenId,
+                min(i.supplier_id) as supplierId,
+                coalesce(max(nullif(i.created_by, '')), min(i.created_by)) as operator
+           from inv_inbound i where i.doc_no = ?`,
+        [docNo],
+      );
+      const items = await this.db.query<any>(
+        `select i.product_id as productId, p.name as productName, p.unit as unit,
+                i.qty, i.unit_price as unitPrice, i.prod_date as prodDate, i.shelf_life_days as shelfLifeDays
+           from inv_inbound i left join inv_products p on p.id = i.product_id
+          where i.doc_no = ? order by i.id asc`,
+        [docNo],
+      );
+      const atts = await this.db.query<any>(
+        `select type, image_url as imageUrl, created_at as createdAt
+           from inbound_attachments where doc_no = ? order by id asc`,
+        [docNo],
+      );
+      return { head: head.rows?.[0] || null, items: items.rows || [], attachments: atts.rows || [] };
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/unknown column 'i\.doc_no'|no such column: i\.doc_no|ER_BAD_FIELD_ERROR/i.test(msg)) {
+        // Legacy fallback: interpret docNo as inbound id
+        const byId = await this.db.query<any>(
+          `select i.id as docNo,
+                  date(i.at) as date,
+                  i.school_id as schoolId,
+                  i.canteen_id as canteenId,
+                  i.supplier_id as supplierId,
+                  coalesce(nullif(i.created_by, ''), '') as operator
+             from inv_inbound i where i.id = ? limit 1`,
+          [Number(docNo)],
+        );
+        const items = await this.db.query<any>(
+          `select i.product_id as productId, p.name as productName, p.unit as unit,
+                  i.qty, null as unitPrice, null as prodDate, null as shelfLifeDays
+             from inv_inbound i left join inv_products p on p.id = i.product_id
+            where i.id = ? order by i.id asc`,
+          [Number(docNo)],
+        );
+        return { head: byId.rows?.[0] || null, items: items.rows || [], attachments: [] };
+      }
+      throw e;
+    }
   }
   async updateInboundDoc(docNo: string, b: { schoolId: number; canteenId?: number; supplierId?: number | string; date: string; operator?: string; items: Array<{ productId: string; qty: number; unitPrice?: number; prodDate?: string; shelfLifeDays?: number }>; tickets: Array<{ type: 'ticket_quarantine'|'ticket_invoice'|'ticket_receipt'; imageUrl: string }>; images?: string[] }) {
     // Recreate rows for simplicity: delete existing, then insert with new head + items + attachments
@@ -462,11 +637,24 @@ export class InventoryRepository {
     }
   }
   async insertOutbound(r: { schoolId: number; productId: string; qty: number; purpose?: string; by?: string; receiver?: string; canteenId?: number; warehouseId?: string; at: string; source: string }) {
-    const res = await this.db.query(
-      'insert into inv_outbound(school_id, canteen_id, product_id, qty, purpose, by_who, receiver, warehouse_id, at, source) values(?,?,?,?,?,?,?,?,?,?)',
-      [r.schoolId, r.canteenId || null, r.productId, r.qty, r.purpose || null, r.by || null, r.receiver || null, r.warehouseId || null, new Date(r.at), r.source],
-    );
-    return res.insertId || 0;
+    try {
+      const res = await this.db.query(
+        'insert into inv_outbound(school_id, canteen_id, product_id, qty, purpose, by_who, receiver, warehouse_id, at, source) values(?,?,?,?,?,?,?,?,?,?)',
+        [r.schoolId, r.canteenId || null, r.productId, r.qty, r.purpose || null, r.by || null, r.receiver || null, r.warehouseId || null, new Date(r.at), r.source],
+      );
+      return res.insertId || 0;
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/unknown column 'canteen_id'|ER_BAD_FIELD_ERROR/i.test(msg)) {
+        // Fallback for legacy schema without canteen_id/receiver
+        const res = await this.db.query(
+          'insert into inv_outbound(school_id, product_id, qty, purpose, by_who, warehouse_id, at, source) values(?,?,?,?,?,?,?,?)',
+          [r.schoolId, r.productId, r.qty, r.purpose || null, r.by || null, r.warehouseId || null, new Date(r.at), r.source],
+        );
+        return res.insertId || 0;
+      }
+      throw e;
+    }
   }
   async listInbound(schoolId?: number | string) {
     const where = schoolId ? 'where school_id = ?' : '';
@@ -484,23 +672,48 @@ export class InventoryRepository {
   async listOutbound(schoolId?: number | string) {
     const where = schoolId ? 'where school_id = ?' : '';
     const params = schoolId ? [schoolId] : [];
-    const { rows } = await this.db.query<any>(
-      `select id, canteen_id as canteenId, product_id as productId, qty, purpose, by_who as \`by\`, receiver, warehouse_id as warehouseId, at, source
-       from inv_outbound ${where} order by at desc`,
-      params,
-    );
-    return rows;
+    try {
+      const { rows } = await this.db.query<any>(
+        `select id, canteen_id as canteenId, product_id as productId, qty, purpose, by_who as \`by\`, receiver, warehouse_id as warehouseId, at, source
+         from inv_outbound ${where} order by at desc`,
+        params,
+      );
+      return rows;
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/unknown column 'canteen_id'|unknown column 'receiver'|ER_BAD_FIELD_ERROR/i.test(msg)) {
+        const { rows } = await this.db.query<any>(
+          `select id, product_id as productId, qty, purpose, by_who as \`by\`, warehouse_id as warehouseId, at, source
+           from inv_outbound ${where} order by at desc`,
+          params,
+        );
+        return rows.map((r: any) => ({ canteenId: null, receiver: null, ...r }));
+      }
+      throw e;
+    }
   }
   async listOutboundTotalByProduct(schoolId: number | string, productId: number | string, canteenId?: number | string) {
-    const where = canteenId !== undefined && canteenId !== null
-      ? 'where school_id = ? and product_id = ? and canteen_id = ?'
-      : 'where school_id = ? and product_id = ?';
-    const params = canteenId !== undefined && canteenId !== null ? [schoolId, productId, canteenId] : [schoolId, productId];
-    const { rows } = await this.db.query<any>(
-      `select coalesce(sum(qty),0) as total from inv_outbound ${where}`,
-      params,
-    );
-    return Number(rows?.[0]?.total || 0);
+    try {
+      const where = canteenId !== undefined && canteenId !== null
+        ? 'where school_id = ? and product_id = ? and canteen_id = ?'
+        : 'where school_id = ? and product_id = ?';
+      const params = canteenId !== undefined && canteenId !== null ? [schoolId, productId, canteenId] : [schoolId, productId];
+      const { rows } = await this.db.query<any>(
+        `select coalesce(sum(qty),0) as total from inv_outbound ${where}`,
+        params,
+      );
+      return Number(rows?.[0]?.total || 0);
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/unknown column 'canteen_id'|ER_BAD_FIELD_ERROR/i.test(msg)) {
+        const { rows } = await this.db.query<any>(
+          `select coalesce(sum(qty),0) as total from inv_outbound where school_id = ? and product_id = ?`,
+          [schoolId, productId],
+        );
+        return Number(rows?.[0]?.total || 0);
+      }
+      throw e;
+    }
   }
   async listInboundFifoBatches(params: { schoolId: number | string; productId: number | string; canteenId?: number | string }) {
     const { schoolId, productId, canteenId } = params;

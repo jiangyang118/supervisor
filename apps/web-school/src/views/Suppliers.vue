@@ -216,7 +216,7 @@ const form = reactive<any>({
   license: '',
   licenseExpireAt: '',
 });
-function goCreate() { router.push('/suppliers/new'); }
+function goCreate() { router.push('/hr/suppliers/new'); }
 function view(row: any) { router.push({ path: '/suppliers/edit', query: { id: String(row.id) } }); }
 function openEdit(row: any) { router.push({ path: '/suppliers/edit', query: { id: String(row.id) } }); }
 async function save() {

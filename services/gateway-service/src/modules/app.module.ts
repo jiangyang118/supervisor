@@ -50,6 +50,7 @@ import { DbService } from './db.service';
 import { DbBootstrapService } from './db.bootstrap';
 import { PersistenceModule } from './persistence.module';
 import { DbHealthController } from './db.controller';
+import { RoutesController } from './routes.controller';
 import { Module as NestModule } from '@nestjs/common';
 import { SchoolMorningCheckModule } from '../areas/school/morning-check.module';
 import { SchoolDineModule } from '../areas/school/dine.module';
@@ -119,6 +120,7 @@ import { DeviceSafetyService } from './device-safety.service';
     RegulatorMorningChecksController,
     DeviceMockController,
     DbHealthController,
+    RoutesController,
     IotController,
   ],
   providers: [

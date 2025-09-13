@@ -21,6 +21,7 @@ const map: Record<string, string> = {
   '/hr/staff/view':'人员资质详情',
   '/hr/canteen-licenses':'食堂资质',
   '/hr/suppliers':'供应商资质',
+  '/hr/suppliers/new':'新增供应商',
   '/system': '系统配置',
   '/ai/events': '违规抓拍明细',
   '/ai/summary': 'AI 抓拍统计',

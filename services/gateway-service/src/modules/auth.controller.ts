@@ -21,9 +21,19 @@ export class AuthController {
   ) {}
 
   @Post('login')
-  async login(@Body() b: { username: string; password: string }) {
-    // 1) 从数据库读取用户与角色
-    const dbUser = await this.usersRepo.findWithRolesByUsername(b.username);
+  async login(@Body() b?: { username?: string; password?: string }) {
+    // 基础校验，避免空 Body 导致 500
+    if (!b || typeof b.username !== 'string') {
+      return { ok: false, message: 'username required' } as any;
+    }
+
+    // 1) 从数据库读取用户与角色（防御性 try/catch，避免 DB 异常抛 500）
+    let dbUser: { id: number; username: string; displayName: string; enabled: number; roles: string[] } | null = null;
+    try {
+      dbUser = await this.usersRepo.findWithRolesByUsername(b.username);
+    } catch {
+      dbUser = null;
+    }
 
     // 2) 校验密码：优先使用数据库 user_credentials（salt+sha256），否则回退到演示口令
     let ok = false;

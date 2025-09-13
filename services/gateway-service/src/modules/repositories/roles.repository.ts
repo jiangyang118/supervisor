@@ -1,10 +1,25 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, OnModuleInit } from '@nestjs/common';
 import { DbService } from '../db.service';
 
 @Injectable()
-export class RolesRepository {
+export class RolesRepository implements OnModuleInit {
   constructor(private readonly db: DbService) {}
   private cols: Set<string> | null = null;
+
+  async onModuleInit() {
+    await this.ensureSchema();
+  }
+
+  private async ensureSchema() {
+    try {
+      await this.db.query(
+        'create table if not exists roles(id int auto_increment primary key, name varchar(255) unique, remark varchar(255) null, school_id int null, created_at datetime default current_timestamp, updated_at datetime default current_timestamp on update current_timestamp)'
+      );
+    } catch {}
+    try {
+      await this.db.query('create table if not exists role_permissions(role_id int, permission_key varchar(255), unique key uk_rp(role_id, permission_key))');
+    } catch {}
+  }
   private async ensureCols() {
     if (this.cols) return this.cols;
     try {
@@ -19,12 +34,18 @@ export class RolesRepository {
   }
 
   async listRoles(): Promise<Array<{ name: string; permissions: string[] }>> {
-    const { rows } = await this.db.query<any>(
-      `select r.name, group_concat(rp.permission_key separator ',') as perms
-         from roles r
-         left join role_permissions rp on rp.role_id = r.id
-        group by r.id, r.name order by r.name asc`);
-    return (rows as any[]).map(r => ({ name: r.name, permissions: r.perms ? String(r.perms).split(',').filter(Boolean) : [] }));
+    try {
+      const { rows } = await this.db.query<any>(
+        `select r.name, group_concat(rp.permission_key separator ',') as perms
+           from roles r
+           left join role_permissions rp on rp.role_id = r.id
+          group by r.id, r.name order by r.name asc`);
+      return (rows as any[]).map(r => ({ name: r.name, permissions: r.perms ? String(r.perms).split(',').filter(Boolean) : [] }));
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/no such table|doesn't exist|ER_NO_SUCH_TABLE/i.test(msg)) return [];
+      throw e;
+    }
   }
 
   async setPermissions(name: string, perms: string[]) {
@@ -117,38 +138,44 @@ export class RolesRepository {
   }
 
   async search(params: { schoolId?: number; q?: string }) {
-    const cols = await this.ensureCols();
-    const hasSchool = cols.has('school_id');
-    const hasRemark = cols.has('remark');
-    const hasCreated = cols.has('created_at');
-    const hasUpdated = cols.has('updated_at');
+    try {
+      const cols = await this.ensureCols();
+      const hasSchool = cols.has('school_id');
+      const hasRemark = cols.has('remark');
+      const hasCreated = cols.has('created_at');
+      const hasUpdated = cols.has('updated_at');
 
-    const where: string[] = [];
-    const values: any[] = [];
-    if (hasSchool && params.schoolId && Number.isFinite(Number(params.schoolId))) {
-      where.push('school_id = ?'); values.push(Number(params.schoolId));
-    }
-    if (params.q && String(params.q).trim()) {
-      if (hasRemark) {
-        where.push('(name like ? or coalesce(remark, "") like ?)');
-        const kw = `%${String(params.q).trim()}%`; values.push(kw, kw);
-      } else {
-        where.push('(name like ?)');
-        const kw = `%${String(params.q).trim()}%`; values.push(kw);
+      const where: string[] = [];
+      const values: any[] = [];
+      if (hasSchool && params.schoolId && Number.isFinite(Number(params.schoolId))) {
+        where.push('school_id = ?'); values.push(Number(params.schoolId));
       }
-    }
+      if (params.q && String(params.q).trim()) {
+        if (hasRemark) {
+          where.push('(name like ? or coalesce(remark, "") like ?)');
+          const kw = `%${String(params.q).trim()}%`; values.push(kw, kw);
+        } else {
+          where.push('(name like ?)');
+          const kw = `%${String(params.q).trim()}%`; values.push(kw);
+        }
+      }
 
-    const selectParts = [
+      const selectParts = [
       'id',
       hasSchool ? 'school_id as schoolId' : '1 as schoolId',
       'name',
       hasRemark ? 'remark' : 'null as remark',
       hasCreated ? 'date(created_at) as createdAt' : 'null as createdAt',
       hasUpdated ? 'date(updated_at) as updatedAt' : 'null as updatedAt',
-    ];
-    const sql = `select ${selectParts.join(', ')} from roles ${where.length ? 'where ' + where.join(' and ') : ''} order by id desc`;
-    const { rows } = await this.db.query<any>(sql, values);
-    return rows as Array<{ id: number; schoolId: number; name: string; remark?: string; createdAt: string; updatedAt: string }>;
+      ];
+      const sql = `select ${selectParts.join(', ')} from roles ${where.length ? 'where ' + where.join(' and ') : ''} order by id desc`;
+      const { rows } = await this.db.query<any>(sql, values);
+      return rows as Array<{ id: number; schoolId: number; name: string; remark?: string; createdAt: string; updatedAt: string }>;
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      if (/no such table|doesn't exist|ER_NO_SUCH_TABLE/i.test(msg)) return [];
+      throw e;
+    }
   }
 
   async create(schoolId: number, name: string, remark?: string) {

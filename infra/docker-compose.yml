@@ -1,21 +1,4 @@
 services:
-  mysql:
-    image: mysql:8.0
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-foodsafe_dev}
-      MYSQL_USER: ${MYSQL_USER:-foodsafe}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-secret}
-    command: ["mysqld", "--default-authentication-plugin=mysql_native_password", "--sql-mode=", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
-    ports:
-      - '3307:3306'
-    volumes:
-      - mysqldata:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root}"]
-      interval: 5s
-      timeout: 3s
-      retries: 20
 
   redis:
     image: redis:7-alpine
@@ -72,11 +55,13 @@ services:
     environment:
       PORT: 3000
       # Either provide DATABASE_URL or MYSQL_* to the app
-      DATABASE_URL: ${DATABASE_URL:-mysql://foodsafe:secret@mysql:3306/foodsafe_dev}
+      # Use host database; override with HOST_DATABASE_URL if needed
+      # Example: HOST_DATABASE_URL=mysql://user:pass@host.docker.internal:3306/foodsafe
+      DATABASE_URL: ${HOST_DATABASE_URL:-mysql://foodsafe:secret@host.docker.internal:3306/foodsafe_dev}
     ports: ['3300:3000']
+    # Allow container to resolve host.docker.internal on Linux (host-gateway)
+    extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
-      mysql:
-        condition: service_healthy
       redis:
         condition: service_started
       kafka:
@@ -101,15 +86,15 @@ services:
       - ../.env
     environment:
       PORT: 3000
-      DATABASE_URL: ${DATABASE_URL:-mysql://foodsafe:secret@mysql:3306/foodsafe_dev}
+      # Use host database in dev mode as well
+      DATABASE_URL: ${HOST_DATABASE_URL:-mysql://foodsafe:secret@host.docker.internal:3306/foodsafe_dev}
     command: ["sh", "-lc", "node scripts/run-migrations.js && node --watch dist/services/gateway-service/src/main.js"]
     volumes:
       - ../services/gateway-service/migrations:/app/migrations:ro
       - ../services/gateway-service/dist:/app/dist
     ports: ['3301:3000']
+    extra_hosts: ['host.docker.internal:host-gateway']
     depends_on:
-      mysql:
-        condition: service_healthy
       redis:
         condition: service_started
       kafka:
@@ -117,5 +102,4 @@ services:
     profiles: ["dev"]
 
 volumes:
-  mysqldata:
   minio:

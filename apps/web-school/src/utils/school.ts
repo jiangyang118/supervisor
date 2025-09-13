@@ -3,9 +3,9 @@ export type SchoolOption = { id: string; name: string };
 const KEY = 'current-school-id';
 
 export function getCurrentSchoolId(): string {
-  if (typeof localStorage === 'undefined') return 0;
-  console.log('localStorage',localStorage.getItem(KEY));
-  return localStorage.getItem(KEY) || 0;
+  if (typeof localStorage === 'undefined') return '1';
+  console.log('localStorage', localStorage.getItem(KEY));
+  return localStorage.getItem(KEY) || '1';
 }
 
 export function setCurrentSchoolId(id: string) {
@@ -23,5 +23,4 @@ export function toNumericSchoolId(id: string | number | undefined): number | und
 export function getCurrentSchoolIdNum(): number | undefined {
   return toNumericSchoolId(getCurrentSchoolId());
 }
-
 

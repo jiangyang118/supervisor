@@ -1,8 +1,5 @@
 services:
   # Use domestic mirrors for faster pulls in mainland China
-  mysql:
-    image: docker.m.daocloud.io/library/mysql:8.0
-
   redis:
     image: docker.m.daocloud.io/library/redis:7-alpine
 

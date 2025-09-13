@@ -64,3 +64,16 @@ start-test:
 
 start-prod:
 	@$(MAKE) -s ENV=prod start-services
+
+# Docker compose helpers (host DB)
+compose-up-host:
+	@echo "Compose up services (host DB)"
+	docker compose -f infra/docker-compose.yml up -d redis minio zookeeper kafka kafka-ui gateway-service nginx
+
+compose-logs:
+	@echo "Tailing gateway-service logs"
+	docker compose -f infra/docker-compose.yml logs -f gateway-service
+
+compose-down:
+	@echo "Compose down"
+	docker compose -f infra/docker-compose.yml down

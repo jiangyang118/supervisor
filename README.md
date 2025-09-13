@@ -60,12 +60,16 @@
 
 ## 启动方式
 
-### 方式一：Docker 启动（推荐）
-- 启动基础设施与网关：
-  - `docker compose -f infra/docker-compose.yml up -d mysql redis minio zookeeper kafka kafka-ui gateway-service nginx`
-- 数据库初始化：服务启动时会自动执行迁移与初始化（可通过 `DB_AUTO_MIGRATE=0` 关闭）。
-  - 也可手动执行迁移：`make migrate`
-  - 或：`DATABASE_URL="mysql://foodsafe:secret@127.0.0.1:3307/foodsafe" pnpm -C services/gateway-service db:migrate`
+### 方式一：Docker 启动（使用宿主机数据库）
+- 启动基础设施与网关（不再拉起 MySQL 容器）：
+  - `docker compose -f infra/docker-compose.yml up -d redis minio zookeeper kafka kafka-ui gateway-service nginx`
+- 指向宿主机数据库（任选其一）：
+  - 在项目根目录 `.env` 中新增：`HOST_DATABASE_URL=mysql://<用户>:<密码>@host.docker.internal:<端口>/<数据库>`
+  - 或运行时覆盖：`HOST_DATABASE_URL=... docker compose -f infra/docker-compose.yml up -d ...`
+  - Linux 如无法解析 `host.docker.internal`，compose 已添加 `extra_hosts: host.docker.internal:host-gateway`；需 Docker 20.10+。
+- 数据库迁移：服务启动时自动执行（可用 `DB_AUTO_MIGRATE=0` 关闭）。亦可手动：
+  - `make migrate`
+  - 或：`DATABASE_URL="mysql://user:pass@127.0.0.1:3306/foodsafe" pnpm -C services/gateway-service db:migrate`
 - 查看日志：
   - `docker compose -f infra/docker-compose.yml logs -f gateway-service`
 
@@ -205,7 +209,7 @@ CI 示例：`.github/workflows/ci.yml`
 - Nginx 反向代理：`8081`（转发至网关 `/api/*`、`/iot/*`）
 - Kafka UI：`8080`
 - MinIO：`9000`（S3 API）、`9001`（Console）
-- MySQL：`3307`（映射到容器 `3306`）
+- MySQL：使用宿主机数据库（自行管理端口，如 `3306`）
 - Redis：`6379`
 - Zookeeper：`2181`
 - Kafka Broker：`9092`

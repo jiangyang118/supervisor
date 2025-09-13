@@ -1,0 +1,23 @@
+create table if not exists trustivs_cameras (
+  id int not null auto_increment primary key,
+  school_id int null,
+  canteen_id int null,
+  fnationcode varchar(191) not null,
+  fname varchar(255) null,
+  device_id varchar(191) null,
+  device_sn varchar(191) null,
+  device_host_ip varchar(64) null,
+  status varchar(32) null,
+  flv text null,
+  hls text null,
+  rtmp text null,
+  webrtc text null,
+  ws_flv text null,
+  raw mediumtext null,
+  created_at datetime not null default current_timestamp,
+  updated_at datetime not null default current_timestamp on update current_timestamp,
+  unique key uk_trustivs_cameras_fnationcode(fnationcode),
+  key idx_trustivs_cameras_school(school_id),
+  key idx_trustivs_cameras_canteen(canteen_id),
+  key idx_trustivs_cameras_device(device_id)
+);

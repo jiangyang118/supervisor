@@ -110,9 +110,85 @@
   - 完全停止并删除容器/网络：`docker compose -f infra/docker-compose.yml down`
   - 同时删除数据卷（会清空 MySQL/MinIO 数据）：`docker compose -f infra/docker-compose.yml down -v`
 - 本地开发停止：
-  - 使用 `make dev-*` 启动的开发进程：在对应终端按 `Ctrl+C` 结束。
+ - 使用 `make dev-*` 启动的开发进程：在对应终端按 `Ctrl+C` 结束。
   - 使用 `make start-services`（无 HMR）启动的进程：`make stop-services` 结束后台网关进程。
   - 如需手动：查找并结束占用 3300 端口的进程（macOS 示例）`lsof -i :3300 -sTCP:LISTEN -Pn`。
+
+## 生产部署（PM2 + Nginx）
+
+以下方案避免使用 dev 脚本，支持进程守护、零停机 reload、反向代理与健康检查。
+
+### 一、准备环境
+- Node 20、npm 或 pnpm
+- PM2：`npm i -g pm2`
+- Nginx（Ubuntu: `apt install nginx`）
+- 数据库/Redis/对象存储等按需准备
+
+### 二、环境变量
+- 在项目根目录准备 `.env`（或 `.env.prod`），关键示例：
+  - `PORT=3300`
+  - `JWT_SECRET=请替换为强随机值`
+  - `BODY_LIMIT_MB=20`
+  - 数据库：`DATABASE_URL=mysql://user:pass@127.0.0.1:3306/foodsafe`
+
+> 网关会自动兼容以 `/api/` 开头的路由前缀；线上建议通过 Nginx 将 `/api/` 反代到网关 3300 端口。
+
+### 三、PM2 配置（已内置）
+- 文件：`ecosystem.config.js`
+- 默认 cluster 模式、实例 = CPU 核心数、日志路径 `/var/log/foodsafety/*.log`
+- 首次启动：
+  ```bash
+  # 构建并启动（见下一小节的脚本）
+  scripts/deploy-prod.sh
+
+  # 可选：设置开机自启
+  pm2 startup && pm2 save
+  ```
+
+### 四、一键部署脚本（构建 → Reload → 健康检查）
+- 文件：`scripts/deploy-prod.sh`
+- 作用：
+  - 在 `services/gateway-service` 下执行 `npm ci && npm run build`
+  - 使用 `ecosystem.config.js` 启动/重载 PM2 进程 `gateway-service`
+  - 轮询 `http://127.0.0.1:3300/health` 直至健康
+- 使用：
+  ```bash
+  chmod +x scripts/deploy-prod.sh
+  PORT=3300 scripts/deploy-prod.sh
+  ```
+  成功后输出 Health check OK；失败会打印 PM2 日志片段以便排错。
+
+### 五、Nginx 配置（示例）
+- 文件：`infra/nginx/foodsafety.prod.example.conf`
+- 关键点：
+  - 前端静态：`root /var/www/foodsafety/web;`，`try_files $uri /index.html;`
+  - 反代 API：`location /api/ { proxy_pass http://127.0.0.1:3300/; }`
+  - 可选直达：`/iot/` 等路径无需 `/api` 前缀也可反代
+- 使用步骤（Ubuntu）：
+  ```bash
+  sudo cp infra/nginx/foodsafety.prod.example.conf /etc/nginx/sites-available/foodsafety.conf
+  sudo ln -sf /etc/nginx/sites-available/foodsafety.conf /etc/nginx/sites-enabled/foodsafety.conf
+  sudo nginx -t && sudo systemctl reload nginx
+  ```
+
+### 六、生产自检清单
+- 网关健康：`curl -i http://127.0.0.1:3300/health` → 200
+- Swagger：`http://<域名>/api/docs`（经 Nginx）
+- 路由命中判断：
+  - 命中路由但未鉴权：返回 401（如 `GET /school/canteens`）
+  - 未匹配路由：返回 `{"code":"0","message":"Cannot GET ..."}`（需检查构建与进程）
+- 日志：
+  - PM2：`pm2 logs gateway-service`
+  - 启动项：`pm2 describe gateway-service`
+
+### 七、常见问题排查
+- 线上 404 而本地正常：
+  - 多为“正在运行的构建未包含对应控制器/路由”或“构建后未 reload 进程”
+  - 重新执行部署脚本，或检查 `dist` 是否存在对应模块、Swagger 是否能看到该路由
+- 前端端口访问 `/api/*` 返回 404：
+  - 线上没有 Vite dev 代理，需 Nginx 反代 `/api/` 到网关 3300
+  - 或者在前端构建时设置 `VITE_API_BASE=http://<服务器IP>:3300` 直连后端
+
 
 ## 环境变量
 - 复制 `.env.example` 为 `.env` 并按需配置。

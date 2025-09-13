@@ -99,7 +99,7 @@
             <div style="display:flex; align-items:center; justify-content:space-between">
               <span style="font-weight:600">AI预警类型分布</span>
               <div style="display:flex; align-items:center; gap:8px">
-                <el-tag  effect="plain">Top {{ aiTopN }}</el-tag>
+               
                 <el-select v-model="periodMode"  style="width: 120px">
                   <el-option label="本周" value="week" />
                   <el-option label="最近7天" value="7d" />
@@ -588,7 +588,7 @@ function exportAiBar() {
 .warning-badge .warn-icon { color:#fff; }
 .warning-badge .num { font-size: 22px; font-weight: 800; line-height: 1; }
 .warning-badge.zero { background: linear-gradient(90deg,#67C23A,#8cd87b); box-shadow: 0 6px 14px rgba(103,194,58,.25); }
-.card .core-line, .kpi-card .kpi-line { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; color: var(--kpi-text); font-size:14px }
+.card .core-line, .kpi-card .kpi-line { display:flex; gap:8px; align-items:baseline; flex-wrap:wrap; color: #000000; font-size:14px }
 .kpi-card { 
   background: var(--kpi-bg);
   border: 1px solid var(--kpi-border);
@@ -599,7 +599,7 @@ function exportAiBar() {
 .kpi-card:hover { box-shadow: 0 10px 24px var(--kpi-shadow-hover); transform: translateY(-1px); transition: all .2s ease; }
 .kpi-header { display:flex; align-items:center; justify-content:space-between; }
 .kpi-title-wrap { display:flex; align-items:center; gap:6px; }
-.kpi-title { font-weight: 700; letter-spacing: .5px; color: var(--kpi-title); }
+.kpi-title { font-weight: 700; letter-spacing: .5px; color: #000; }
  .kpi-badge { font-size:13px; padding: 3px 10px; border-radius: 999px; border:1px solid transparent; font-weight: 700; letter-spacing: .2px; display:inline-flex; align-items:center; }
  .kpi-badge::before { content:''; width:8px; height:8px; border-radius:50%; margin-right:6px; background: currentColor; display:inline-block; }
  .kpi-badge.ok { color: #1a7f1a; background: linear-gradient(90deg,#dff6df,#effbef); border-color: #86df86; box-shadow: inset 0 0 0 1px rgba(134,223,134,.15); }
@@ -626,28 +626,28 @@ function exportAiBar() {
 .kpi-card.card-morning {
   --accent: #2979ff;
   background: linear-gradient(180deg, #eaf3ff, #f7fbff);
-  border-color: #d6e6ff;
+  border:1px solid  #d6e6ff;
 }
 .kpi-card.card-cert {
   --accent: #00b38a;
   background: linear-gradient(180deg, #eafff2, #f7fffb);
-  border-color: #c8f5e3;
+  border:1px solid  #c8f5e3;
 }
 .kpi-card.card-disinfection {
   --accent: #ff9f1a;
   background: linear-gradient(180deg, #fff4e6, #fffbf2);
-  border-color: #ffe0b3;
+  border:1px solid  #ffe0b3;
 }
 .kpi-card.card-alerts {
   --accent: #ff4d4f;
   background: linear-gradient(180deg, #ffecec, #fff6f6);
-  border-color: #ffd6d6;
+  border:1px solid #ffd6d6;
 }
 /* 菜品留样卡片：浅紫主题 */
 .kpi-card.card-sampling {
   --accent: #7a5cff;
   background: linear-gradient(180deg, #f3eafe, #faf5ff);
-  border-color: #e6d9ff;
+  border:1px solid #e6d9ff;
 }
 
 /* simple ok/warn color helpers for status text */

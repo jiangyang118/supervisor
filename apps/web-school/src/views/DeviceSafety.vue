@@ -10,7 +10,7 @@
     </template>
 
     <div class="filter-bar">
-      <el-select v-model="canteenId" placeholder="全部食堂" clearable filterable style="width:220px">
+      <el-select v-model="canteenId" placeholder="全部" clearable filterable style="width:220px">
         <el-option v-for="c in canteens" :key="String(c.id)" :label="c.name" :value="Number(c.id)" />
       </el-select>
       <el-date-picker v-model="range" style="width:260px;margin:0 20px" type="daterange" unlink-panels range-separator="至" start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" :shortcuts="shortcuts" />

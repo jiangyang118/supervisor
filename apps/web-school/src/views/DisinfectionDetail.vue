@@ -1,6 +1,11 @@
 <template>
   <el-card>
-    <template #header>消毒记录详情</template>
+    <template #header>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <span>消毒记录详情</span>
+        <el-button  @click="router.back()">返回</el-button>
+      </div>
+    </template>
     <el-descriptions :column="2" border >
       <el-descriptions-item label="记录编号">{{ detail?.id }}</el-descriptions-item>
       <el-descriptions-item label="消毒日期">{{ (detail?.at||'').slice(0,10) }}</el-descriptions-item>
@@ -25,12 +30,13 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { api } from '../services/api';
 import { getCurrentSchoolId } from '../utils/school';
 import { ElMessage } from 'element-plus';
 const route = useRoute();
 const id = String(route.query.id || route.params.id || '');
+const router = useRouter();
 const canteens = ref<any[]>([]);
 const detail = ref<any>(null);
 function canteenName(id?: number) { return canteens.value.find((c:any)=> Number(c.id)===Number(id))?.name || '-'; }
@@ -45,4 +51,3 @@ onMounted(async () => {
 </script>
 
 <style scoped></style>
-

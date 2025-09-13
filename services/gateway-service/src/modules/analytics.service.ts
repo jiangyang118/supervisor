@@ -206,6 +206,12 @@ export class AnalyticsService {
     if (startDay || endDay) {
       filtered = filtered.filter((x) => {
         const d = (x.at || '').slice(0, 10);
+        const isCert = x.type === '证件过期' || x.type === '健康证到期';
+        if (isCert) {
+          // 证件类：按“截至结束日已过期”的口径统计，忽略开始日
+          return (!endDay || d <= endDay);
+        }
+        // 其它类型：按区间过滤（含起止）
         return (!startDay || d >= startDay) && (!endDay || d <= endDay);
       });
     }

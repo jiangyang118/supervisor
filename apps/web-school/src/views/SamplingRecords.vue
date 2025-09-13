@@ -12,12 +12,16 @@
     </template>
 
     <el-table :data="batches"  border>
-      <el-table-column prop="date" label="留样日期" width="140" />
+      <el-table-column label="样品/菜品" min-width="220">
+        <template #default="{ row }">{{ sampleSummary(row) }}</template>
+      </el-table-column>
+      <!-- <el-table-column prop="date" label="留样日期" width="140" /> -->
       <el-table-column prop="meal" label="餐次" width="100" />
       <el-table-column prop="canteen" label="食堂" width="160" />
       <el-table-column prop="by" label="留样人" width="120" />
+
       <el-table-column label="留样时间" width="180">
-        <template #default="{ row }">{{ row.createdAt || (row.items && row.items[0] ? row.items[0].at : '') }}</template>
+        <template #default="{ row }">{{ fmtDateTime(row.createdAt || (row.items && row.items[0] ? row.items[0].at : '')) }}</template>
       </el-table-column>
       <el-table-column label="出锅时间" width="140">
         <template #default="{ row }">{{ (row.items && row.items[0] && row.items[0].cookTime) ? row.items[0].cookTime : '' }}</template>
@@ -159,6 +163,19 @@ const manualForm = reactive<{ sample: string; weight: number; imageUrl: string; 
 const canteens = ref<Array<{ id: number|string; name: string }>>([]);
 const cleanupForm = reactive({ by: '', photos: '' });
 
+function sampleSummary(b: Batch): string {
+  try {
+    const names = (b.items || [])
+      .map((it) => (it && it.sample ? String(it.sample).trim() : ''))
+      .filter(Boolean);
+    if (!names.length) return '-';
+    if (names.length <= 3) return names.join('、');
+    return names.slice(0, 3).join('、') + ` 等${names.length}道`;
+  } catch {
+    return '-';
+  }
+}
+
 function mealNow(): Batch['meal'] {
   const h = new Date().getHours();
   if (h < 10) return '早餐';
@@ -225,6 +242,7 @@ function exportAll() {
       meal: b.meal,
       canteen: b.canteen,
       by: b.by,
+      samples: (b.items || []).map((it: any) => (it && it.sample ? String(it.sample).trim() : '')).filter(Boolean).join('、'),
       createdAt: fmtDateTime(b.createdAt || first.at || ''),
       cookTime: first.cookTime || '',
       linkedCount: b.linkedCount,
@@ -235,6 +253,7 @@ function exportAll() {
     meal: '餐次',
     canteen: '食堂',
     by: '留样人',
+    samples: '样品/菜品',
 
     cookTime: '出锅时间',
     linkedCount: '关联菜品数',

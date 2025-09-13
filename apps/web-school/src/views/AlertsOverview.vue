@@ -12,7 +12,7 @@
     <el-form :inline="true" label-width="84px" style="margin-bottom:12px">
 
       <el-form-item label="食堂">
-        <el-select v-model="canteenId" placeholder="全部食堂" clearable filterable style="width: 120px">
+        <el-select v-model="canteenId" placeholder="全部" clearable filterable style="width: 120px">
           <el-option v-for="c in canteens" :key="String(c.id)" :label="c.name" :value="Number(c.id)" />
         </el-select>
       </el-form-item>
@@ -49,13 +49,16 @@
       </el-form-item>
     </el-form>
 
-    <el-row :gutter="8" style="margin-bottom:8px">
-      <el-col v-for="s in summary" :key="s.name" :span="6">
-        <el-statistic :title="s.name" :value="s.count" />
+    <el-row :gutter="8" class="summary-tiles">
+      <el-col v-for="(s, idx) in summary" :key="s.name" :span="6">
+        <div class="stat-tile" :class="tileClass(idx)">
+          <div class="num">{{ s.count }}</div>
+          <div class="label">{{ s.name }}</div>
+        </div>
       </el-col>
     </el-row>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:8px 0">
+    <div style="display:flex;justify-content:flex-end;gap:20px;align-items:center;margin:8px 0">
       <div>
         <el-button type="success" :disabled="!selectedIds.length" @click="batchMark">批量标记已处理</el-button>
       </div>
@@ -119,13 +122,12 @@ import { exportCsv } from '../utils/export';
 
 // 枚举定义
 const TYPE_ENUM = [
-  { label: '证件过期（供应商、食堂相关）', value: '证件过期' },
+  { label: '资质证书过期', value: '资质证书过期' },
   { label: '食材过期预警', value: '食材过期预警' },
   { label: '日常行为AI预警', value: '日常行为AI预警' },
   { label: '环境监测异常', value: '环境监测异常' },
   { label: '农残检测', value: '农残检测' },
   { label: '晨检异常', value: '晨检异常' },
-  { label: '健康证到期', value: '健康证到期' },
   { label: '设备安全异常', value: '设备安全异常' },
   { label: '消毒管理', value: '消毒管理' },
 ] as const;
@@ -147,6 +149,12 @@ const page = ref(1);
 const pageSize = ref(20);
 const selectedIds = ref<string[]>([]);
 const pagedRows = computed(() => warnRows.value.slice((page.value - 1) * pageSize.value, (page.value - 1) * pageSize.value + pageSize.value));
+
+// Summary tile class mapping，模仿 AI 抓拍统计样式
+function tileClass(idx: number) {
+  const map = ['primary', 'danger', 'success'];
+  return map[idx % map.length];
+}
 
 function fmt(iso?: string) {
   try {
@@ -197,8 +205,14 @@ async function handleOne(row: any) {
   if (t.includes('农残')) { router.push({ path: '/daily-op/pesticide-tests' }); return; }
   if (t.includes('设备安全')) { router.push({ path: '/daily-op/device-safety' }); return; }
   if (t.includes('环境')) { router.push({ path: '/daily-op/environment' }); return; }
-  if (t.includes('健康证')) { router.push({ path: '/hr/staff' }); return; }
-  if (t.includes('证件过期')) { router.push({ path: '/hr/canteen-licenses' }); return; }
+  if (t.includes('资质证书过期')) {
+    if ((row as any).origType && String((row as any).origType).includes('健康证')) {
+      router.push({ path: '/hr/staff' });
+    } else {
+      router.push({ path: '/hr/canteen-licenses' });
+    }
+    return;
+  }
 }
 function doExport() {
   const rows = warnRows.value.map((r) => ({ id: r.id, type: r.type, detail: r.detail || '', at: dateOnly(r.at), status: r.status }));
@@ -250,10 +264,15 @@ function resolveDateRange(): { start?: string; end?: string } {
   return { start: toISO(s), end: toISO(e) };
 }
 
-function recomputeSummary(rows: Array<{ type: string }>) {
+function recomputeSummary(rows: Array<{ type?: string }>) {
   const map = new Map<string, number>();
-  rows.forEach((r) => map.set(r.type, (map.get(r.type) || 0) + 1));
-  summary.value = Array.from(map.entries()).map(([name, count]) => ({ name, count }));
+  rows.forEach((r) => {
+    const key = (r.type && String(r.type).trim()) || '其他';
+    map.set(key, (map.get(key) || 0) + 1);
+  });
+  summary.value = Array.from(map.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
 }
 
 async function load() {
@@ -269,6 +288,8 @@ async function load() {
       canteenId: canteenId.value,
     } as any);
     let rows = (alerts.items || []) as Array<any>;
+    // 合并后端“证件过期/健康证到期”为统一类型“资质证书过期”
+    rows = rows.map((r) => ({ ...r, type: (r.type === '证件过期' || r.type === '健康证到期') ? '资质证书过期' : r.type }));
     if (Array.isArray(typeLabels.value) && typeLabels.value.length) {
       const selValues = typeLabels.value
         .map((lab) => TYPE_ENUM.find((t) => t.label === lab)?.value)
@@ -278,8 +299,16 @@ async function load() {
     if (canteenId.value) rows = rows.filter((r) => !('canteenId' in r) || r.canteenId === canteenId.value);
     warnRows.value = rows as any;
     recomputeSummary(rows as any);
-    const today = new Date().toISOString().slice(0,10);
-    todayTotal.value = warnRows.value.filter((x) => String(x.at||'').slice(0,10) === today).length;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const d = new Date();
+    const todayLocal = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    todayTotal.value = warnRows.value.filter((x) => {
+      try {
+        const dt = new Date(String(x.at || ''));
+        const ds = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
+        return ds === todayLocal;
+      } catch { return false; }
+    }).length;
   } finally {
     loading.value = false;
   }
@@ -313,3 +342,31 @@ watch(schoolId, (v) => {
 
 onBeforeUnmount(() => { if (timer) clearInterval(timer); });
 </script>
+
+<style scoped>
+.summary-tiles { margin-bottom: 8px;  }
+.stat-tile {
+  text-align: center;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #ebeef5;
+  background: #fff;
+  transition: all .25s ease;
+  cursor: default;
+}
+.stat-tile .num { font-size: 28px; font-weight: 800; }
+.stat-tile .label { color: #666; margin-top: 4px; }
+.stat-tile:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.08); transform: translateY(-1px); }
+
+/* Variants inspired by AI抓拍统计 */
+.stat-tile.primary { background: #f0f9ff; border-color: #e6f7ff; }
+.stat-tile.primary .num { color: #1890ff; }
+.stat-tile.danger { background: #fff1f0; border-color: #fff1f0; }
+.stat-tile.danger .num { color: #f56c6c; }
+.stat-tile.success { background: #f0f9f0; border-color: #f0f9f0; }
+.stat-tile.success .num { color: #67c23a; }
+
+@media (max-width: 992px) {
+  .stat-tile .num { font-size: 24px; }
+}
+</style>

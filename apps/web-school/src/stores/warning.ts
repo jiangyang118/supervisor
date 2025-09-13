@@ -14,13 +14,12 @@ export type WarningItem = {
 };
 
 export const TYPE_ENUM = [
-  { label: '证件过期（供应商、食堂相关）', value: '证件过期' },
+  { label: '资质证书过期（人员资质证件、供应商资质、食堂资质）', value: '资质证书过期' },
   { label: '食材过期预警', value: '食材过期预警' },
   { label: '日常行为AI预警', value: '日常行为AI预警' },
   { label: '环境监测异常', value: '环境监测异常' },
   { label: '农残检测', value: '农残检测' },
   { label: '晨检异常', value: '晨检异常' },
-  { label: '健康证到期', value: '健康证到期' },
   { label: '设备安全异常（设备安全检查结果不通过提示异常）', value: '设备安全异常' },
   { label: '消毒管理（当日未提交消毒记录提示异常）', value: '消毒管理' },
 ] as const;
@@ -88,14 +87,17 @@ export const useWarningStore = defineStore('warning', {
         });
         const rows = (data.items || []) as Array<{ id: string; type: string; status: WarningStatus; at: string; level?: string; detail?: string; school?: string }>;
         // 映射为页面字段
-        const items: WarningItem[] = rows.map((r) => ({
+        const items: WarningItem[] = rows.map((r) => {
+          const type = r.type === '证件过期' || r.type === '健康证到期' ? '资质证书过期' : r.type;
+          return {
           id: r.id,
-          type: r.type,
+          type,
           title: r.detail || r.type,
           location: r.school || '-',
           at: r.at,
           status: r.status || '未处理',
-        }));
+          };
+        });
         // 前端过滤：类型/状态
         const typeSet = new Set(this.types.filter(Boolean));
         const filteredByType = typeSet.size ? items.filter((it) => typeSet.has(it.type)) : items;
